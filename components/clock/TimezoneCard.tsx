@@ -1,0 +1,159 @@
+'use client';
+
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Timezone, ViewMode } from '@/store/timezoneStore';
+import AnalogClock from './AnalogClock';
+import DigitalClock from './DigitalClock';
+import { isInDST } from '@/lib/utils/timezone';
+import { DateTime } from 'luxon';
+
+interface TimezoneCardProps {
+  timezone: Timezone;
+  currentTime: Date;
+  viewMode: ViewMode;
+  onRemove: (id: string) => void;
+  highlightedTime: Date | null;
+  timeSlots: Date[];
+  onTimeSelect: (time: Date) => void;
+  roundToNearestIncrement: (date: Date, increment: number) => Date;
+}
+
+/**
+ * Component for displaying a single timezone
+ */
+export default function TimezoneCard({
+  timezone,
+  currentTime,
+  viewMode,
+  onRemove,
+  highlightedTime,
+  timeSlots,
+  onTimeSelect,
+  roundToNearestIncrement
+}: TimezoneCardProps) {
+  const [showOptions, setShowOptions] = useState(false);
+  
+  // Convert current time to the timezone
+  const zonedTime = DateTime.fromJSDate(currentTime).setZone(timezone.id);
+  
+  // Check if the timezone is in DST
+  const isDST = isInDST(timezone.id);
+  
+  // Determine if it's business hours (9 AM to 5 PM)
+  const hour = zonedTime.hour;
+  const isBusinessHours = hour >= 9 && hour < 17;
+  
+  // Determine if it's night time (8 PM to 6 AM)
+  const isNightTime = hour >= 20 || hour < 6;
+  
+  // Format the date for display
+  const dateDisplay = zonedTime.toFormat('EEE, MMM d');
+  
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className={`
+        relative p-4 rounded-lg shadow-md
+        ${isNightTime ? 'bg-gray-800 text-white' : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}
+        ${isBusinessHours ? 'border-l-4 border-green-500' : ''}
+      `}
+    >
+      <div className="flex justify-between items-start mb-2">
+        <div>
+          <h3 className="text-lg font-semibold">{timezone.city || timezone.name}</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{timezone.id}</p>
+        </div>
+        <div className="flex items-center">
+          {isDST && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100 mr-2">
+              DST
+            </span>
+          )}
+          <button
+            onClick={() => setShowOptions(!showOptions)}
+            className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            aria-label="Options"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      {/* Options dropdown */}
+      {showOptions && (
+        <div className="absolute right-4 top-12 z-10 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1">
+          <button
+            onClick={() => {
+              onRemove(timezone.id);
+              setShowOptions(false);
+            }}
+            className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+          >
+            Remove
+          </button>
+        </div>
+      )}
+      
+      <p className="text-sm mb-4">{dateDisplay}</p>
+      
+      {/* Clock display based on view mode */}
+      <div className="flex justify-center mb-4">
+        {viewMode === 'analog' && (
+          <AnalogClock
+            time={zonedTime.toJSDate()}
+            size={150}
+            highlightedTime={highlightedTime}
+          />
+        )}
+        
+        {viewMode === 'digital' && (
+          <DigitalClock
+            time={zonedTime.toJSDate()}
+            timezone={timezone.id}
+            highlightedTime={highlightedTime}
+          />
+        )}
+        
+        {viewMode === 'list' && (
+          <div className="w-full max-h-40 overflow-y-auto">
+            {timeSlots.map((slot) => {
+              const slotInTimezone = DateTime.fromJSDate(slot).setZone(timezone.id);
+              const isHighlighted = highlightedTime && 
+                DateTime.fromJSDate(highlightedTime).hasSame(slotInTimezone, 'hour') && 
+                DateTime.fromJSDate(highlightedTime).hasSame(slotInTimezone, 'minute');
+              
+              return (
+                <button
+                  key={slot.getTime()}
+                  onClick={() => onTimeSelect(slot)}
+                  className={`
+                    w-full text-left px-2 py-1 rounded-md mb-1
+                    ${isHighlighted ? 'bg-primary-500 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}
+                  `}
+                >
+                  {slotInTimezone.toFormat('HH:mm')}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      
+      {/* Status indicators */}
+      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+        <span>
+          {isBusinessHours ? 'Business Hours' : isNightTime ? 'Night Time' : 'Off Hours'}
+        </span>
+        <span>
+          {zonedTime.toFormat('ZZZZ')}
+        </span>
+      </div>
+    </motion.div>
+  );
+} 

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Optimized clock face SVG with reduced paths for better performance -->
+  <circle cx="120" cy="120" r="118" stroke="currentColor" stroke-width="4" fill="none" stroke-opacity="0.1"/>
+  <circle cx="120" cy="120" r="110" stroke="currentColor" stroke-width="2" fill="none" stroke-opacity="0.05"/>
+  
+  <!-- Optimized hour markers - reduced points -->
+  <line x1="120" y1="24" x2="120" y2="36" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  <line x1="178" y1="62" x2="170" y2="70" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  <line x1="216" y1="120" x2="204" y2="120" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  <line x1="178" y1="178" x2="170" y2="170" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  <line x1="120" y1="216" x2="120" y2="204" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  <line x1="62" y1="178" x2="70" y2="170" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  <line x1="24" y1="120" x2="36" y2="120" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  <line x1="62" y1="62" x2="70" y2="70" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Optimized minute markers - reduced number of markers for better performance -->
+  <line x1="120" y1="45" x2="120" y2="50" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="145" y1="49" x2="143" y2="54" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="165" y1="61" x2="161" y2="65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="179" y1="80" x2="174" y2="83" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="186" y1="101" x2="181" y2="102" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="186" y1="139" x2="181" y2="138" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="179" y1="160" x2="174" y2="157" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="165" y1="179" x2="161" y2="175" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="145" y1="191" x2="143" y2="186" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="120" y1="195" x2="120" y2="190" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="95" y1="191" x2="97" y2="186" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="75" y1="179" x2="79" y2="175" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="61" y1="160" x2="66" y2="157" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="54" y1="139" x2="59" y2="138" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="54" y1="101" x2="59" y2="102" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="61" y1="80" x2="66" y2="83" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="75" y1="61" x2="79" y2="65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+  <line x1="95" y1="49" x2="97" y2="54" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Center point -->
+  <circle cx="120" cy="120" r="6" fill="currentColor"/>
+</svg> 

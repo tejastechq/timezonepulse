@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  color: #333;
+  background-color: #f8f8f8;
+}
+
+/* Custom utility classes */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* View transition animations */
+.view-transition-enter-active {
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.view-transition-exit-active {
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Dashboard animations */
+.dashboard-enter-active {
+  opacity: 1;
+  max-height: 1000px;
+  transition: opacity 0.3s ease-in-out, max-height 0.3s ease-in-out;
+}
+
+.dashboard-exit-active {
+  opacity: 0;
+  max-height: 0;
+  transition: opacity 0.3s ease-in-out, max-height 0.3s ease-in-out;
+}
+
+.dashboard-container {
+  transition: opacity 0.3s ease-in-out;
+}
+
+.dashboard-container.visible {
+  opacity: 1;
+}
+
+.dashboard-container:not(.visible) {
+  opacity: 0;
+}
+
+/* Time selection animations */
+.user-selected {
+  animation: pulse 1.5s ease-in-out;
+}
+
+.auto-scroll-transition {
+  animation: highlight 1.2s ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    background-color: rgba(var(--primary-500), 0.2);
+  }
+  50% {
+    background-color: rgba(var(--primary-500), 0.5);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes highlight {
+  0% {
+    background-color: transparent;
+  }
+  30% {
+    background-color: rgba(var(--primary-500), 0.3);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+/* Scrollbar styling */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(229, 231, 235, 0.5);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-track {
+  background: rgba(55, 65, 81, 0.5);
+}
+
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(107, 114, 128, 0.5);
+}
+
+/* Handle reduced motion preferences with CSS */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Use the data attribute for components that need to access this preference */
+html[data-prefers-reduced-motion="true"] .view-transition-enter-active,
+html[data-prefers-reduced-motion="true"] .view-transition-exit-active,
+html[data-prefers-reduced-motion="true"] .dashboard-enter-active,
+html[data-prefers-reduced-motion="true"] .dashboard-exit-active {
+  transition: none !important;
+}
+
+/* Font loading optimization with data attributes */
+html[data-fonts-loaded="true"] {
+  /* Apply any styles needed for loaded fonts */
+  font-display: swap;
+}
+
+/* BFCache restoration handling */
+html[data-bfcache-restored="true"] {
+  /* Styles for restored pages if needed */
+} 
