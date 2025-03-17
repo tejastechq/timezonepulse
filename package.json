@@ -50,6 +50,9 @@
   },
   "devDependencies": {
     "@testing-library/react": "^16.2.0",
+    "@types/aria-query": "^5.0.4",
+    "@types/estree": "^1.0.6",
+    "@types/json-schema": "^7.0.15",
     "@types/luxon": "^3.4.2",
     "autoprefixer": "^10.4.16",
     "eslint": "^9.22.0",
