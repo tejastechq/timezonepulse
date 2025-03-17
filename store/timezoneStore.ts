@@ -54,8 +54,28 @@ export const useTimezoneStore = create<TimezoneState>()(
             name: `Local (${localTz})`,
             city: 'Local',
             country: '',
-          }
-        ],
+          },
+          // Add two default timezones if they're different from local
+          ...(localTz !== 'America/New_York' ? [{
+            id: 'America/New_York',
+            name: 'New York (America/New_York)',
+            city: 'New York',
+            country: 'United States',
+          }] : []),
+          ...(localTz !== 'Europe/London' ? [{
+            id: 'Europe/London',
+            name: 'London (Europe/London)',
+            city: 'London',
+            country: 'United Kingdom',
+          }] : []),
+          // If local timezone is either New York or London, add Tokyo as a third option
+          ...((localTz === 'America/New_York' || localTz === 'Europe/London') ? [{
+            id: 'Asia/Tokyo',
+            name: 'Tokyo (Asia/Tokyo)',
+            city: 'Tokyo',
+            country: 'Japan',
+          }] : []),
+        ].slice(0, 3), // Ensure we have at most 3 timezones (local + 2 others)
         viewMode: 'analog',
         highlightedTime: null,
         localTimezone: localTz,
