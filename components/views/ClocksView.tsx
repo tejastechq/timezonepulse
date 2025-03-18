@@ -226,7 +226,7 @@ export default function ClocksView({
             <div className="rounded-full bg-primary-100 dark:bg-primary-900/30 p-3 mb-3">
               <Plus className="h-6 w-6 text-primary-600 dark:text-primary-400" />
             </div>
-            <p className="text-gray-600 dark:text-gray-300 font-medium">Add Timezone</p>
+            <p className="text-gray-600 dark:text-gray-300 font-medium">Add Timezone or Region</p>
             <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1">
               Track time for another region
             </p>
