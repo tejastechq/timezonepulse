@@ -51,6 +51,8 @@ export default function ListView({
   const { addTimezone, removeTimezone } = useTimezoneStore();
 
   const [timeRemaining, setTimeRemaining] = useState<number>(60);
+  // Add a ref to keep track of the current time remaining
+  const timeRemainingRef = useRef<number>(60);
 
   // Create a performance marker for debugging
   const markRender = useCallback((name: string) => {
@@ -74,19 +76,31 @@ export default function ListView({
 
   // Consolidated timer manager - uses RAF for smoother timing
   const useConsolidatedTimer = useCallback(() => {
+    // Always make sure to clear any existing animation frame first
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
 
     // Only start timer if we have a highlighted time
-    if (!highlightedTime) return () => {}; // Return empty cleanup function to fix the linter error
+    if (!highlightedTime || !mounted) return () => {}; // Return empty cleanup function if no highlighted time or not mounted
 
     // Initialize last tick time
     let lastTickTime = Date.now();
-    let remainingTime = timeRemaining;
+    // Use the ref instead of the state directly
+    let remainingTime = timeRemainingRef.current;
     
     // Use requestAnimationFrame for smoother animations that sync with browser's render cycle
     const timerLoop = () => {
+      // Check if component is still mounted and still has a highlighted time
+      if (!mounted || !highlightedTime) {
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+        return;
+      }
+      
       const now = Date.now();
       const deltaTime = now - lastTickTime;
       
@@ -97,11 +111,16 @@ export default function ListView({
         
         if (remainingTime <= 0) {
           // When we reach 0, clear the timer and selection
+          if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+            animationFrameRef.current = null;
+          }
           handleTimeSelection(null);
           return;
         }
         
-        // Update state (batched with React 18+)
+        // Update both the ref and the state
+        timeRemainingRef.current = remainingTime;
         setTimeRemaining(remainingTime);
       }
       
@@ -116,9 +135,10 @@ export default function ListView({
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
       }
     };
-  }, [highlightedTime, timeRemaining, handleTimeSelection]);
+  }, [highlightedTime, handleTimeSelection, mounted]); // Dependencies remain the same
 
   // Auto-cancel selection after 1 minute of inactivity with visual countdown
   useEffect(() => {
@@ -133,8 +153,14 @@ export default function ListView({
       countdownIntervalRef.current = null;
     }
     
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
     // Reset time remaining when selection changes
     setTimeRemaining(60);
+    timeRemainingRef.current = 60;
     
     // Start consolidated timer if we have a highlighted time
     if (highlightedTime) {
@@ -148,28 +174,58 @@ export default function ListView({
       
       return () => {
         cleanup();
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
       };
+    } else {
+      // If there's no highlighted time, make sure all timers are cleared
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
     }
   }, [highlightedTime, handleTimeSelection, useConsolidatedTimer]);
   
   // Function to reset the inactivity timer and visual countdown
   const resetInactivityTimer = useCallback(() => {
     if (highlightedTime) {
-      // Reset time remaining
-      setTimeRemaining(60);
-      
-      // Clear existing timeout
+      // Cancel all existing timers first to avoid potential issues with multiple timers
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
       }
       
-      // Set a new timeout
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      
+      // Reset time remaining
+      setTimeRemaining(60);
+      timeRemainingRef.current = 60;
+      
+      // Set a new timeout for automatic clearing
       timeoutRef.current = setTimeout(() => {
-        handleTimeSelection(null);
+        // Ensure we're still in a valid state before clearing the selection
+        if (highlightedTime) {
+          handleTimeSelection(null);
+        }
       }, 60000); // 60,000 ms = 1 minute
+      
+      // Restart the animation frame timer
+      const cleanup = useConsolidatedTimer();
+      
+      // Return the cleanup function
+      return cleanup;
     }
-  }, [highlightedTime, handleTimeSelection]);
+  }, [highlightedTime, handleTimeSelection, useConsolidatedTimer]);
   
   // Add click outside handler to cancel time selection - uses a more performant approach
   useEffect(() => {
@@ -207,13 +263,26 @@ export default function ListView({
   }, [mounted, highlightedTime, handleTimeSelection]);
   
   // Throttled user interaction handler to reduce event processing
-  const throttledUserInteraction = useCallback(() => {
+  const throttledUserInteraction = useCallback((event: Event) => {
     const now = Date.now();
     // Throttle to once per 100ms
     if (now - lastRenderTimeRef.current < 100) return;
-    lastRenderTimeRef.current = now;
     
-    resetInactivityTimer();
+    // Only reset the timer for relevant interactions
+    // Check if the interaction is within the highlighted time indicator or related controls
+    const target = event.target as Element;
+    
+    // Check if the interaction is within the time columns container or on the reset button
+    const isRelevantInteraction = 
+      timeColumnsContainerRef.current?.contains(target) || 
+      target.closest('.time-item') !== null ||
+      target.closest('[data-reset-timer]') !== null;
+    
+    // Only reset the timer for relevant interactions
+    if (isRelevantInteraction) {
+      lastRenderTimeRef.current = now;
+      resetInactivityTimer();
+    }
   }, [resetInactivityTimer]);
   
   // Listen for user interactions to reset the timer - with throttling
@@ -221,18 +290,15 @@ export default function ListView({
     if (!mounted || !highlightedTime) return;
     
     // Add event listeners with passive option for better performance
-    window.addEventListener('mousemove', throttledUserInteraction, { passive: true });
+    // Remove mousemove, scroll, and touchstart listeners to prevent constant timer resets
+    // Only keep keydown for accessibility and click for intentional interactions
     window.addEventListener('keydown', throttledUserInteraction, { passive: true });
-    window.addEventListener('scroll', throttledUserInteraction, { passive: true });
     window.addEventListener('click', throttledUserInteraction, { passive: true });
-    window.addEventListener('touchstart', throttledUserInteraction, { passive: true });
     
     return () => {
-      window.removeEventListener('mousemove', throttledUserInteraction);
+      // Remove event listeners
       window.removeEventListener('keydown', throttledUserInteraction);
-      window.removeEventListener('scroll', throttledUserInteraction);
       window.removeEventListener('click', throttledUserInteraction);
-      window.removeEventListener('touchstart', throttledUserInteraction);
     };
   }, [mounted, highlightedTime, throttledUserInteraction]);
   
@@ -868,6 +934,7 @@ export default function ListView({
                 <button 
                   onClick={resetInactivityTimer}
                   className="text-primary-500 hover:text-primary-600 focus:outline-none"
+                  data-reset-timer="true"
                 >
                   Reset
                 </button>
