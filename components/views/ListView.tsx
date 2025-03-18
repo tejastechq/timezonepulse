@@ -42,6 +42,8 @@ export default function ListView({
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const lastRenderTimeRef = useRef<number>(Date.now());
+  // Add a ref to store the timer cleanup function
+  const timerCleanupRef = useRef<(() => void) | null>(null);
   
   // State for timezone selector
   const [selectorOpen, setSelectorOpen] = useState(false);
@@ -61,18 +63,51 @@ export default function ListView({
     }
   }, []);
 
-  // Set mounted state on client
+  // Set mounted state on client and handle comprehensive cleanup
   useEffect(() => {
     setMounted(true);
     markRender('mount');
+    
+    // Comprehensive cleanup function
     return () => {
       markRender('unmount');
+      
       // Clean up all timers and animation frames on unmount
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      
+      // Call the timer cleanup function if it exists
+      if (timerCleanupRef.current) {
+        timerCleanupRef.current();
+        timerCleanupRef.current = null;
+      }
+      
+      // Reset state
+      setTimeRemaining(60);
+      timeRemainingRef.current = 60;
+      highlightedTimeRef.current = null;
     };
   }, [markRender]);
+
+  // Add a ref to keep track of the currently highlighted time
+  const highlightedTimeRef = useRef<Date | null>(null);
+  
+  // Update the ref whenever highlightedTime changes
+  useEffect(() => {
+    highlightedTimeRef.current = highlightedTime;
+  }, [highlightedTime]);
 
   // Consolidated timer manager - uses RAF for smoother timing
   const useConsolidatedTimer = useCallback(() => {
@@ -83,7 +118,7 @@ export default function ListView({
     }
 
     // Only start timer if we have a highlighted time
-    if (!highlightedTime || !mounted) return () => {}; // Return empty cleanup function if no highlighted time or not mounted
+    if (!highlightedTimeRef.current || !mounted) return () => {}; // Return empty cleanup function
 
     // Initialize last tick time
     let lastTickTime = Date.now();
@@ -93,7 +128,7 @@ export default function ListView({
     // Use requestAnimationFrame for smoother animations that sync with browser's render cycle
     const timerLoop = () => {
       // Check if component is still mounted and still has a highlighted time
-      if (!mounted || !highlightedTime) {
+      if (!mounted || !highlightedTimeRef.current) {
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
           animationFrameRef.current = null;
@@ -115,6 +150,7 @@ export default function ListView({
             cancelAnimationFrame(animationFrameRef.current);
             animationFrameRef.current = null;
           }
+          // Use the handler function directly rather than relying on the captured value
           handleTimeSelection(null);
           return;
         }
@@ -138,10 +174,37 @@ export default function ListView({
         animationFrameRef.current = null;
       }
     };
-  }, [highlightedTime, handleTimeSelection, mounted]); // Dependencies remain the same
+  }, [mounted, handleTimeSelection]); // Remove highlightedTime from dependencies, use ref instead
 
   // Auto-cancel selection after 1 minute of inactivity with visual countdown
   useEffect(() => {
+    // Don't do anything if there's no highlighted time
+    if (!highlightedTime) {
+      // Clear any existing timers
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      
+      if (countdownIntervalRef.current) {
+        clearInterval(countdownIntervalRef.current);
+        countdownIntervalRef.current = null;
+      }
+      
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+      
+      // Call any existing cleanup function
+      if (timerCleanupRef.current) {
+        timerCleanupRef.current();
+        timerCleanupRef.current = null;
+      }
+      
+      return;
+    }
+    
     // Clear any previous timers
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
@@ -158,48 +221,38 @@ export default function ListView({
       animationFrameRef.current = null;
     }
     
+    // Call any existing cleanup function
+    if (timerCleanupRef.current) {
+      timerCleanupRef.current();
+      timerCleanupRef.current = null;
+    }
+    
     // Reset time remaining when selection changes
     setTimeRemaining(60);
     timeRemainingRef.current = 60;
     
-    // Start consolidated timer if we have a highlighted time
-    if (highlightedTime) {
-      // Use the consolidated timer approach
-      const cleanup = useConsolidatedTimer();
-      
-      // Also set a backup timeout just in case (belt and suspenders)
-      timeoutRef.current = setTimeout(() => {
+    // Use the consolidated timer approach and store the cleanup function
+    const cleanup = useConsolidatedTimer();
+    timerCleanupRef.current = cleanup;
+    
+    // Also set a backup timeout just in case (belt and suspenders)
+    timeoutRef.current = setTimeout(() => {
+      // Use the ref to check if still valid
+      if (highlightedTimeRef.current) {
         handleTimeSelection(null);
-      }, 60000); // 60,000 ms = 1 minute
-      
-      return () => {
-        cleanup();
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current);
-          timeoutRef.current = null;
-        }
-      };
-    } else {
-      // If there's no highlighted time, make sure all timers are cleared
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
       }
-    }
-  }, [highlightedTime, handleTimeSelection, useConsolidatedTimer]);
-  
-  // Function to reset the inactivity timer and visual countdown
-  const resetInactivityTimer = useCallback(() => {
-    if (highlightedTime) {
-      // Cancel all existing timers first to avoid potential issues with multiple timers
+    }, 60000); // 60,000 ms = 1 minute
+    
+    // Return a cleanup function that handles all timers
+    return () => {
+      if (timerCleanupRef.current) {
+        timerCleanupRef.current();
+        timerCleanupRef.current = null;
+      }
+      
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
-      }
-      
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
       }
       
       if (countdownIntervalRef.current) {
@@ -207,25 +260,58 @@ export default function ListView({
         countdownIntervalRef.current = null;
       }
       
-      // Reset time remaining
-      setTimeRemaining(60);
-      timeRemainingRef.current = 60;
-      
-      // Set a new timeout for automatic clearing
-      timeoutRef.current = setTimeout(() => {
-        // Ensure we're still in a valid state before clearing the selection
-        if (highlightedTime) {
-          handleTimeSelection(null);
-        }
-      }, 60000); // 60,000 ms = 1 minute
-      
-      // Restart the animation frame timer
-      const cleanup = useConsolidatedTimer();
-      
-      // Return the cleanup function
-      return cleanup;
-    }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
   }, [highlightedTime, handleTimeSelection, useConsolidatedTimer]);
+  
+  // Function to reset the inactivity timer and visual countdown
+  const resetInactivityTimer = useCallback(() => {
+    // Use the ref to check if we have a highlighted time
+    if (!highlightedTimeRef.current) return;
+    
+    // Store previous cleanup function if it exists
+    const previousCleanup = timerCleanupRef.current;
+    
+    // Cancel all existing timers first to avoid potential issues with multiple timers
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    
+    // If we had a previous cleanup function, call it
+    if (previousCleanup) {
+      previousCleanup();
+    }
+    
+    // Reset time remaining
+    setTimeRemaining(60);
+    timeRemainingRef.current = 60;
+    
+    // Set a new timeout for automatic clearing
+    timeoutRef.current = setTimeout(() => {
+      // Ensure we're still in a valid state before clearing the selection
+      if (highlightedTimeRef.current) {
+        handleTimeSelection(null);
+      }
+    }, 60000); // 60,000 ms = 1 minute
+    
+    // Restart the animation frame timer and store its cleanup function
+    const cleanup = useConsolidatedTimer();
+    timerCleanupRef.current = cleanup;
+  }, [handleTimeSelection, useConsolidatedTimer]);
   
   // Add click outside handler to cancel time selection - uses a more performant approach
   useEffect(() => {
@@ -268,14 +354,28 @@ export default function ListView({
     // Throttle to once per 100ms
     if (now - lastRenderTimeRef.current < 100) return;
     
-    // Only reset the timer for relevant interactions
-    // Check if the interaction is within the highlighted time indicator or related controls
+    // Check if we even have a highlighted time
+    if (!highlightedTimeRef.current) return;
+    
+    // Handle keyboard events specially for accessibility
+    if (event.type === 'keydown') {
+      const keyEvent = event as KeyboardEvent;
+      // Reset the timer for navigation keys (arrows, tab, space, enter)
+      const accessibilityKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab', ' ', 'Enter'];
+      if (accessibilityKeys.includes(keyEvent.key)) {
+        lastRenderTimeRef.current = now;
+        resetInactivityTimer();
+        return;
+      }
+    }
+    
+    // For mouse and other events, check if the interaction is relevant
     const target = event.target as Element;
     
-    // Check if the interaction is within the time columns container or on the reset button
+    // Check if the interaction is within the time columns container, a time item, or the reset button
     const isRelevantInteraction = 
       timeColumnsContainerRef.current?.contains(target) || 
-      target.closest('.time-item') !== null ||
+      target.closest('[data-time-item="true"]') !== null ||
       target.closest('[data-reset-timer]') !== null;
     
     // Only reset the timer for relevant interactions
@@ -772,6 +872,7 @@ export default function ListView({
         aria-selected={isHighlight}
         data-key={time.getTime()}
         data-local-time={isLocal ? 'true' : 'false'}
+        data-time-item="true"
         onClick={() => handleTimeSelectionFn(time)}
         className={itemClasses}
         tabIndex={0}
