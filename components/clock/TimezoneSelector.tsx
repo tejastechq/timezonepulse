@@ -83,31 +83,43 @@ export default function TimezoneSelector({
   const overlayVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1 },
+    exit: { opacity: 0 }
   };
   
   const contentVariants = {
     hidden: { 
       opacity: 0, 
-      scale: prefersReducedMotion ? 1 : 0.95
+      scale: prefersReducedMotion ? 1 : 0.95,
+      y: prefersReducedMotion ? 0 : 10,
     },
     visible: { 
       opacity: 1, 
-      scale: 1
+      scale: 1,
+      y: 0,
     },
+    exit: {
+      opacity: 0,
+      scale: prefersReducedMotion ? 1 : 0.98,
+      y: prefersReducedMotion ? 0 : -8,
+      transition: {
+        duration: 0.15,
+        ease: [0.32, 0.72, 0, 1] // Custom easing for a nice quick exit
+      }
+    }
   };
   
-  // Transition configuration
+  // Transition configuration for entering animation
   const transition = {
     type: 'spring',
-    stiffness: 300,
-    damping: 25,
+    stiffness: 400,
+    damping: 30,
     duration: prefersReducedMotion ? 0.1 : 0.25,
   };
 
-  // Overlay transition - faster and simpler for better performance
+  // Overlay transition - faster and optimized for smooth animation
   const overlayTransition = {
-    duration: 0.15,
-    ease: 'easeOut'
+    enter: { duration: 0.15, ease: 'easeOut' },
+    exit: { duration: 0.1, ease: 'easeIn' }
   };
 
   // Load all available timezones
@@ -215,22 +227,22 @@ export default function TimezoneSelector({
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={open => !open && onClose()}>
-      <AnimatePresence mode="wait">
+      <AnimatePresence mode="sync" onExitComplete={() => null}>
         {isOpen && (
           <Dialog.Portal forceMount>
-            {/* Fixed backdrop blur layer (no animation) */}
-            {isOpen && (
-              <div 
-                className="fixed inset-0 backdrop-blur-sm z-40"
-                aria-hidden="true"
-              />
-            )}
+            {/* Fixed backdrop blur layer with fade-out on exit */}
+            <motion.div 
+              className="fixed inset-0 backdrop-blur-sm z-40"
+              aria-hidden="true"
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, transition: { duration: 0.1 } }}
+            />
             
             {/* Animated backdrop overlay (opacity only) */}
             <motion.div
               initial="hidden"
               animate="visible"
-              exit="hidden"
+              exit="exit"
               variants={overlayVariants}
               transition={overlayTransition}
             >
@@ -246,11 +258,11 @@ export default function TimezoneSelector({
               <motion.div
                 initial="hidden"
                 animate="visible"
-                exit="hidden"
+                exit="exit"
                 variants={contentVariants}
                 transition={transition}
                 layout
-                className="w-full max-w-md"
+                className="w-full max-w-md will-change-transform"
               >
                 <Dialog.Content 
                   className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl 
