@@ -12,7 +12,11 @@
     "build:production": "cross-env NEXT_PUBLIC_ENV=production next build",
     "analyze": "cross-env ANALYZE=true next build",
     "lighthouse": "lighthouse http://localhost:3000 --view",
-    "clean": "rimraf .next"
+    "clean": "rimraf .next",
+    "fix-env": "node fix-env.js",
+    "dev:fixed": "npm run fix-env && npm run clean && next dev",
+    "dev:safe": "cross-env NEXT_RSC_STRICT_MODE=false next dev",
+    "postinstall": "npm run fix-env"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
@@ -33,8 +37,8 @@
     "@tanstack/react-query": "^5.68.0",
     "@tanstack/react-virtual": "^3.13.4",
     "@types/node": "^22.13.10",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
+    "@types/react": "19.0.11",
+    "@types/react-dom": "19.0.4",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "class-variance-authority": "^0.7.1",
@@ -45,12 +49,12 @@
     "framer-motion": "^12.5.0",
     "lucide-react": "^0.482.0",
     "luxon": "^3.5.0",
-    "million": "^3.1.11",
-    "next": "^15.2.1",
+    "million": "3.1.11",
+    "next": "15.2.3",
     "next-intl": "^4.0.2",
     "next-themes": "^0.4.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
     "react-virtualized-auto-sizer": "^1.0.25",
     "react-window": "^1.8.11",
     "tailwind-merge": "^3.0.2",
@@ -69,7 +73,7 @@
     "@types/react-window": "^1.8.8",
     "autoprefixer": "^10.4.16",
     "eslint": "^9.22.0",
-    "eslint-config-next": "^15.2.2",
+    "eslint-config-next": "15.2.3",
     "gzip-size-cli": "^5.1.0",
     "lighthouse": "^11.7.1",
     "msw": "^2.7.3",
@@ -78,5 +82,37 @@
     "rimraf": "^6.0.1",
     "tailwindcss": "^3.4.0",
     "vitest": "^3.0.8"
+  },
+  "pnpm": {
+    "ignoredBuiltDependencies": [
+      "@vercel/speed-insights",
+      "esbuild",
+      "msw",
+      "sharp"
+    ],
+    "overrides": {
+      "react": "19.0.0",
+      "react-dom": "19.0.0"
+    },
+    "neverBuiltDependencies": [
+      "@modelcontextprotocol/sdk"
+    ],
+    "packageExtensions": {
+      "@modelcontextprotocol/*": {
+        "peerDependencies": {
+          "react": "*",
+          "react-dom": "*"
+        }
+      }
+    }
+  },
+  "resolutions": {
+    "react": "19.0.0",
+    "react-dom": "19.0.0"
+  },
+  "workspaces": {
+    "nohoist": [
+      "**/@modelcontextprotocol/**"
+    ]
   }
 }

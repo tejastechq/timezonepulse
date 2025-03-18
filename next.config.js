@@ -1,4 +1,4 @@
-const million = require('million/compiler');
+// const million = require('million/compiler');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -23,34 +23,12 @@ const nextConfig = {
   },
   // Enable tree-shaking for better dead code elimination
   webpack: (config, { dev, isServer }) => {
-    // Set to 'cheap-module-source-map' for development (better performance while still providing source maps)
-    // Set to 'source-map' for production (more accurate but slower)
-    config.devtool = dev ? 'cheap-module-source-map' : 'source-map';
+    // Fix for the devtool warning - use Next.js compatible values
+    // Next.js 15.2.x has strict requirements on webpack devtool values
+    // Remove custom devtool setting to let Next.js use its defaults
     
-    // Ensure source maps are properly generated for all file types
-    if (dev) {
-      // Explicitly enable source maps for all JavaScript/TypeScript files in development
-      config.module.rules.forEach((rule) => {
-        if (rule.oneOf) {
-          rule.oneOf.forEach((oneOfRule) => {
-            if (
-              oneOfRule.use &&
-              Array.isArray(oneOfRule.use) &&
-              oneOfRule.use.some(u => typeof u === 'object' && (u.loader === 'next-swc-loader' || u.loader?.includes('babel-loader')))
-            ) {
-              // Ensure source maps are enabled for SWC and Babel loaders
-              oneOfRule.use.forEach(loader => {
-                if (typeof loader === 'object') {
-                  if (!loader.options) loader.options = {};
-                  // Set sourceMap true for loaders
-                  loader.options.sourceMap = true;
-                }
-              });
-            }
-          });
-        }
-      });
-    }
+    // Omitting the custom devtool setting to fix the warning
+    // config.devtool = dev ? 'cheap-module-source-map' : 'source-map';
     
     if (!dev && !isServer) {
       // Optimize client-side bundles in production
@@ -183,5 +161,6 @@ const millionConfig = {
   },
 };
 
-// Export the configuration with simplified Million.js optimization
-module.exports = million.next(nextConfig, millionConfig); 
+// Export the configuration WITHOUT Million.js optimization
+// module.exports = million.next(nextConfig, millionConfig);
+module.exports = nextConfig; 

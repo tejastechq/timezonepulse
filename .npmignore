@@ -1,0 +1,33 @@
+# Exclude browser tools directory from npm operations
+browser-tools-mcp/
+browsermcpscreenshots/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Testing
+coverage
+.nyc_output
+
+# Build folders
+.next/
+out/
+build/
+dist/
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Cache directories
+.npm
+.pnpm-store/
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production 
