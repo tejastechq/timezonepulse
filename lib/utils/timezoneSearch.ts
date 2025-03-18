@@ -12,16 +12,28 @@ const WEIGHTS = {
 
 // Popular timezone IDs based on global usage
 const POPULAR_TIMEZONES = new Set([
-  'America/New_York',
-  'Europe/London',
-  'Asia/Tokyo',
-  'Europe/Paris',
-  'America/Los_Angeles',
-  'Asia/Dubai',
-  'Asia/Shanghai',
-  'Australia/Sydney',
-  'Europe/Berlin',
-  'Asia/Singapore',
+  // North America
+  'America/New_York',     // Eastern Time (US & Canada)
+  'America/Chicago',      // Central Time (US & Canada) 
+  'America/Los_Angeles',  // Pacific Time (US & Canada)
+  
+  // Europe
+  'Europe/London',        // London, UK
+  'Europe/Berlin',        // Central European Time
+  'Europe/Paris',         // Paris, France
+  
+  // Asia
+  'Asia/Dubai',           // Dubai, UAE
+  'Asia/Kolkata',         // India Standard Time
+  'Asia/Shanghai',        // China Standard Time
+  'Asia/Tokyo',           // Japan Standard Time
+  'Asia/Singapore',       // Singapore Standard Time
+  
+  // Australia & Pacific
+  'Australia/Sydney',     // Sydney, Australia
+  
+  // UTC
+  'Etc/UTC',              // Coordinated Universal Time
 ]);
 
 /**

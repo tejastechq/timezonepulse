@@ -49,33 +49,77 @@ export const useTimezoneStore = create<TimezoneState>()(
       return {
         // Initial state
         timezones: [
+          // Always include local timezone as first option
           {
             id: localTz,
             name: `Local (${localTz})`,
             city: 'Local',
             country: '',
           },
-          // Add two default timezones if they're different from local
-          ...(localTz !== 'America/New_York' ? [{
-            id: 'America/New_York',
-            name: 'New York (America/New_York)',
-            city: 'New York',
-            country: 'United States',
-          }] : []),
-          ...(localTz !== 'Europe/London' ? [{
+          // Add a timezone from a different continent based on user's location
+          ...(/^America\//.test(localTz) ? [{
             id: 'Europe/London',
             name: 'London (Europe/London)',
             city: 'London',
             country: 'United Kingdom',
           }] : []),
-          // If local timezone is either New York or London, add Tokyo as a third option
-          ...((localTz === 'America/New_York' || localTz === 'Europe/London') ? [{
+          ...(/^Europe\//.test(localTz) ? [{
             id: 'Asia/Tokyo',
             name: 'Tokyo (Asia/Tokyo)',
             city: 'Tokyo',
             country: 'Japan',
           }] : []),
-        ].slice(0, 3), // Ensure we have at most 3 timezones (local + 2 others)
+          ...(/^Asia\//.test(localTz) ? [{
+            id: 'America/New_York',
+            name: 'New York (America/New_York)',
+            city: 'New York',
+            country: 'United States',
+          }] : []),
+          ...(/^Australia\/|^Pacific\//.test(localTz) ? [{
+            id: 'Europe/London',
+            name: 'London (Europe/London)',
+            city: 'London',
+            country: 'United Kingdom',
+          }] : []),
+          ...(/^Africa\//.test(localTz) ? [{
+            id: 'Europe/London',
+            name: 'London (Europe/London)',
+            city: 'London',
+            country: 'United Kingdom',
+          }] : []),
+          
+          // Add a second geographically different timezone
+          ...(/^America\//.test(localTz) ? [{
+            id: 'Asia/Tokyo',
+            name: 'Tokyo (Asia/Tokyo)',
+            city: 'Tokyo',
+            country: 'Japan',
+          }] : []),
+          ...(/^Europe\//.test(localTz) ? [{
+            id: 'America/New_York',
+            name: 'New York (America/New_York)',
+            city: 'New York',
+            country: 'United States',
+          }] : []),
+          ...(/^Asia\//.test(localTz) ? [{
+            id: 'Europe/London',
+            name: 'London (Europe/London)',
+            city: 'London',
+            country: 'United Kingdom',
+          }] : []),
+          ...(/^Australia\/|^Pacific\//.test(localTz) ? [{
+            id: 'America/New_York',
+            name: 'New York (America/New_York)',
+            city: 'New York',
+            country: 'United States',
+          }] : []),
+          ...(/^Africa\//.test(localTz) ? [{
+            id: 'America/New_York',
+            name: 'New York (America/New_York)',
+            city: 'New York',
+            country: 'United States',
+          }] : []),
+        ].slice(0, 3), // Ensure we have exactly 3 timezones
         viewMode: 'analog',
         highlightedTime: null,
         localTimezone: localTz,

@@ -10,6 +10,7 @@ export interface TimezoneInfo {
   city?: string;
   country?: string;
   abbreviation?: string;
+  region?: string;
 }
 
 /**
@@ -77,42 +78,129 @@ export function getDSTTransitions(timezone: string) {
  * @returns Array of timezone information objects
  */
 export function getAllTimezones(): TimezoneInfo[] {
-  // Luxon doesn't expose ZONE_NAMES directly in newer versions
-  // Use a predefined list of common IANA timezone names
+  // Comprehensive list of IANA timezone names organized by region
   const zones = [
-    'Africa/Cairo', 'Africa/Johannesburg', 'Africa/Lagos', 'Africa/Nairobi',
-    'America/Anchorage', 'America/Bogota', 'America/Chicago', 'America/Denver',
-    'America/Los_Angeles', 'America/Mexico_City', 'America/New_York', 'America/Phoenix',
-    'America/Sao_Paulo', 'America/Toronto', 'America/Vancouver',
-    'Asia/Bangkok', 'Asia/Dubai', 'Asia/Hong_Kong', 'Asia/Jakarta', 'Asia/Kolkata',
-    'Asia/Seoul', 'Asia/Shanghai', 'Asia/Singapore', 'Asia/Tokyo',
-    'Australia/Melbourne', 'Australia/Perth', 'Australia/Sydney',
-    'Europe/Amsterdam', 'Europe/Berlin', 'Europe/Istanbul', 'Europe/London',
-    'Europe/Madrid', 'Europe/Moscow', 'Europe/Paris', 'Europe/Rome',
-    'Pacific/Auckland', 'Pacific/Honolulu',
-    'UTC'
+    // North America
+    'America/New_York',      // Eastern Time (US & Canada)
+    'America/Chicago',       // Central Time (US & Canada)
+    'America/Denver',        // Mountain Time (US & Canada)
+    'America/Los_Angeles',   // Pacific Time (US & Canada)
+    'America/Anchorage',     // Alaska Time (US)
+    'Pacific/Honolulu',      // Hawaii-Aleutian Time (US)
+
+    // Latin America & Caribbean
+    'America/Mexico_City',   // Mexico City
+    'America/Bogota',        // Bogota, Colombia
+    'America/Argentina/Buenos_Aires', // Buenos Aires, Argentina
+    'America/Sao_Paulo',     // São Paulo, Brazil
+    'America/Santiago',      // Santiago, Chile
+    'America/Lima',          // Lima, Peru
+    'America/Toronto',       // Toronto, Canada
+    'America/Vancouver',     // Vancouver, Canada
+    'America/Phoenix',       // Phoenix, Arizona (no DST)
+
+    // Europe
+    'Europe/London',         // London, UK
+    'Europe/Berlin',         // Central European Time (Berlin, Paris, Rome, Madrid, Amsterdam)
+    'Europe/Paris',          // Paris, France
+    'Europe/Rome',           // Rome, Italy
+    'Europe/Madrid',         // Madrid, Spain
+    'Europe/Amsterdam',      // Amsterdam, Netherlands
+    'Europe/Athens',         // Eastern European Time (Athens, Bucharest)
+    'Europe/Moscow',         // Moscow, Russia
+    'Europe/Istanbul',       // Istanbul, Turkey
+
+    // Africa
+    'Africa/Casablanca',     // Casablanca, Morocco
+    'Africa/Lagos',          // West Africa Time (Lagos, Nigeria)
+    'Africa/Johannesburg',   // Central Africa Time (Johannesburg, South Africa)
+    'Africa/Nairobi',        // East Africa Time (Nairobi, Kenya)
+    'Africa/Cairo',          // Cairo, Egypt
+
+    // Asia
+    'Asia/Dubai',            // Dubai, UAE
+    'Asia/Kolkata',          // India Standard Time (Mumbai, Delhi, Bangalore)
+    'Asia/Bangkok',          // Bangkok, Thailand
+    'Asia/Singapore',        // Singapore
+    'Asia/Hong_Kong',        // Hong Kong
+    'Asia/Tokyo',            // Tokyo, Japan
+    'Asia/Seoul',            // Seoul, South Korea
+    'Asia/Shanghai',         // Shanghai/Beijing, China
+    'Asia/Jakarta',          // Jakarta, Indonesia
+    'Asia/Karachi',          // Pakistan Standard Time (Karachi)
+
+    // Australia & Pacific
+    'Australia/Sydney',      // Sydney, Australia
+    'Australia/Melbourne',   // Melbourne, Australia
+    'Australia/Brisbane',    // Brisbane, Australia
+    'Australia/Adelaide',    // Adelaide, Australia
+    'Australia/Perth',       // Perth, Australia
+    'Pacific/Auckland',      // Auckland, New Zealand
+
+    // UTC & Global
+    'Etc/UTC',               // Coordinated Universal Time (UTC)
+    'Etc/GMT',               // Greenwich Mean Time (GMT)
   ];
   
-  return zones.map(zone => {
-    const now = DateTime.now().setZone(zone);
+  // Helper function to get the region from the timezone ID
+  const getRegion = (id: string): string => {
+    if (id.startsWith('America/')) return 'North America';
+    if (id.startsWith('Europe/')) return 'Europe';
+    if (id.startsWith('Asia/')) return 'Asia';
+    if (id.startsWith('Africa/')) return 'Africa';
+    if (id.startsWith('Australia/')) return 'Australia & Pacific';
+    if (id.startsWith('Pacific/')) return 'Australia & Pacific';
+    if (id.startsWith('Etc/')) return 'UTC & Global';
+    return 'Other';
+  };
+  
+  // Get timezone info for all zones
+  const timezones = zones.map(tz => {
+    const now = DateTime.now().setZone(tz);
     const offset = now.toFormat('ZZ');
-    const parts = zone.split('/');
-    const city = parts.length > 1 ? parts[parts.length - 1].replace(/_/g, ' ') : zone;
+    const parts = tz.split('/');
+    const city = parts.length > 1 ? parts[parts.length - 1].replace(/_/g, ' ') : tz;
     const country = parts.length > 1 ? parts[0] : '';
     
     return {
-      id: zone,
+      id: tz,
       name: `${city} (${offset})`,
       offset,
       city,
       country,
-      abbreviation: now.toFormat('ZZZZ')
+      abbreviation: now.toFormat('ZZZZ'),
+      region: getRegion(tz)
     };
-  }).sort((a, b) => {
-    // Sort by offset first, then by name
+  });
+  
+  // Define the region order
+  const regionOrder = [
+    'North America',
+    'Europe',
+    'Asia',
+    'Australia & Pacific',
+    'Africa',
+    'UTC & Global',
+    'Other'
+  ];
+  
+  // Sort by region first, then by offset within each region
+  return timezones.sort((a, b) => {
+    // First sort by region based on defined order
+    const regionA = a.region as string;
+    const regionB = b.region as string;
+    const regionCompare = regionOrder.indexOf(regionA) - regionOrder.indexOf(regionB);
+    
+    if (regionCompare !== 0) {
+      return regionCompare;
+    }
+    
+    // Within the same region, sort by offset
     if (a.offset === b.offset) {
+      // If same offset, sort by name alphabetically
       return a.name.localeCompare(b.name);
     }
+    
     return a.offset.localeCompare(b.offset);
   });
 }
