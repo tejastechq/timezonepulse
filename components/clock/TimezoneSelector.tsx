@@ -12,6 +12,7 @@ interface TimezoneSelectorProps {
   onClose: () => void;
   onSelect: (timezone: Timezone) => void;
   excludeTimezones?: string[];
+  [key: string]: any; // Allow for additional props like data attributes
 }
 
 /**
@@ -22,7 +23,8 @@ export default function TimezoneSelector({
   isOpen,
   onClose,
   onSelect,
-  excludeTimezones = []
+  excludeTimezones = [],
+  ...props
 }: TimezoneSelectorProps) {
   const [search, setSearch] = useState('');
   const [timezones, setTimezones] = useState<Timezone[]>([]);
@@ -65,6 +67,7 @@ export default function TimezoneSelector({
           className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 
                     bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-md z-50
                     border border-gray-200 dark:border-gray-700"
+          {...props}
         >
           <div className="flex justify-between items-center mb-4">
             <Dialog.Title className="text-xl font-semibold text-gray-900 dark:text-white">

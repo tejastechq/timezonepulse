@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo, memo } from 'react';
 import { DateTime } from 'luxon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Timezone, useTimezoneStore } from '@/store/timezoneStore';
@@ -18,7 +18,7 @@ interface ListViewProps {
   timeSlots: Date[];
   localTime: Date | null;
   highlightedTime: Date | null;
-  handleTimeSelection: (time: Date) => void;
+  handleTimeSelection: (time: Date | null) => void;
   roundToNearestIncrement: (date: Date, increment: number) => Date;
 }
 
@@ -38,6 +38,10 @@ export default function ListView({
   const timeColumnsContainerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
   const listRefs = useRef<Record<string, FixedSizeList | null>>({});
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
+  const lastRenderTimeRef = useRef<number>(Date.now());
   
   // State for timezone selector
   const [selectorOpen, setSelectorOpen] = useState(false);
@@ -46,17 +50,206 @@ export default function ListView({
   // Get timezone actions from store
   const { addTimezone, removeTimezone } = useTimezoneStore();
 
+  const [timeRemaining, setTimeRemaining] = useState<number>(60);
+
+  // Create a performance marker for debugging
+  const markRender = useCallback((name: string) => {
+    if (typeof performance !== 'undefined' && process.env.NODE_ENV === 'development') {
+      performance.mark(`ListView-${name}-${Date.now()}`);
+    }
+  }, []);
+
   // Set mounted state on client
   useEffect(() => {
     setMounted(true);
+    markRender('mount');
+    return () => {
+      markRender('unmount');
+      // Clean up all timers and animation frames on unmount
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, [markRender]);
+
+  // Consolidated timer manager - uses RAF for smoother timing
+  const useConsolidatedTimer = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+
+    // Only start timer if we have a highlighted time
+    if (!highlightedTime) return () => {}; // Return empty cleanup function to fix the linter error
+
+    // Initialize last tick time
+    let lastTickTime = Date.now();
+    let remainingTime = timeRemaining;
+    
+    // Use requestAnimationFrame for smoother animations that sync with browser's render cycle
+    const timerLoop = () => {
+      const now = Date.now();
+      const deltaTime = now - lastTickTime;
+      
+      // Only update state at most once per second to avoid unnecessary renders
+      if (deltaTime >= 1000) {
+        lastTickTime = now;
+        remainingTime -= 1;
+        
+        if (remainingTime <= 0) {
+          // When we reach 0, clear the timer and selection
+          handleTimeSelection(null);
+          return;
+        }
+        
+        // Update state (batched with React 18+)
+        setTimeRemaining(remainingTime);
+      }
+      
+      // Continue the loop
+      animationFrameRef.current = requestAnimationFrame(timerLoop);
+    };
+    
+    // Start the timer loop
+    animationFrameRef.current = requestAnimationFrame(timerLoop);
+    
+    // Clear the timer on cleanup
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [highlightedTime, timeRemaining, handleTimeSelection]);
+
+  // Auto-cancel selection after 1 minute of inactivity with visual countdown
+  useEffect(() => {
+    // Clear any previous timers
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
+    if (countdownIntervalRef.current) {
+      clearInterval(countdownIntervalRef.current);
+      countdownIntervalRef.current = null;
+    }
+    
+    // Reset time remaining when selection changes
+    setTimeRemaining(60);
+    
+    // Start consolidated timer if we have a highlighted time
+    if (highlightedTime) {
+      // Use the consolidated timer approach
+      const cleanup = useConsolidatedTimer();
+      
+      // Also set a backup timeout just in case (belt and suspenders)
+      timeoutRef.current = setTimeout(() => {
+        handleTimeSelection(null);
+      }, 60000); // 60,000 ms = 1 minute
+      
+      return () => {
+        cleanup();
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      };
+    }
+  }, [highlightedTime, handleTimeSelection, useConsolidatedTimer]);
+  
+  // Function to reset the inactivity timer and visual countdown
+  const resetInactivityTimer = useCallback(() => {
+    if (highlightedTime) {
+      // Reset time remaining
+      setTimeRemaining(60);
+      
+      // Clear existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
+      // Set a new timeout
+      timeoutRef.current = setTimeout(() => {
+        handleTimeSelection(null);
+      }, 60000); // 60,000 ms = 1 minute
+    }
+  }, [highlightedTime, handleTimeSelection]);
+  
+  // Add click outside handler to cancel time selection - uses a more performant approach
+  useEffect(() => {
+    // Only add the listener if there's a highlighted time
+    if (!mounted || !highlightedTime) return;
+    
+    // Use a throttled handler to avoid excessive calculations
+    let lastClickTime = 0;
+    const CLICK_THROTTLE = 150; // ms
+    
+    // Handler to detect clicks outside the time columns
+    const handleClickOutside = (event: MouseEvent) => {
+      const now = Date.now();
+      if (now - lastClickTime < CLICK_THROTTLE) return;
+      lastClickTime = now;
+      
+      if (
+        timeColumnsContainerRef.current && 
+        !timeColumnsContainerRef.current.contains(event.target as Node) &&
+        // Prevent cancellation when clicking on timezone selection modal
+        !(event.target as Element)?.closest('[data-timezone-selector]')
+      ) {
+        // Cancel the selection
+        handleTimeSelection(null);
+      }
+    };
+    
+    // Add event listener
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Clean up event listener
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [mounted, highlightedTime, handleTimeSelection]);
+  
+  // Throttled user interaction handler to reduce event processing
+  const throttledUserInteraction = useCallback(() => {
+    const now = Date.now();
+    // Throttle to once per 100ms
+    if (now - lastRenderTimeRef.current < 100) return;
+    lastRenderTimeRef.current = now;
+    
+    resetInactivityTimer();
+  }, [resetInactivityTimer]);
+  
+  // Listen for user interactions to reset the timer - with throttling
+  useEffect(() => {
+    if (!mounted || !highlightedTime) return;
+    
+    // Add event listeners with passive option for better performance
+    window.addEventListener('mousemove', throttledUserInteraction, { passive: true });
+    window.addEventListener('keydown', throttledUserInteraction, { passive: true });
+    window.addEventListener('scroll', throttledUserInteraction, { passive: true });
+    window.addEventListener('click', throttledUserInteraction, { passive: true });
+    window.addEventListener('touchstart', throttledUserInteraction, { passive: true });
+    
+    return () => {
+      window.removeEventListener('mousemove', throttledUserInteraction);
+      window.removeEventListener('keydown', throttledUserInteraction);
+      window.removeEventListener('scroll', throttledUserInteraction);
+      window.removeEventListener('click', throttledUserInteraction);
+      window.removeEventListener('touchstart', throttledUserInteraction);
+    };
+  }, [mounted, highlightedTime, throttledUserInteraction]);
+  
+  // Memoize expensive functions
+  // Format time for display - memoized with useMemo
+  const formatTimeFunction = useMemo(() => {
+    return (date: Date, timezone: string) => {
+      return DateTime.fromJSDate(date).setZone(timezone).toFormat('h:mm a');
+    };
   }, []);
 
-  // Format time for display
+  // Use memoized format time function
   const formatTime = useCallback((date: Date, timezone: string) => {
-    return DateTime.fromJSDate(date).setZone(timezone).toFormat('h:mm a');
-  }, []);
+    return formatTimeFunction(date, timezone);
+  }, [formatTimeFunction]);
 
-  // Check if a time is the current local time
+  // Check if a time is the current local time - with timestamp comparison instead of object comparison
   const isLocalTime = useCallback((time: Date, timezone: string) => {
     if (!localTime) return false;
     
@@ -67,42 +260,127 @@ export default function ListView({
     return timeInTimezone.hasSame(localTimeInTimezone, 'minute');
   }, [localTime, roundToNearestIncrement]);
 
-  // Check if a time is highlighted
+  // Check if a time is highlighted - using timestamp comparison for better performance
   const isHighlighted = useCallback((time: Date) => {
     if (!highlightedTime) return false;
     
     return time.getTime() === highlightedTime.getTime();
   }, [highlightedTime]);
 
-  // Helper to generate animation class for highlighted items
+  // Helper to generate animation class for highlighted items - optimize to use CSS variables
   const getHighlightAnimationClass = useCallback((isHighlight: boolean) => {
     if (!isHighlight) return '';
     
-    return 'animate-highlight-pulse';
+    // Use a class that applies hardware-accelerated animations
+    return 'highlight-item-optimized';
   }, []);
 
-  // Add CSS keyframes for the pulse animation in global CSS or module
+  // Add optimized CSS keyframes for animations
   useEffect(() => {
     if (!mounted) return;
     
-    // Add keyframes for highlighted time pulse if they don't exist
-    if (!document.querySelector('#highlight-pulse-keyframes')) {
+    // Add optimized keyframes that use hardware acceleration if they don't exist
+    if (!document.querySelector('#optimized-animations')) {
       const style = document.createElement('style');
-      style.id = 'highlight-pulse-keyframes';
+      style.id = 'optimized-animations';
       style.innerHTML = `
-        @keyframes highlightPulse {
-          0% { box-shadow: 0 0 0 0 rgba(var(--primary-500-rgb), 0.4); }
-          70% { box-shadow: 0 0 0 10px rgba(var(--primary-500-rgb), 0); }
-          100% { box-shadow: 0 0 0 0 rgba(var(--primary-500-rgb), 0); }
+        /* Fix for white flashing in highlight transitions */
+        .time-item {
+          transition: none !important; /* Disable transitions that might cause flashing */
+          will-change: transform;
+          position: relative;
+          transform: translateZ(0);
+          /* Apply a background color that matches the parent to avoid white flash */
+          background-color: var(--time-item-bg, rgba(0, 0, 0, 0));
         }
-        .animate-highlight-pulse {
-          animation: highlightPulse 2s cubic-bezier(0.4, 0, 0.6, 1) 1;
+        
+        /* Add highlight styles without transitions */
+        .time-item.bg-primary-500 {
+          background-color: rgb(var(--primary-500-rgb)) !important;
+          color: white !important;
+          /* Force immediate painting without animation */
+          transform: translateZ(0);
+          backface-visibility: hidden;
+          -webkit-font-smoothing: subpixel-antialiased;
         }
+        
+        /* Optimize current time indicator to prevent flashing */
+        .current-time-indicator {
+          position: relative;
+          overflow: hidden;
+          /* Force the correct layering */
+          z-index: 0;
+        }
+        
+        .current-time-indicator::before {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          height: 100%;
+          width: 3px;
+          background-color: rgb(var(--primary-500-rgb));
+          /* Ensure this is in front of any other elements */
+          z-index: 1;
+          transform: translateZ(0);
+        }
+        
+        /* When using hardware-accelerated animations */
+        .highlight-item-optimized {
+          /* Use transform for hardware acceleration but no actual animation */
+          animation: none !important;
+          position: relative;
+          /* Force GPU rendering */
+          transform: translateZ(0);
+          /* No opacity changes that could cause flashing */
+          opacity: 1 !important;
+        }
+        
+        /* Instead of animating properties that can cause flashing, 
+           use a pseudo element for the visual effect */
+        .highlight-item-optimized::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: 2;
+          pointer-events: none;
+          border-radius: inherit;
+          box-shadow: 0 0 0 0 rgba(var(--primary-500-rgb), 0.4);
+          /* Use this instead of scaling the parent element */
+          animation: optimizedHighlightPulse 1s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+        }
+        
+        @keyframes optimizedHighlightPulse {
+          0% { 
+            box-shadow: 0 0 0 0 rgba(var(--primary-500-rgb), 0.4);
+          }
+          50% { 
+            box-shadow: 0 0 0 8px rgba(var(--primary-500-rgb), 0.2);
+          }
+          100% { 
+            box-shadow: 0 0 0 0 rgba(var(--primary-500-rgb), 0);
+          }
+        }
+        
+        /* Additional fix to prevent highlight flashing when adding/removing classes */
+        .bg-primary-100, .bg-primary-500, .bg-primary-900\\/30 {
+          transition: none !important;
+        }
+        
+        /* Root variables */
         :root {
           --primary-500-rgb: 99, 102, 241;
+          --time-item-bg: transparent;
+          --time-item-text: inherit;
         }
+        
         .dark {
           --primary-500-rgb: 129, 140, 248;
+          /* Set dark mode background to avoid white flash */
+          --time-item-bg: rgba(17, 24, 39, 0.4);
         }
       `;
       document.head.appendChild(style);
@@ -139,14 +417,30 @@ export default function ListView({
     return timeInTimezone.offset !== oneDayLater.offset;
   }, []);
   
-  // Check if this is the current time (to the minute)
+  // Cache for time-related calculations to reduce recomputation
+  const timeCalculationCache = useRef(new Map<string, boolean>());
+  
+  // Clear cache when necessary data changes
+  useEffect(() => {
+    timeCalculationCache.current.clear();
+  }, [localTime, highlightedTime]);
+  
+  // Optimized version of isCurrentTime with caching
   const isCurrentTime = useCallback((time: Date, timezone: string) => {
     if (!localTime) return false;
+    
+    const cacheKey = `current-${time.getTime()}-${timezone}`;
+    if (timeCalculationCache.current.has(cacheKey)) {
+      return timeCalculationCache.current.get(cacheKey) as boolean;
+    }
     
     const now = DateTime.fromJSDate(localTime);
     const timeToCheck = DateTime.fromJSDate(time).setZone(timezone);
     
-    return now.hasSame(timeToCheck, 'minute');
+    const result = now.hasSame(timeToCheck, 'minute');
+    timeCalculationCache.current.set(cacheKey, result);
+    
+    return result;
   }, [localTime]);
   
   // Get weekday name for a time
@@ -190,110 +484,64 @@ export default function ListView({
     return index > -1 ? index : 0;
   }, [localTime, timeSlots, roundToNearestIncrement]);
 
-  // Add effect to scroll lists to selected time or current time
+  // Optimize the scroll synchronization with debouncing
   useEffect(() => {
     if (!mounted || !timeSlots.length) return;
     
-    // Small delay to ensure lists are rendered properly
-    const scrollTimeout = setTimeout(() => {
-      // Get index to scroll to (either highlighted time or current time)
-      let targetIndex: number;
-      
-      if (highlightedTime) {
-        // Find index of highlighted time
-        targetIndex = timeSlots.findIndex(t => 
-          t.getTime() === highlightedTime.getTime()
-        );
-      } else if (localTime) {
-        // If no highlighted time, use current time
-        targetIndex = getCurrentTimeIndex();
-      } else {
-        // Fallback
-        targetIndex = 0;
+    // Debounce scroll synchronization to avoid performance issues
+    let scrollSyncTimeout: NodeJS.Timeout | null = null;
+    
+    const synchronizeScrolls = () => {
+      if (scrollSyncTimeout) {
+        clearTimeout(scrollSyncTimeout);
       }
       
-      // Default to current time if target index wasn't found
-      if (targetIndex === -1) targetIndex = getCurrentTimeIndex();
-      
-      // Check if user prefers reduced motion
-      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      
-      // Scroll all timezone lists to the target index with smooth animation
-      Object.entries(listRefs.current).forEach(([timezoneId, listRef]) => {
-        if (listRef) {
-          if (prefersReducedMotion) {
-            // Instant scroll for users who prefer reduced motion
-            listRef.scrollToItem(targetIndex, 'center');
-          } else {
-            // Calculate current position and target position
-            const currentOffset = listRef.state && 'scrollOffset' in listRef.state ? 
-              (listRef.state as any).scrollOffset : 0;
-            const targetOffset = targetIndex * 48; // 48px is the item size
-            
-            // Only animate if there's a significant difference
-            if (Math.abs(currentOffset - targetOffset) > 48) {
-              // Custom smooth scroll animation
-              const startTime = performance.now();
-              const duration = 500; // 500ms animation
-              
-              const animateScroll = (timestamp: number) => {
-                const elapsed = timestamp - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                // Ease-out cubic function for smooth deceleration
-                const easeOut = 1 - Math.pow(1 - progress, 3);
-                
-                const newOffset = currentOffset + (targetOffset - currentOffset) * easeOut;
-                listRef.scrollTo(newOffset);
-                
-                if (progress < 1) {
-                  window.requestAnimationFrame(animateScroll);
-                }
-              };
-              
-              window.requestAnimationFrame(animateScroll);
+      scrollSyncTimeout = setTimeout(() => {
+        // Get index to scroll to (either highlighted time or current time)
+        let targetIndex: number;
+        
+        if (highlightedTime) {
+          // Find index of highlighted time using timestamp comparison
+          targetIndex = timeSlots.findIndex(t => 
+            t.getTime() === highlightedTime.getTime()
+          );
+        } else if (localTime) {
+          // If no highlighted time, use current time
+          targetIndex = getCurrentTimeIndex();
+        } else {
+          // Fallback
+          targetIndex = 0;
+        }
+        
+        // Default to current time if target index wasn't found
+        if (targetIndex === -1) targetIndex = getCurrentTimeIndex();
+        
+        // Check if user prefers reduced motion
+        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        
+        // Apply optimized scroll behavior
+        Object.entries(listRefs.current).forEach(([timezoneId, listRef]) => {
+          if (listRef) {
+            if (prefersReducedMotion) {
+              // Instant scroll for users who prefer reduced motion
+              listRef.scrollToItem(targetIndex, 'center');
             } else {
-              // For small changes, just jump
+              // Simplified smooth scroll to reduce complexity
               listRef.scrollToItem(targetIndex, 'center');
             }
           }
-          
-          // Add a subtle flash effect to the target item
-          setTimeout(() => {
-            const targetItem = document.querySelector(`[data-timezone-id="${timezoneId}"] [data-key="${timeSlots[targetIndex].getTime()}"]`);
-            if (targetItem && !highlightedTime) {
-              targetItem.classList.add('flash-target-item');
-              setTimeout(() => {
-                targetItem.classList.remove('flash-target-item');
-              }, 1000);
-            }
-          }, 100);
-        }
-      });
-    }, 100); // Small delay for rendering
+        });
+      }, 50); // Small delay to batch scroll operations
+    };
     
-    return () => clearTimeout(scrollTimeout);
+    synchronizeScrolls();
+    
+    return () => {
+      if (scrollSyncTimeout) {
+        clearTimeout(scrollSyncTimeout);
+      }
+    };
   }, [mounted, highlightedTime, localTime, timeSlots, getCurrentTimeIndex]);
-  
-  // Add CSS for flash effect
-  useEffect(() => {
-    if (!mounted) return;
-    
-    // Add keyframes for flash effect if they don't exist
-    if (!document.querySelector('#flash-target-keyframes')) {
-      const style = document.createElement('style');
-      style.id = 'flash-target-keyframes';
-      style.innerHTML = `
-        @keyframes flashTarget {
-          0% { background-color: rgba(var(--primary-500-rgb), 0.3); }
-          100% { background-color: rgba(var(--primary-500-rgb), 0); }
-        }
-        .flash-target-item {
-          animation: flashTarget 1s ease-out forwards;
-        }
-      `;
-      document.head.appendChild(style);
-    }
-  }, [mounted]);
 
   // Jump to a specific time period
   const jumpToTime = useCallback((timePeriod: 'morning' | 'afternoon' | 'evening' | 'night' | 'now', timezone: string) => {
@@ -367,7 +615,169 @@ export default function ListView({
     }
   }, [removeTimezone, userLocalTimezone]);
 
-  // Render time columns with virtualization
+  // Create a memoized time item component to prevent unnecessary re-renders
+  interface TimeItemProps {
+    style: React.CSSProperties;
+    time: Date;
+    timezone: string;
+    isLocalTimeFn: (time: Date, timezone: string) => boolean;
+    isHighlightedFn: (time: Date) => boolean;
+    isBusinessHoursFn: (time: Date, timezone: string) => boolean;
+    isNightTimeFn: (time: Date, timezone: string) => boolean;
+    isDateBoundaryFn: (time: Date, timezone: string) => boolean;
+    isDSTTransitionFn: (time: Date, timezone: string) => boolean;
+    isCurrentTimeFn: (time: Date, timezone: string) => boolean;
+    isWeekendFn: (time: Date, timezone: string) => boolean;
+    hasMeetingAtFn: (time: Date, timezone: string) => boolean;
+    getMeetingTitleFn: (time: Date, timezone: string) => string;
+    formatTimeFn: (time: Date, timezone: string) => string;
+    getHighlightAnimationClassFn: (isHighlight: boolean) => string;
+    getTimezoneOffsetFn: (timezone: string) => string;
+    handleTimeSelectionFn: (time: Date | null) => void;
+  }
+
+  const TimeItem = memo(function TimeItem({
+    style,
+    time,
+    timezone,
+    isLocalTimeFn,
+    isHighlightedFn,
+    isBusinessHoursFn,
+    isNightTimeFn,
+    isDateBoundaryFn,
+    isDSTTransitionFn,
+    isCurrentTimeFn,
+    isWeekendFn,
+    hasMeetingAtFn,
+    getMeetingTitleFn,
+    formatTimeFn,
+    getHighlightAnimationClassFn,
+    getTimezoneOffsetFn,
+    handleTimeSelectionFn
+  }: TimeItemProps) {
+    // Compute all the boolean flags once
+    const isLocal = isLocalTimeFn(time, timezone);
+    const isHighlight = isHighlightedFn(time);
+    const isBusiness = isBusinessHoursFn(time, timezone);
+    const isNight = isNightTimeFn(time, timezone);
+    const isMidnight = isDateBoundaryFn(time, timezone);
+    const isDST = isDSTTransitionFn(time, timezone);
+    const isCurrent = isCurrentTimeFn(time, timezone);
+    const isWeekend = isWeekendFn(time, timezone);
+    const isMeeting = hasMeetingAtFn(time, timezone);
+    const meetingTitle = isMeeting ? getMeetingTitleFn(time, timezone) : '';
+    
+    // Build classes with direct style application to prevent flashing
+    const itemClasses = [
+      'time-item py-2 px-3 cursor-pointer relative',
+      isHighlight ? 'bg-primary-500 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700',
+      isLocal ? 'current-time-indicator pl-4' : '',
+      isBusiness ? 'font-medium' : '',
+      isNight ? 'text-gray-500 dark:text-gray-400' : '',
+      isMidnight ? 'border-t border-dashed border-gray-300 dark:border-gray-600 pt-3' : '',
+      isDST ? 'bg-amber-50 dark:bg-amber-900/20' : '',
+      isCurrent ? 'bg-primary-100 dark:bg-primary-900/30' : '',
+      isWeekend ? 'text-gray-500 dark:text-gray-400' : '',
+      isMeeting ? 'bg-red-50 dark:bg-red-900/20' : '',
+      getHighlightAnimationClassFn(isHighlight),
+      'focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 rounded-sm'
+    ].filter(Boolean).join(' ');
+    
+    // Apply additional inline styles to ensure consistent rendering
+    const combinedStyle = {
+      ...style,
+      // Force background color directly when highlighted to prevent flash
+      ...(isHighlight ? { 
+        backgroundColor: 'rgb(var(--primary-500-rgb))',
+        color: 'white',
+        transform: 'translateZ(0)'
+      } : {}),
+      // Force current time indicator background to prevent flash
+      ...(isCurrent && !isHighlight ? {
+        backgroundColor: 'rgba(var(--primary-500-rgb), 0.1)',
+        transform: 'translateZ(0)'
+      } : {})
+    };
+    
+    return (
+      <div
+        style={combinedStyle}
+        role="option"
+        aria-selected={isHighlight}
+        data-key={time.getTime()}
+        data-local-time={isLocal ? 'true' : 'false'}
+        onClick={() => handleTimeSelectionFn(time)}
+        className={itemClasses}
+        tabIndex={0}
+      >
+        {/* If it's midnight, show the date */}
+        {isMidnight && (
+          <div className="absolute top-0 left-0 w-full text-xs text-gray-500 dark:text-gray-400 pt-0.5 px-3 font-medium">
+            {DateTime.fromJSDate(time).setZone(timezone).toFormat('EEE, MMM d')}
+          </div>
+        )}
+        
+        <div className="flex justify-between items-center">
+          <span className={`${isHighlight ? 'text-white' : ''} ${isCurrent ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}`}>
+            {formatTimeFn(time, timezone)}
+          </span>
+          <div className="flex space-x-1">
+            {isLocal && !isHighlight && (
+              <span className="absolute left-0 top-0 h-full w-1 bg-primary-500 rounded-l-md" />
+            )}
+            
+            {isBusiness && !isHighlight && (
+              <span className="text-xs text-green-500" title="Business hours">●</span>
+            )}
+            
+            {isNight && !isHighlight && (
+              <span className="text-xs text-gray-400" title="Night time">○</span>
+            )}
+            
+            {isDST && !isHighlight && (
+              <span className="text-xs text-amber-500 ml-1" title="DST transition soon">⚠️</span>
+            )}
+
+            {isCurrent && !isHighlight && (
+              <span className="text-xs text-blue-500 ml-1" title="Current time">⏰</span>
+            )}
+
+            {isWeekend && !isHighlight && (
+              <span className="text-xs text-purple-500 ml-1" title="Weekend">🏖️</span>
+            )}
+          </div>
+        </div>
+
+        {/* Show meeting indicator for meetings */}
+        {isMeeting && !isHighlight && (
+          <div className="mt-1 text-xs bg-red-100 dark:bg-red-900/30 rounded p-1 text-red-700 dark:text-red-300">
+            🗓️ {meetingTitle}
+          </div>
+        )}
+
+        {/* Show DST information with more details */}
+        {isDST && !isHighlight && (
+          <div className="mt-1 text-xs bg-amber-100 dark:bg-amber-900/30 rounded p-1 text-amber-700 dark:text-amber-300">
+            DST change soon: {getTimezoneOffsetFn(timezone)}
+          </div>
+        )}
+      </div>
+    );
+  }, (prevProps, nextProps) => {
+    // Custom comparison function for memoization
+    // Only re-render if any of these change
+    return (
+      prevProps.time.getTime() === nextProps.time.getTime() &&
+      prevProps.timezone === nextProps.timezone &&
+      prevProps.isHighlightedFn(prevProps.time) === nextProps.isHighlightedFn(nextProps.time) &&
+      prevProps.isLocalTimeFn(prevProps.time, prevProps.timezone) === 
+        nextProps.isLocalTimeFn(nextProps.time, nextProps.timezone) &&
+      prevProps.isCurrentTimeFn(prevProps.time, prevProps.timezone) === 
+        nextProps.isCurrentTimeFn(nextProps.time, nextProps.timezone)
+    );
+  });
+
+  // Updated renderTimeColumns function to include the countdown indicator
   const renderTimeColumns = useCallback(() => {
     if (!mounted) return null;
     
@@ -430,24 +840,45 @@ export default function ListView({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="mb-4 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm flex items-center justify-between"
+            className="mb-4 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm"
           >
-            <div className="flex items-center">
-              <span className="inline-block w-3 h-3 bg-primary-500 rounded-full mr-2"></span>
-              <span className="text-sm font-medium">
-                {DateTime.fromJSDate(highlightedTime).toFormat('h:mm a')} {' '}
-                <span className="text-gray-500 dark:text-gray-400">
-                  ({timeDifference})
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center">
+                <span className="inline-block w-3 h-3 bg-primary-500 rounded-full mr-2"></span>
+                <span className="text-sm font-medium">
+                  {DateTime.fromJSDate(highlightedTime).toFormat('h:mm a')} {' '}
+                  <span className="text-gray-500 dark:text-gray-400">
+                    ({timeDifference})
+                  </span>
                 </span>
-              </span>
+              </div>
+              <button 
+                onClick={() => handleTimeSelection(null)} 
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
+                aria-label="Clear time selection"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <button 
-              onClick={() => handleTimeSelection(null as any)} 
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
-              aria-label="Clear time selection"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            
+            {/* Countdown indicator */}
+            <div className="mt-2">
+              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                <span>Auto-clear in {timeRemaining}s</span>
+                <button 
+                  onClick={resetInactivityTimer}
+                  className="text-primary-500 hover:text-primary-600 focus:outline-none"
+                >
+                  Reset
+                </button>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                <div 
+                  className="bg-primary-500 h-1.5 rounded-full transition-all duration-1000"
+                  style={{ width: `${(timeRemaining / 60) * 100}%` }}
+                ></div>
+              </div>
+            </div>
           </motion.div>
         )}
       
@@ -589,99 +1020,29 @@ export default function ListView({
                         overscanCount={10}
                         ref={(ref) => { listRefs.current[timezone.id] = ref; }}
                         className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md"
+                        itemKey={(index) => `${timezone.id}-${timeSlots[index].getTime()}`}
                       >
-                        {({ index, style }) => {
-                          const time = timeSlots[index];
-                          const isLocal = isLocalTime(time, timezone.id);
-                          const isHighlight = isHighlighted(time);
-                          const isBusiness = isBusinessHours(time, timezone.id);
-                          const isNight = isNightTime(time, timezone.id);
-                          const isMidnight = isDateBoundary(time, timezone.id);
-                          const isDST = isDSTTransition(time, timezone.id);
-                          const isCurrent = isCurrentTime(time, timezone.id);
-                          const isWeekday = isBusiness || isCurrent;
-                          const isWeekend = !isWeekday;
-                          const isMeeting = hasMeetingAt(time, timezone.id);
-                          const meetingTitle = getMeetingTitle(time, timezone.id);
-                          
-                          return (
-                            <div
-                              style={style}
-                              role="option"
-                              aria-selected={isHighlight}
-                              data-key={time.getTime()}
-                              data-local-time={isLocal ? 'true' : 'false'}
-                              onClick={() => handleTimeSelection(time)}
-                              className={`
-                                py-2 px-3 cursor-pointer transition-colors relative
-                                ${isHighlight ? 'bg-primary-500 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}
-                                ${isLocal ? 'border-l-4 border-primary-500 pl-2' : ''}
-                                ${isBusiness ? 'font-medium' : ''}
-                                ${isNight ? 'text-gray-500 dark:text-gray-400' : ''}
-                                ${isMidnight ? 'border-t border-dashed border-gray-300 dark:border-gray-600 pt-3' : ''}
-                                ${isDST ? 'bg-amber-50 dark:bg-amber-900/20' : ''}
-                                ${isCurrent ? 'bg-primary-100 dark:bg-primary-900/30' : ''}
-                                ${isWeekend ? 'text-gray-500 dark:text-gray-400' : ''}
-                                ${isMeeting ? 'bg-red-50 dark:bg-red-900/20' : ''}
-                                ${getHighlightAnimationClass(isHighlight)}
-                                focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 rounded-sm
-                              `}
-                              tabIndex={0}
-                            >
-                              {/* If it's midnight, show the date */}
-                              {isMidnight && (
-                                <div className="absolute top-0 left-0 w-full text-xs text-gray-500 dark:text-gray-400 pt-0.5 px-3 font-medium">
-                                  {DateTime.fromJSDate(time).setZone(timezone.id).toFormat('EEE, MMM d')}
-                                </div>
-                              )}
-                              
-                              <div className="flex justify-between items-center">
-                                <span className={`${isHighlight ? 'text-white' : ''} ${isCurrent ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}`}>
-                                  {formatTime(time, timezone.id)}
-                                </span>
-                                <div className="flex space-x-1">
-                                  {isLocal && !isHighlight && (
-                                    <span className="absolute left-0 top-0 h-full w-1 bg-primary-500 rounded-l-md" />
-                                  )}
-                                  
-                                  {isBusiness && !isHighlight && (
-                                    <span className="text-xs text-green-500" title="Business hours">●</span>
-                                  )}
-                                  
-                                  {isNight && !isHighlight && (
-                                    <span className="text-xs text-gray-400" title="Night time">○</span>
-                                  )}
-                                  
-                                  {isDST && !isHighlight && (
-                                    <span className="text-xs text-amber-500 ml-1" title="DST transition soon">⚠️</span>
-                                  )}
-
-                                  {isCurrent && !isHighlight && (
-                                    <span className="text-xs text-blue-500 ml-1" title="Current time">⏰</span>
-                                  )}
-
-                                  {isWeekend && !isHighlight && (
-                                    <span className="text-xs text-purple-500 ml-1" title="Weekend">🏖️</span>
-                                  )}
-                                </div>
-                              </div>
-
-                              {/* Show meeting indicator for meetings */}
-                              {isMeeting && !isHighlight && (
-                                <div className="mt-1 text-xs bg-red-100 dark:bg-red-900/30 rounded p-1 text-red-700 dark:text-red-300">
-                                  🗓️ {meetingTitle}
-                                </div>
-                              )}
-
-                              {/* Show DST information with more details */}
-                              {isDST && !isHighlight && (
-                                <div className="mt-1 text-xs bg-amber-100 dark:bg-amber-900/30 rounded p-1 text-amber-700 dark:text-amber-300">
-                                  DST change soon: {getTimezoneOffset(timezone.id)}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        }}
+                        {({ index, style }) => (
+                          <TimeItem
+                            style={style}
+                            time={timeSlots[index]}
+                            timezone={timezone.id}
+                            isLocalTimeFn={isLocalTime}
+                            isHighlightedFn={isHighlighted}
+                            isBusinessHoursFn={isBusinessHours}
+                            isNightTimeFn={isNightTime}
+                            isDateBoundaryFn={isDateBoundary}
+                            isDSTTransitionFn={isDSTTransition}
+                            isCurrentTimeFn={isCurrentTime}
+                            isWeekendFn={isWeekend}
+                            hasMeetingAtFn={hasMeetingAt}
+                            getMeetingTitleFn={getMeetingTitle}
+                            formatTimeFn={formatTime}
+                            getHighlightAnimationClassFn={getHighlightAnimationClass}
+                            getTimezoneOffsetFn={getTimezoneOffset}
+                            handleTimeSelectionFn={handleTimeSelection}
+                          />
+                        )}
                       </FixedSizeList>
                     )}
                   </AutoSizer>
@@ -735,7 +1096,9 @@ export default function ListView({
     handleTimeSelection,
     getCurrentTimeIndex,
     jumpToTime,
-    handleRemoveTimezone
+    handleRemoveTimezone,
+    timeRemaining,
+    resetInactivityTimer
   ]);
 
   return (
@@ -759,6 +1122,7 @@ export default function ListView({
             }}
             onSelect={editingTimezoneId ? handleReplaceTimezone : handleAddTimezone}
             excludeTimezones={[userLocalTimezone, ...selectedTimezones.map(tz => tz.id)]}
+            data-timezone-selector
           />
         )}
       </AnimatePresence>

@@ -22,7 +22,7 @@ interface ListViewProps {
   timeSlots: Date[];
   localTime: Date | null;
   highlightedTime: Date | null;
-  handleTimeSelection: (time: Date) => void;
+  handleTimeSelection: (time: Date | null) => void;
   roundToNearestIncrement: (date: Date, increment: number) => Date;
 }
 
@@ -96,7 +96,7 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
   } = useTimezoneStore();
 
   // Get view state from the view context
-  const { currentView } = useView();
+  const { currentView, setCurrentView } = useView();
 
   // Get dashboard state from the dashboard context
   const { isDashboardVisible } = useDashboard();
@@ -201,9 +201,16 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
   }, [currentTime]);
 
   // Handle time selection for highlighting with optimized callback
-  const handleTimeSelection = useCallback((time: Date) => {
+  const handleTimeSelection = useCallback((time: Date | null) => {
+    // Set the highlighted time
     setHighlightedTime(time);
-  }, [setHighlightedTime]);
+    
+    // If the view is set to something other than list, switch to list view
+    // to show the highlighted time
+    if (currentView !== 'list') {
+      setCurrentView('list');
+    }
+  }, [currentView, setCurrentView]);
 
   // Round a date to the nearest increment (in minutes)
   const roundToNearestIncrement = useCallback((date: Date, increment: number) => {

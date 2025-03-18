@@ -45,7 +45,7 @@ export default function ListViewPage() {
   }, []);
   
   // Handle time selection
-  const handleTimeSelection = (time: Date) => {
+  const handleTimeSelection = (time: Date | null) => {
     setHighlightedTime(time);
   };
   

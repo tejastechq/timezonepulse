@@ -46,7 +46,7 @@ export default function Home() {
   }, []);
   
   // Handle time selection
-  const handleTimeSelection = (time: Date) => {
+  const handleTimeSelection = (time: Date | null) => {
     setHighlightedTime(time);
   };
   
