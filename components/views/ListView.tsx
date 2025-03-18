@@ -54,6 +54,9 @@ export default function ListView({
   // Add a ref to store the timer cleanup function
   const timerCleanupRef = useRef<(() => void) | null>(null);
   
+  // Add a ref for scrollSyncTimeout to fix the undefined error
+  const scrollSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
   // State for timezone selector
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [editingTimezoneId, setEditingTimezoneId] = useState<string | null>(null);
@@ -61,9 +64,18 @@ export default function ListView({
   // Get timezone actions from store
   const { addTimezone, removeTimezone } = useTimezoneStore();
 
-  const [timeRemaining, setTimeRemaining] = useState<number>(60);
+  // Increase default timer from 60 to 120 seconds to give user more time
+  const [timeRemaining, setTimeRemaining] = useState<number>(120);
   // Add a ref to keep track of the current time remaining
-  const timeRemainingRef = useRef<number>(60);
+  const timeRemainingRef = useRef<number>(120);
+
+  // Add state and refs to track user scrolling activity
+  const [userIsScrolling, setUserIsScrolling] = useState(false);
+  const userIsScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Track the last time the user manually scrolled
+  const lastScrollTimeRef = useRef<number>(0);
 
   // Create a performance marker for debugging
   const markRender = useCallback((name: string) => {
@@ -104,8 +116,8 @@ export default function ListView({
       }
       
       // Reset state
-      setTimeRemaining(60);
-      timeRemainingRef.current = 60;
+      setTimeRemaining(120);
+      timeRemainingRef.current = 120;
       highlightedTimeRef.current = null;
     };
   }, [markRender]);
@@ -237,8 +249,8 @@ export default function ListView({
     }
     
     // Reset time remaining when selection changes
-    setTimeRemaining(60);
-    timeRemainingRef.current = 60;
+    setTimeRemaining(120);
+    timeRemainingRef.current = 120;
     
     // Use the consolidated timer approach and store the cleanup function
     const cleanup = useConsolidatedTimer();
@@ -250,7 +262,7 @@ export default function ListView({
       if (highlightedTimeRef.current) {
         handleTimeSelection(null);
       }
-    }, 60000); // 60,000 ms = 1 minute
+    }, 120000); // 120,000 ms = 2 minutes (increased from 1 minute)
     
     // Return a cleanup function that handles all timers
     return () => {
@@ -305,9 +317,9 @@ export default function ListView({
       previousCleanup();
     }
     
-    // Reset time remaining
-    setTimeRemaining(60);
-    timeRemainingRef.current = 60;
+    // Reset time remaining to 120 seconds (increased from 60)
+    setTimeRemaining(120);
+    timeRemainingRef.current = 120;
     
     // Set a new timeout for automatic clearing
     timeoutRef.current = setTimeout(() => {
@@ -315,7 +327,7 @@ export default function ListView({
       if (highlightedTimeRef.current) {
         handleTimeSelection(null);
       }
-    }, 60000); // 60,000 ms = 1 minute
+    }, 120000); // 120,000 ms = 2 minutes (increased from 1 minute)
     
     // Restart the animation frame timer and store its cleanup function
     const cleanup = useConsolidatedTimer();
@@ -357,7 +369,95 @@ export default function ListView({
     };
   }, [mounted, highlightedTime, handleTimeSelection]);
   
-  // Throttled user interaction handler to reduce event processing
+  // Add handler for when user starts scrolling
+  const handleUserScroll = useCallback(() => {
+    // Mark that user is currently scrolling
+    setUserIsScrolling(true);
+    userIsScrollingRef.current = true;
+    lastScrollTimeRef.current = Date.now();
+    
+    // Clear any existing timeout
+    if (scrollTimeoutRef.current) {
+      clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = null;
+    }
+    
+    // Set a timeout to mark scrolling as finished after a delay
+    scrollTimeoutRef.current = setTimeout(() => {
+      setUserIsScrolling(false);
+      userIsScrollingRef.current = false;
+    }, 3000); // Consider user finished scrolling after 3 seconds of inactivity
+    
+    // If there's a highlighted time, reset the inactivity timer
+    if (highlightedTimeRef.current) {
+      resetInactivityTimer();
+    }
+  }, [resetInactivityTimer]);
+  
+  // Find index of current time in timeslots array
+  const getCurrentTimeIndex = useCallback(() => {
+    if (!localTime || !timeSlots.length) return 0;
+    
+    const roundedLocalTime = roundToNearestIncrement(localTime, 30);
+    const index = timeSlots.findIndex(t => 
+      DateTime.fromJSDate(t).hasSame(DateTime.fromJSDate(roundedLocalTime), 'minute')
+    );
+    
+    return index > -1 ? index : 0;
+  }, [localTime, timeSlots, roundToNearestIncrement]);
+  
+  // Updated synchronizeScrolls function that respects user scrolling
+  const synchronizeScrolls = useCallback(() => {
+    if (scrollSyncTimeoutRef.current) {
+      clearTimeout(scrollSyncTimeoutRef.current);
+      scrollSyncTimeoutRef.current = null;
+    }
+
+    // If user is actively scrolling or has scrolled recently (within last 3 seconds), don't auto-scroll
+    const recentlyScrolled = Date.now() - lastScrollTimeRef.current < 3000;
+    if (userIsScrollingRef.current || recentlyScrolled) {
+      return;
+    }
+    
+    scrollSyncTimeoutRef.current = setTimeout(() => {
+      // Get index to scroll to (either highlighted time or current time)
+      let targetIndex: number;
+      
+      if (highlightedTime) {
+        // Find index of highlighted time using timestamp comparison
+        targetIndex = timeSlots.findIndex(t => 
+          t.getTime() === highlightedTime.getTime()
+        );
+      } else if (localTime) {
+        // If no highlighted time, use current time
+        targetIndex = getCurrentTimeIndex();
+      } else {
+        // Fallback
+        targetIndex = 0;
+      }
+      
+      // Default to current time if target index wasn't found
+      if (targetIndex === -1) targetIndex = getCurrentTimeIndex();
+      
+      // Check if user prefers reduced motion
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      
+      // Apply optimized scroll behavior
+      Object.entries(listRefs.current).forEach(([timezoneId, listRef]) => {
+        if (listRef) {
+          if (prefersReducedMotion) {
+            // Instant scroll for users who prefer reduced motion
+            listRef.scrollToItem(targetIndex, 'center');
+          } else {
+            // Simplified smooth scroll to reduce complexity
+            listRef.scrollToItem(targetIndex, 'center');
+          }
+        }
+      });
+    }, 50); // Small delay to batch scroll operations
+  }, [highlightedTime, localTime, timeSlots, getCurrentTimeIndex]); // Add proper dependencies
+
+  // Update throttledUserInteraction to include scrolling events
   const throttledUserInteraction = useCallback((event: Event) => {
     const now = Date.now();
     // Throttle to once per 100ms
@@ -378,6 +478,13 @@ export default function ListView({
       }
     }
     
+    // Handle scroll events
+    if (event.type === 'scroll') {
+      handleUserScroll();
+      lastRenderTimeRef.current = now;
+      return;
+    }
+    
     // For mouse and other events, check if the interaction is relevant
     const target = event.target as Element;
     
@@ -392,22 +499,23 @@ export default function ListView({
       lastRenderTimeRef.current = now;
       resetInactivityTimer();
     }
-  }, [resetInactivityTimer]);
+  }, [resetInactivityTimer, handleUserScroll]);
   
   // Listen for user interactions to reset the timer - with throttling
   useEffect(() => {
     if (!mounted || !highlightedTime) return;
     
     // Add event listeners with passive option for better performance
-    // Remove mousemove, scroll, and touchstart listeners to prevent constant timer resets
-    // Only keep keydown for accessibility and click for intentional interactions
+    // Add scroll event listener to detect user scrolling
     window.addEventListener('keydown', throttledUserInteraction, { passive: true });
     window.addEventListener('click', throttledUserInteraction, { passive: true });
+    window.addEventListener('scroll', throttledUserInteraction, { passive: true });
     
     return () => {
       // Remove event listeners
       window.removeEventListener('keydown', throttledUserInteraction);
       window.removeEventListener('click', throttledUserInteraction);
+      window.removeEventListener('scroll', throttledUserInteraction);
     };
   }, [mounted, highlightedTime, throttledUserInteraction]);
   
@@ -652,77 +760,6 @@ export default function ListView({
     // This will be replaced with actual event data in the future
     return "";
   }, []);
-
-  // Find index of current time in timeslots array
-  const getCurrentTimeIndex = useCallback(() => {
-    if (!localTime || !timeSlots.length) return 0;
-    
-    const roundedLocalTime = roundToNearestIncrement(localTime, 30);
-    const index = timeSlots.findIndex(t => 
-      DateTime.fromJSDate(t).hasSame(DateTime.fromJSDate(roundedLocalTime), 'minute')
-    );
-    
-    return index > -1 ? index : 0;
-  }, [localTime, timeSlots, roundToNearestIncrement]);
-
-  // Optimize the scroll synchronization with debouncing
-  useEffect(() => {
-    if (!mounted || !timeSlots.length) return;
-    
-    // Debounce scroll synchronization to avoid performance issues
-    let scrollSyncTimeout: NodeJS.Timeout | null = null;
-    
-    const synchronizeScrolls = () => {
-      if (scrollSyncTimeout) {
-        clearTimeout(scrollSyncTimeout);
-      }
-      
-      scrollSyncTimeout = setTimeout(() => {
-        // Get index to scroll to (either highlighted time or current time)
-        let targetIndex: number;
-        
-        if (highlightedTime) {
-          // Find index of highlighted time using timestamp comparison
-          targetIndex = timeSlots.findIndex(t => 
-            t.getTime() === highlightedTime.getTime()
-          );
-        } else if (localTime) {
-          // If no highlighted time, use current time
-          targetIndex = getCurrentTimeIndex();
-        } else {
-          // Fallback
-          targetIndex = 0;
-        }
-        
-        // Default to current time if target index wasn't found
-        if (targetIndex === -1) targetIndex = getCurrentTimeIndex();
-        
-        // Check if user prefers reduced motion
-        const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        
-        // Apply optimized scroll behavior
-        Object.entries(listRefs.current).forEach(([timezoneId, listRef]) => {
-          if (listRef) {
-            if (prefersReducedMotion) {
-              // Instant scroll for users who prefer reduced motion
-              listRef.scrollToItem(targetIndex, 'center');
-            } else {
-              // Simplified smooth scroll to reduce complexity
-              listRef.scrollToItem(targetIndex, 'center');
-            }
-          }
-        });
-      }, 50); // Small delay to batch scroll operations
-    };
-    
-    synchronizeScrolls();
-    
-    return () => {
-      if (scrollSyncTimeout) {
-        clearTimeout(scrollSyncTimeout);
-      }
-    };
-  }, [mounted, highlightedTime, localTime, timeSlots, getCurrentTimeIndex]);
 
   // Jump to a specific time period
   const jumpToTime = useCallback((timePeriod: 'morning' | 'afternoon' | 'evening' | 'night' | 'now', timezone: string) => {
@@ -1207,6 +1244,7 @@ export default function ListView({
                         ref={(ref) => { listRefs.current[timezone.id] = ref; }}
                         className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md"
                         itemKey={(index) => `${timezone.id}-${timeSlots[index].getTime()}`}
+                        onScroll={handleUserScroll}
                       >
                         {({ index, style }) => (
                           <TimeItem
@@ -1284,8 +1322,44 @@ export default function ListView({
     jumpToTime,
     handleRemoveTimezone,
     timeRemaining,
-    resetInactivityTimer
+    resetInactivityTimer,
+    handleUserScroll
   ]);
+
+  // Update the useEffect hook to call our updated synchronizeScrolls function
+  useEffect(() => {
+    if (!mounted || !timeSlots.length) return;
+    
+    // Use the synchronizeScrolls function we defined earlier
+    // Only scroll to current time if user hasn't been scrolling recently
+    if (!userIsScrolling) {
+      synchronizeScrolls();
+    }
+    
+    return () => {
+      // Clear the timeout on cleanup
+      if (scrollSyncTimeoutRef.current) {
+        clearTimeout(scrollSyncTimeoutRef.current);
+        scrollSyncTimeoutRef.current = null;
+      }
+    };
+  }, [mounted, highlightedTime, localTime, timeSlots, synchronizeScrolls, userIsScrolling]);
+
+  // Add cleanup for all timeouts
+  useEffect(() => {
+    return () => {
+      // Clean up all timeouts on unmount
+      if (scrollSyncTimeoutRef.current) {
+        clearTimeout(scrollSyncTimeoutRef.current);
+        scrollSyncTimeoutRef.current = null;
+      }
+      
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   return (
     <motion.div
@@ -1294,6 +1368,7 @@ export default function ListView({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="w-full"
+      onScroll={handleUserScroll} // Add onScroll handler
     >
       {renderTimeColumns()}
       
