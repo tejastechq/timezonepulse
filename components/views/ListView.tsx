@@ -23,8 +23,17 @@ interface ListViewProps {
 }
 
 /**
- * ListView component for displaying timezones in a list format
- * Optimized with virtualization for better performance with large datasets
+ * ListView Component
+ * 
+ * Displays multiple timezones in a list view with time columns.
+ * Shows current time, business hours, and other time-related information.
+ * 
+ * TODO: Implement a proper event/meeting system to replace the mock implementation.
+ * The system should:
+ * - Connect to a calendar API or a custom events database
+ * - Display real events with proper titles, durations, and participants
+ * - Allow adding/editing events directly from the interface
+ * - Support recurring events and notifications
  */
 export default function ListView({
   selectedTimezones,
@@ -628,14 +637,20 @@ export default function ListView({
   // Mock function to check if there's a meeting at a specific time
   // In a real application, this would connect to a meeting/event API
   const hasMeetingAt = useCallback((time: Date, timezone: string): boolean => {
-    // This is just a placeholder that returns true for a demo time slot
-    const timeToCheck = DateTime.fromJSDate(time).setZone(timezone);
-    return timeToCheck.hour === 14 && timeToCheck.minute === 0;
+    // Disabled the mock meeting at 2pm for now
+    // Will be replaced with a proper implementation in the future
+    return false;
+    
+    // Previous implementation:
+    // const timeToCheck = DateTime.fromJSDate(time).setZone(timezone);
+    // return timeToCheck.hour === 14 && timeToCheck.minute === 0;
   }, []);
 
   // Mock function to get meeting title
+  // Kept for future implementation
   const getMeetingTitle = useCallback((time: Date, timezone: string): string => {
-    return "Team Standup";
+    // This will be replaced with actual event data in the future
+    return "";
   }, []);
 
   // Find index of current time in timeslots array
@@ -830,6 +845,8 @@ export default function ListView({
     const isDST = isDSTTransitionFn(time, timezone);
     const isCurrent = isCurrentTimeFn(time, timezone);
     const isWeekend = isWeekendFn(time, timezone);
+    
+    // Meeting check is disabled for now, but structure kept for future implementation
     const isMeeting = hasMeetingAtFn(time, timezone);
     const meetingTitle = isMeeting ? getMeetingTitleFn(time, timezone) : '';
     
@@ -844,7 +861,7 @@ export default function ListView({
       isDST ? 'bg-amber-50 dark:bg-amber-900/20' : '',
       isCurrent ? 'bg-primary-100 dark:bg-primary-900/30' : '',
       isWeekend ? 'text-gray-500 dark:text-gray-400' : '',
-      isMeeting ? 'bg-red-50 dark:bg-red-900/20' : '',
+      isMeeting ? 'bg-red-50 dark:bg-red-900/20' : '', // Kept for future implementation
       getHighlightAnimationClassFn(isHighlight),
       'focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 rounded-sm'
     ].filter(Boolean).join(' ');
@@ -916,6 +933,7 @@ export default function ListView({
         </div>
 
         {/* Show meeting indicator for meetings */}
+        {/* Meeting display is disabled for now, but structure kept for future implementation */}
         {isMeeting && !isHighlight && (
           <div className="mt-1 text-xs bg-red-100 dark:bg-red-900/30 rounded p-1 text-red-700 dark:text-red-300">
             🗓️ {meetingTitle}
