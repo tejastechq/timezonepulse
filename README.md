@@ -1,12 +1,12 @@
 # World Clock
 
-A sophisticated time management application designed to help users track and visualize time across multiple global timezones. This application provides a robust solution for professionals who work with international teams, schedule global meetings, or need to coordinate activities across different time zones.
+A time management application designed to help users track and visualize time across multiple global timezones. This application provides a robust solution for professionals who work with international teams, schedule global meetings, or need to coordinate activities across different time zones.
 
 ## Git Workflow
 
 This project follows a GitFlow-like branching model:
 
-- `main`: Production-ready code
+- `main`: Production-ready code 
 - `develop`: Integration branch for features
 - Feature branches: Individual features (format: `feature/feature-name`)
 
