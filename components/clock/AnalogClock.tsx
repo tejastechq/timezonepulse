@@ -23,9 +23,11 @@ function AnalogClock({ time, size = 200, highlightedTime }: AnalogClockProps) {
     const seconds = dt.second;
     
     // Calculate rotations
-    const hourRotation = (hours * 30) + (minutes * 0.5); // 30 degrees per hour, plus 0.5 degrees per minute
-    const minuteRotation = minutes * 6; // 6 degrees per minute
-    const secondRotation = seconds * 6; // 6 degrees per second
+    // Adjust the rotation to account for SVG coordinate system
+    // In standard clock, 0 degrees should point to 12 o'clock, which is -90 degrees in SVG coordinates
+    const hourRotation = (hours * 30) + (minutes * 0.5) - 90; // 30 degrees per hour, plus 0.5 degrees per minute
+    const minuteRotation = minutes * 6 - 90; // 6 degrees per minute
+    const secondRotation = seconds * 6 - 90; // 6 degrees per second
     
     // Calculate highlight rotation if a highlighted time is provided
     let highlightRotation = null;
@@ -33,7 +35,7 @@ function AnalogClock({ time, size = 200, highlightedTime }: AnalogClockProps) {
       const highlightDt = DateTime.fromJSDate(highlightedTime);
       const highlightHours = highlightDt.hour % 12;
       const highlightMinutes = highlightDt.minute;
-      highlightRotation = (highlightHours * 30) + (highlightMinutes * 0.5);
+      highlightRotation = (highlightHours * 30) + (highlightMinutes * 0.5) - 90;
     }
     
     return { hourRotation, minuteRotation, secondRotation, highlightRotation };
@@ -67,6 +69,26 @@ function AnalogClock({ time, size = 200, highlightedTime }: AnalogClockProps) {
       );
     });
   }, [center, size, strokeWidth]);
+
+  // Calculate endpoints for the clock hands
+  const getHandCoordinates = (length: number, rotation: number) => {
+    // Convert rotation from degrees to radians and adjust for SVG coordinate system
+    const radians = (rotation + 90) * (Math.PI / 180);
+    // Calculate the end point of the hand
+    return {
+      x2: center + length * Math.cos(radians),
+      y2: center + length * Math.sin(radians)
+    };
+  };
+  
+  // Calculate hand endpoints
+  const hourHandLength = size * 0.25;
+  const minuteHandLength = size * 0.35;
+  const secondHandLength = size * 0.4;
+  
+  const hourHand = getHandCoordinates(hourHandLength, hourRotation);
+  const minuteHand = getHandCoordinates(minuteHandLength, minuteRotation);
+  const secondHand = getHandCoordinates(secondHandLength, secondRotation);
   
   return (
     <div className="relative" style={{ width: size, height: size }}>
@@ -93,64 +115,48 @@ function AnalogClock({ time, size = 200, highlightedTime }: AnalogClockProps) {
         
         {/* Highlighted time indicator */}
         {highlightRotation !== null && (
-          <motion.line
+          <line
             x1={center}
             y1={center}
-            x2={center}
-            y2={strokeWidth * 2}
+            x2={center + (center - strokeWidth * 4) * Math.cos((highlightRotation + 90) * (Math.PI / 180))}
+            y2={center + (center - strokeWidth * 4) * Math.sin((highlightRotation + 90) * (Math.PI / 180))}
             stroke="#F59E0B"
             strokeWidth={strokeWidth / 2}
             strokeLinecap="round"
-            style={{
-              transformOrigin: `${center}px ${center}px`,
-              rotate: `${highlightRotation}deg`,
-            }}
           />
         )}
         
         {/* Hour hand */}
-        <motion.line
+        <line
           x1={center}
           y1={center}
-          x2={center}
-          y2={center - size * 0.25}
+          x2={hourHand.x2}
+          y2={hourHand.y2}
           stroke="currentColor"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
-          style={{
-            transformOrigin: `${center}px ${center}px`,
-            rotate: `${hourRotation}deg`,
-          }}
         />
         
         {/* Minute hand */}
-        <motion.line
+        <line
           x1={center}
           y1={center}
-          x2={center}
-          y2={center - size * 0.35}
+          x2={minuteHand.x2}
+          y2={minuteHand.y2}
           stroke="currentColor"
           strokeWidth={strokeWidth * 0.7}
           strokeLinecap="round"
-          style={{
-            transformOrigin: `${center}px ${center}px`,
-            rotate: `${minuteRotation}deg`,
-          }}
         />
         
         {/* Second hand */}
-        <motion.line
+        <line
           x1={center}
           y1={center}
-          x2={center}
-          y2={center - size * 0.4}
+          x2={secondHand.x2}
+          y2={secondHand.y2}
           stroke="#EF4444"
           strokeWidth={strokeWidth * 0.3}
           strokeLinecap="round"
-          style={{
-            transformOrigin: `${center}px ${center}px`,
-            rotate: `${secondRotation}deg`,
-          }}
         />
         
         {/* Center dot */}
