@@ -20,7 +20,7 @@ export default function ViewSwitcher() {
         onClick={() => handleViewChange('list')}
         className={`px-4 py-2 rounded-md transition-colors ${
           currentView === 'list'
-            ? 'bg-primary-500 text-white'
+            ? 'bg-primary-700 text-white'
             : 'hover:bg-gray-100 dark:hover:bg-gray-700'
         }`}
         aria-pressed={currentView === 'list'}
@@ -46,7 +46,7 @@ export default function ViewSwitcher() {
         onClick={() => handleViewChange('clocks')}
         className={`px-4 py-2 rounded-md transition-colors ${
           currentView === 'clocks'
-            ? 'bg-primary-500 text-white'
+            ? 'bg-primary-700 text-white'
             : 'hover:bg-gray-100 dark:hover:bg-gray-700'
         }`}
         aria-pressed={currentView === 'clocks'}
@@ -72,7 +72,7 @@ export default function ViewSwitcher() {
         onClick={() => handleViewChange('digital')}
         className={`px-4 py-2 rounded-md transition-colors ${
           currentView === 'digital'
-            ? 'bg-primary-500 text-white'
+            ? 'bg-primary-700 text-white'
             : 'hover:bg-gray-100 dark:hover:bg-gray-700'
         }`}
         aria-pressed={currentView === 'digital'}

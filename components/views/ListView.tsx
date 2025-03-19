@@ -1232,7 +1232,11 @@ export default function ListView({
                   </div>
                 </div>
                 
-                <div className="h-64 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50" role="listbox">
+                <div 
+                  className="h-64 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50" 
+                  role="listbox"
+                  aria-label={`Time selection list for ${timezone.name}`}
+                >
                   <AutoSizer>
                     {({ height, width }) => (
                       <FixedSizeList
@@ -1286,7 +1290,7 @@ export default function ListView({
                         dark:border-gray-700 p-4 h-full min-h-[264px] flex flex-col items-center justify-center
                         hover:border-primary-500 dark:hover:border-primary-500 hover:bg-gray-50 
                         dark:hover:bg-gray-800/80 transition-colors duration-200 cursor-pointer"
-              aria-label="Add timezone"
+              aria-label="Add Timezone or Region - Track time for another region"
             >
               <div className="rounded-full bg-primary-100 dark:bg-primary-900/30 p-3 mb-3">
                 <Plus className="h-6 w-6 text-primary-600 dark:text-primary-400" />
