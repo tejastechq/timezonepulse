@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, memo } from 'react';
 import { Timezone } from '@/store/timezoneStore';
 import BaseClockView from '../clock/BaseClockView';
 import AnalogClock from '../clock/AnalogClock';
@@ -14,16 +14,17 @@ interface ClocksViewProps {
 /**
  * ClocksView component for displaying analog clocks
  * Uses BaseClockView for shared functionality
+ * Optimized with memoization to prevent unnecessary re-renders
  */
-export default function ClocksView(props: ClocksViewProps) {
-  // Define the analog clock renderer function
-  const renderAnalogClock = (time: Date, timezone: string) => (
+function ClocksView(props: ClocksViewProps) {
+  // Define the analog clock renderer function - memoized to prevent recreation on each render
+  const renderAnalogClock = useCallback((time: Date, timezone: string) => (
     <AnalogClock
       time={time}
       size={180}
       highlightedTime={null}
     />
-  );
+  ), []);
 
   return (
     <BaseClockView
@@ -32,4 +33,7 @@ export default function ClocksView(props: ClocksViewProps) {
       minHeight="310px"
     />
   );
-} 
+}
+
+// Export a memoized version of the component
+export default memo(ClocksView); 

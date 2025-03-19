@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useCallback, memo } from 'react';
 import { Timezone } from '@/store/timezoneStore';
 import BaseClockView from '../clock/BaseClockView';
 import DigitalClock from '../clock/DigitalClock';
@@ -14,16 +14,17 @@ interface DigitalViewProps {
 /**
  * DigitalView component for displaying digital clocks
  * Uses BaseClockView for shared functionality
+ * Optimized with memoization to prevent unnecessary re-renders
  */
-export default function DigitalView(props: DigitalViewProps) {
-  // Define the digital clock renderer function
-  const renderDigitalClock = (time: Date, timezone: string) => (
+function DigitalView(props: DigitalViewProps) {
+  // Define the digital clock renderer function - memoized to prevent recreation on each render
+  const renderDigitalClock = useCallback((time: Date, timezone: string) => (
     <DigitalClock
       time={time}
       timezone={timezone}
       highlightedTime={null}
     />
-  );
+  ), []);
 
   return (
     <BaseClockView
@@ -32,4 +33,7 @@ export default function DigitalView(props: DigitalViewProps) {
       minHeight="250px"
     />
   );
-} 
+}
+
+// Export a memoized version of the component
+export default memo(DigitalView); 

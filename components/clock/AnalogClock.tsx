@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { DateTime } from 'luxon';
 import { motion } from 'framer-motion';
 
@@ -12,8 +12,9 @@ interface AnalogClockProps {
 
 /**
  * Component for displaying an analog clock
+ * Optimized with memoization to prevent unnecessary re-renders
  */
-export default function AnalogClock({ time, size = 200, highlightedTime }: AnalogClockProps) {
+function AnalogClock({ time, size = 200, highlightedTime }: AnalogClockProps) {
   // Calculate the rotation angles for the clock hands
   const { hourRotation, minuteRotation, secondRotation, highlightRotation } = useMemo(() => {
     const dt = DateTime.fromJSDate(time);
@@ -42,6 +43,31 @@ export default function AnalogClock({ time, size = 200, highlightedTime }: Analo
   const center = size / 2;
   const strokeWidth = size / 40;
   
+  // Memoize the hour markers to prevent recalculation on every render
+  const hourMarkers = useMemo(() => {
+    return [...Array(12)].map((_, i) => {
+      const angle = (i * 30) * (Math.PI / 180);
+      const markerLength = size * 0.1;
+      const x1 = center + (center - strokeWidth - markerLength) * Math.sin(angle);
+      const y1 = center - (center - strokeWidth - markerLength) * Math.cos(angle);
+      const x2 = center + (center - strokeWidth) * Math.sin(angle);
+      const y2 = center - (center - strokeWidth) * Math.cos(angle);
+      
+      return (
+        <line
+          key={i}
+          x1={x1}
+          y1={y1}
+          x2={x2}
+          y2={y2}
+          stroke="currentColor"
+          strokeWidth={i % 3 === 0 ? strokeWidth : strokeWidth / 2}
+          strokeOpacity="0.5"
+        />
+      );
+    });
+  }, [center, size, strokeWidth]);
+  
   return (
     <div className="relative" style={{ width: size, height: size }}>
       {/* Clock face */}
@@ -63,27 +89,7 @@ export default function AnalogClock({ time, size = 200, highlightedTime }: Analo
         />
         
         {/* Hour markers */}
-        {[...Array(12)].map((_, i) => {
-          const angle = (i * 30) * (Math.PI / 180);
-          const markerLength = size * 0.1;
-          const x1 = center + (center - strokeWidth - markerLength) * Math.sin(angle);
-          const y1 = center - (center - strokeWidth - markerLength) * Math.cos(angle);
-          const x2 = center + (center - strokeWidth) * Math.sin(angle);
-          const y2 = center - (center - strokeWidth) * Math.cos(angle);
-          
-          return (
-            <line
-              key={i}
-              x1={x1}
-              y1={y1}
-              x2={x2}
-              y2={y2}
-              stroke="currentColor"
-              strokeWidth={i % 3 === 0 ? strokeWidth : strokeWidth / 2}
-              strokeOpacity="0.5"
-            />
-          );
-        })}
+        {hourMarkers}
         
         {/* Highlighted time indicator */}
         {highlightRotation !== null && (
@@ -158,3 +164,6 @@ export default function AnalogClock({ time, size = 200, highlightedTime }: Analo
     </div>
   );
 } 
+
+// Export a memoized version of the component
+export default memo(AnalogClock); 
