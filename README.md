@@ -524,6 +524,7 @@ cd "C:\Dev\Projects\clock"
 (Delete the .git and .gitignore files from the folder)
 (https://browsertools.agentdesk.ai/installation)
 (git clone https://github.com/AgentDeskAI/browser-tools-mcp.git)
+(npx @agentdeskai/browser-tools-server)
 -----------------------------------------------------------------------------------------------
 
 
