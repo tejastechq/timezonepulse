@@ -1,7 +1,7 @@
 ---
-description: Instructions
+description: instrucions for every task
 globs: 
-alwaysApply: false
+alwaysApply: true
 ---
 ---
 description: instrucions for every task
