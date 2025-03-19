@@ -1,4 +1,9 @@
 ---
+description: 
+globs: 
+alwaysApply: false
+---
+---
 description: Guidelines for writing Next.js apps with tRPC
 globs: **/*.ts, **/*.tsx, **/*.js, **/*.jsx
 alwaysApply: false

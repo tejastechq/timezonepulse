@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { DateTime } from 'luxon';
 
 interface DigitalClockProps {
@@ -11,9 +11,10 @@ interface DigitalClockProps {
 
 /**
  * Component for displaying a digital clock
+ * Optimized with memoization to prevent unnecessary re-renders
  */
-export default function DigitalClock({ time, timezone, highlightedTime }: DigitalClockProps) {
-  // Format the time for display
+function DigitalClock({ time, timezone, highlightedTime }: DigitalClockProps) {
+  // Format the time for display - memoized to prevent recalculation on every render
   const { timeDisplay, dateDisplay, isHighlighted } = useMemo(() => {
     const dt = DateTime.fromJSDate(time).setZone(timezone);
     const timeDisplay = dt.toFormat('HH:mm:ss');
@@ -44,4 +45,7 @@ export default function DigitalClock({ time, timezone, highlightedTime }: Digita
       </div>
     </div>
   );
-} 
+}
+
+// Export a memoized version of the component
+export default memo(DigitalClock); 
