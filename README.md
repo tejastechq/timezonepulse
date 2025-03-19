@@ -520,6 +520,10 @@ cmd /c npx -y @smithery/cli@latest run @itseasy21/mcp-knowledge-graph --client c
 browser tools
 cmd /c npx -y @agentdeskai/browser-tools-mcp@1.2.0
 
+cd "C:\Dev\Projects\clock"
+(Delete the .git and .gitignore files from the folder)
+(https://browsertools.agentdesk.ai/installation)
+(git clone https://github.com/AgentDeskAI/browser-tools-mcp.git)
 -----------------------------------------------------------------------------------------------
 
 
