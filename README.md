@@ -444,3 +444,16 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Framer Motion](https://www.framer.com/motion/) for smooth animations
 - [Million.js](https://million.dev/) for React optimization
 - All the contributors who have helped make this project better 
+
+
+
+
+
+
+
+
+
+
+
+Cursor Rules:
+
