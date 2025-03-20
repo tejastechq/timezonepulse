@@ -2,9 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --background: #f8f8f8;
+  --foreground: #333333;
+}
+
+.dark {
+  --background: #121212;
+  --foreground: #f8f8f8;
+}
+
 body {
-  color: #333;
-  background-color: #f8f8f8;
+  color: var(--foreground);
+  background-color: var(--background);
 }
 
 /* Custom utility classes */

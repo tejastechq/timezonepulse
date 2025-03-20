@@ -14,10 +14,13 @@ const nextConfig = {
         hostname: 'worldclock.app',
       },
     ],
+    unoptimized: false,
+    minimumCacheTTL: 31536000,
   },
   
   experimental: {
     optimizeCss: true,
+    optimizeServerReact: true,
     optimizePackageImports: [
       '@radix-ui/react-dialog',
       '@radix-ui/react-dropdown-menu',
@@ -29,14 +32,12 @@ const nextConfig = {
       '@radix-ui/react-tooltip',
       'lucide-react',
       'framer-motion',
+      'luxon',
+      'zustand',
     ],
-    webVitalsAttribution: ['CLS', 'LCP'],
+    webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'FID', 'INP', 'TTFB'],
   },
 
-  // Enable SWC minification
-  swcMinify: true,
-
-  // Configure headers for security and caching
   async headers() {
     return [
       {
@@ -62,22 +63,47 @@ const nextConfig = {
             key: 'Referrer-Policy',
             value: 'origin-when-cross-origin',
           },
+          {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https:;",
+          },
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin',
+          },
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'require-corp',
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'same-origin',
+          },
         ],
       },
       {
-        source: '/:all*(svg|jpg|png)',
+        source: '/:all*(svg|jpg|png|webp|avif|woff2|woff)',
         locale: false,
         headers: [
           {
             key: 'Cache-Control',
-            value: 'public, max-age=31536000, must-revalidate',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/:all*(js|css)',
+        locale: false,
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
           },
         ],
       },
     ];
   },
 
-  // Configure redirects for cleaner URLs
   async redirects() {
     return [
       {
@@ -89,13 +115,20 @@ const nextConfig = {
   },
 };
 
-// Wrap the config with Million.js
-const millionConfig = {
-  auto: true,
-  // Optimize specific components
-  optimize: {
-    threshold: 0.05, // Low threshold for more aggressive optimization
-  },
-};
+// Temporarily disable Million.js to fix the compatibility issue
+// const millionConfig = {
+//   auto: { rsc: true },
+//   optimize: {
+//     threshold: 0.05,
+//     skipBatching: false,
+//     mode: "legacy",
+//     server: true,
+//     minifyOptions: {
+//       newline: true,
+//       comments: false,
+//     },
+//   },
+// };
 
-module.exports = million.next(nextConfig, millionConfig); 
+// module.exports = million.next(nextConfig, millionConfig);
+module.exports = nextConfig; 

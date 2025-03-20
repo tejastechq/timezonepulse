@@ -21,6 +21,20 @@ module.exports = {
           900: '#0c4a6e',
           950: '#082f49',
         },
+        background: {
+          DEFAULT: '#f8f8f8',
+          dark: '#121212',
+        },
+        foreground: {
+          DEFAULT: '#333333',
+          dark: '#f8f8f8',
+        },
+      },
+      backgroundColor: {
+        background: 'var(--background)',
+      },
+      textColor: {
+        foreground: 'var(--foreground)',
       },
     },
   },

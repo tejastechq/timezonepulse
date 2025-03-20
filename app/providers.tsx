@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from 'next-themes';
 import { useTimezoneStore } from '@/store/timezoneStore';
@@ -9,7 +9,18 @@ import { DashboardProvider } from './contexts/DashboardContext';
 import { ClientInitializer } from '@/components/performance/ClientInitializer';
 import ErrorBoundary from '@/components/error/ErrorBoundary';
 import { initGlobalErrorHandlers } from '@/lib/utils/errorHandler';
-import { type ReactNode } from 'react';
+
+// Create query client factory with optimized settings
+const createQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60 * 1000, // 1 minute
+      gcTime: 5 * 60 * 1000, // 5 minutes (garbage collection time, formerly cacheTime)
+      retry: 1,
+      refetchOnWindowFocus: process.env.NODE_ENV === 'development', // Only enable in development
+    },
+  },
+});
 
 interface ProvidersProps {
   children: ReactNode;
@@ -24,16 +35,7 @@ interface ProvidersProps {
  */
 export function Providers({ children }: ProvidersProps) {
   // React Query client with optimized settings for performance
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 60 * 1000, // 1 minute
-        gcTime: 5 * 60 * 1000, // 5 minutes (garbage collection time, formerly cacheTime)
-        retry: 1,
-        refetchOnWindowFocus: false, // Don't refetch on window focus in production
-      },
-    },
-  }));
+  const [queryClient] = useState(createQueryClient);
 
   // State to track if the component has mounted
   const [mounted, setMounted] = useState(false);
@@ -43,16 +45,24 @@ export function Providers({ children }: ProvidersProps) {
 
   // Ensure hydration happens after component mount
   useEffect(() => {
-    hydrate();
-    setMounted(true);
-    
     // Initialize global error handlers
     initGlobalErrorHandlers();
-  }, [hydrate]);
+    
+    // Hydrate timezone store
+    hydrate();
+    
+    // Mark as mounted to fix hydration mismatches
+    setMounted(true);
+    
+    // Cleanup resources on unmount
+    return () => {
+      queryClient.clear(); // Clear query cache on unmount to prevent memory leaks
+    };
+  }, [hydrate, queryClient]);
 
-  // Fix hydration mismatch by only rendering after component mounts
+  // Provide fallback during hydration to prevent mismatch
   if (!mounted) {
-    return <div className="min-h-screen bg-gray-50 dark:bg-gray-900" />;
+    return <div className="min-h-screen bg-gray-50 dark:bg-gray-900" aria-hidden="true" />;
   }
 
   return (
@@ -63,6 +73,12 @@ export function Providers({ children }: ProvidersProps) {
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          // Use forced-colors for better accessibility
+          forcedTheme={
+            typeof window !== 'undefined' && 
+            window.matchMedia?.('(forced-colors: active)').matches ? 
+            'light' : undefined
+          }
         >
           <ViewProvider>
             <DashboardProvider>

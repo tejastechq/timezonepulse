@@ -24,7 +24,7 @@ export default function RootLayout({
       className={`${inter.variable} ${robotoMono.variable}`}
       suppressHydrationWarning
     >
-      <body className={`min-h-screen bg-background text-foreground ${inter.className}`}>
+      <body className={`min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${inter.className}`}>
         <Providers>
           {children}
           <Analytics />
