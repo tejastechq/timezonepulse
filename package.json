@@ -16,7 +16,9 @@
     "fix-env": "node fix-env.js",
     "dev:fixed": "npm run fix-env && npm run clean && next dev",
     "dev:safe": "cross-env NEXT_RSC_STRICT_MODE=false next dev",
-    "postinstall": "npm run fix-env"
+    "postinstall": "npm run fix-env",
+    "test": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.7.0",
@@ -37,8 +39,8 @@
     "@tanstack/react-query": "^5.68.0",
     "@tanstack/react-virtual": "^3.13.4",
     "@types/node": "^22.13.10",
-    "@types/react": "19.0.11",
-    "@types/react-dom": "19.0.4",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "class-variance-authority": "^0.7.1",
@@ -53,8 +55,8 @@
     "next": "15.2.3",
     "next-intl": "^4.0.2",
     "next-themes": "^0.4.6",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "react-virtualized-auto-sizer": "^1.0.25",
     "react-window": "^1.8.11",
     "tailwind-merge": "^3.0.2",
@@ -114,5 +116,8 @@
     "nohoist": [
       "**/@modelcontextprotocol/**"
     ]
+  },
+  "engines": {
+    "node": ">=18.17.0"
   }
 }

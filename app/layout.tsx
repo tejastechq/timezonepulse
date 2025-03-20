@@ -1,10 +1,11 @@
 import './globals.css';
 import { baseMetadata, viewport } from './metadata';
-import { inter, getFontVariables } from './font';
-import ClientBoundary from '@/components/layout/ClientBoundary';
-import Script from 'next/script';
+import { inter, robotoMono } from './font';
+import { Providers } from './providers';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
-// Export metadata properly as server component
+// Export metadata and viewport configurations
 export const metadata = baseMetadata;
 export { viewport };
 
@@ -20,64 +21,15 @@ export default function RootLayout({
   return (
     <html 
       lang="en" 
-      className="light"
-      // Add data attributes to match client-side script in optimization.js
-      // This fixes hydration mismatch errors
-      data-prefers-reduced-motion="true"
-      data-fonts-loaded="true"
+      className={`${inter.variable} ${robotoMono.variable}`}
+      suppressHydrationWarning
     >
-      <head>
-        {/* No need for font preconnect or stylesheet links - Next.js font system handles this */}
-        {/* The inter and robotoMono imports from ./font.ts handle the font loading */}
-        
-        {/* Use prefetch with high priority for critical resources */}
-        <link 
-          rel="preload" 
-          href="/images/clock-face.svg" 
-          as="image" 
-          type="image/svg+xml"
-          fetchPriority="high"
-        />
-        
-        {/* Add priority hints script to optimize LCP */}
-        <Script
-          src="/scripts/priority-hints.js"
-          strategy="beforeInteractive"
-          id="priority-hints"
-        />
-        
-        {/* Add the polyfill script with the highest priority (before any other scripts) */}
-        <Script
-          src="/scripts/polyfills.js"
-          strategy="beforeInteractive"
-          id="browser-polyfills"
-        />
-        
-        {/* Add optimization script before any other scripts */}
-        <Script
-          src="/scripts/optimization.js"
-          strategy="beforeInteractive"
-          id="performance-optimization"
-        />
-
-        {/* Add font loading script */}
-        <Script id="font-loading-strategy">
-          {`
-            // Set font display strategy
-            (function() {
-              // Mark font loading completed
-              if ('fonts' in document) {
-                document.fonts.ready.then(function() {
-                  document.documentElement.dataset.fontsLoaded = 'true';
-                });
-              }
-            })();
-          `}
-        </Script>
-      </head>
-      <body className={`min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${inter.className} ${getFontVariables()}`}>
-        {/* Use ClientBoundary as a proper client/server boundary */}
-        <ClientBoundary>{children}</ClientBoundary>
+      <body className={`min-h-screen bg-background text-foreground ${inter.className}`}>
+        <Providers>
+          {children}
+          <Analytics />
+          <SpeedInsights />
+        </Providers>
       </body>
     </html>
   );

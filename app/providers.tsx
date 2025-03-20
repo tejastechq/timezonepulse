@@ -9,6 +9,11 @@ import { DashboardProvider } from './contexts/DashboardContext';
 import { ClientInitializer } from '@/components/performance/ClientInitializer';
 import ErrorBoundary from '@/components/error/ErrorBoundary';
 import { initGlobalErrorHandlers } from '@/lib/utils/errorHandler';
+import { type ReactNode } from 'react';
+
+interface ProvidersProps {
+  children: ReactNode;
+}
 
 /**
  * Providers component to wrap all context providers in one place
@@ -17,7 +22,7 @@ import { initGlobalErrorHandlers } from '@/lib/utils/errorHandler';
  * and wraps the application in the correct provider order.
  * This helps with performance by making sure hydration happens correctly.
  */
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children }: ProvidersProps) {
   // React Query client with optimized settings for performance
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
@@ -53,7 +58,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
           <ViewProvider>
             <DashboardProvider>
               {/* Initialize client-side performance tracking */}
