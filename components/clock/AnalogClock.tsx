@@ -15,6 +15,7 @@ interface AnalogClockProps {
  * Component for displaying an analog clock with enhanced aesthetics
  * Optimized with memoization to prevent unnecessary re-renders
  */
+// million-ignore
 function AnalogClock({ 
   time, 
   size = 200, 
