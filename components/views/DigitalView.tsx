@@ -16,6 +16,7 @@ interface DigitalViewProps {
  * Uses BaseClockView for shared functionality
  * Optimized with memoization to prevent unnecessary re-renders
  */
+// million-ignore
 function DigitalView(props: DigitalViewProps) {
   // Define the digital clock renderer function - memoized to prevent recreation on each render
   const renderDigitalClock = useCallback((time: Date, timezone: string) => (

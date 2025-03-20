@@ -115,20 +115,22 @@ const nextConfig = {
   },
 };
 
-// Temporarily disable Million.js to fix the compatibility issue
-// const millionConfig = {
-//   auto: { rsc: true },
-//   optimize: {
-//     threshold: 0.05,
-//     skipBatching: false,
-//     mode: "legacy",
-//     server: true,
-//     minifyOptions: {
-//       newline: true,
-//       comments: false,
-//     },
-//   },
-// };
+// Configure Million.js with safer settings
+const millionConfig = {
+  auto: { 
+    rsc: false, // Disable RSC optimization which might cause issues
+  },
+  safe: true, // Use safe mode to avoid compatibility issues
+  optimize: {
+    threshold: 0.05, // Only optimize components that would benefit significantly
+    skipBatching: false,
+    mode: "legacy", // Use legacy mode for better compatibility
+    server: true,
+    minifyOptions: {
+      newline: true,
+      comments: false,
+    },
+  },
+};
 
-// module.exports = million.next(nextConfig, millionConfig);
-module.exports = nextConfig; 
+module.exports = million.next(nextConfig, millionConfig); 

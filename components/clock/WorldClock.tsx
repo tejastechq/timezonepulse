@@ -74,10 +74,7 @@ interface WorldClockProps {
   skipHeading?: boolean;
 }
 
-/**
- * Main WorldClock component that manages the clock display
- * Optimized for core web vitals (LCP, FID, CLS)
- */
+// million-ignore
 export default function WorldClock({ skipHeading = false }: WorldClockProps) {
   // Hydration safe rendering
   const [isClient, setIsClient] = useState(false);
