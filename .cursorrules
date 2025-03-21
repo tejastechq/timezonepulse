@@ -77,7 +77,6 @@ The application serves as a comprehensive solution for global time management, h
 - Downshift or Headless UI for customizable selection interfaces
 - next-intl for internationalization
 - tRPC for end-to-end typesafe APIs
-- Prisma with PostgreSQL/PlanetScale for database interactions
 - Redis (via Upstash) for caching and real-time features
 - Clerk or NextAuth.js for authentication
 - Zod for schema validation and type safety
