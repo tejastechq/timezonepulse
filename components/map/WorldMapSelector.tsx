@@ -288,6 +288,49 @@ export function WorldMapSelector() {
     setPosition({ coordinates: [lng, lat], zoom: 4 });
   }, [addTimezone, setPosition]);
   
+  // Handle hovering over a point on the map
+  const handleMapHover = useCallback((coordinates: [number, number] | null) => {
+    if (!coordinates) {
+      setHoveredTimezone(null);
+      return;
+    }
+    
+    // IMPORTANT: Convert from [lng, lat] to [lat, lng] for our utilities
+    const [lng, lat] = coordinates;
+    
+    // Normalize coordinates to valid ranges
+    const normalizedLng = ((lng + 180) % 360) - 180; // Ensure longitude is in range -180 to 180
+    const normalizedLat = Math.max(-85, Math.min(85, lat)); // Clamp latitude to valid range
+    
+    const timezoneId = findClosestTimezone(normalizedLat, normalizedLng);
+    const region = TIMEZONE_REGIONS.find(r => r.id === timezoneId);
+    
+    if (region) {
+      const now = new Date();
+      const isDaylight = isPointInDaylight(normalizedLat, normalizedLng, now);
+      const isWorkHours = isBusinessHours(timezoneId, now);
+      
+      // For display purposes
+      const date = new Date();
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        hour: 'numeric',
+        minute: 'numeric',
+        timeZone: timezoneId,
+        hour12: true
+      });
+      
+      setHoveredTimezone({
+        id: timezoneId,
+        name: region.name,
+        formatted: formatter.format(date),
+        isBusinessHours: isWorkHours,
+        isDaylight
+      });
+    } else {
+      setHoveredTimezone(null);
+    }
+  }, []);
+  
   // Now define handleMapClick which uses handleSelectTimezone
   const handleMapClick = useCallback((e: React.MouseEvent, geo: any) => {
     // If no geography was clicked, use the click coordinates directly
@@ -308,8 +351,12 @@ export function WorldMapSelector() {
       const lng = ((svgCoords[0] - centerX) / scale) + center[0];
       const lat = ((centerY - svgCoords[1]) / scale) + center[1];
       
+      // Normalize coordinates to valid ranges
+      const normalizedLng = ((lng + 180) % 360) - 180; // Ensure longitude is in range -180 to 180
+      const normalizedLat = Math.max(-85, Math.min(85, lat)); // Clamp latitude to valid range
+      
       // Get the timezone at these coordinates
-      const tzData = getTimezoneFromMapCoordinates(lat, lng);
+      const tzData = getTimezoneFromMapCoordinates(normalizedLat, normalizedLng);
       if (tzData && tzData.id) {
         handleSelectTimezone(tzData.id);
       }
@@ -351,44 +398,6 @@ export function WorldMapSelector() {
       handleSelectTimezone(tzData.id);
     }
   }, [position, handleSelectTimezone]);
-  
-  // Handle hovering over a point on the map
-  const handleMapHover = useCallback((coordinates: [number, number] | null) => {
-    if (!coordinates) {
-      setHoveredTimezone(null);
-      return;
-    }
-    
-    // IMPORTANT: Convert from [lng, lat] to [lat, lng] for our utilities
-    const [lng, lat] = coordinates;
-    const timezoneId = findClosestTimezone(lat, lng);
-    const region = TIMEZONE_REGIONS.find(r => r.id === timezoneId);
-    
-    if (region) {
-      const now = new Date();
-      const isDaylight = isPointInDaylight(lat, lng, now);
-      const isWorkHours = isBusinessHours(timezoneId, now);
-      
-      // For display purposes
-      const date = new Date();
-      const formatter = new Intl.DateTimeFormat('en-US', {
-        hour: 'numeric',
-        minute: 'numeric',
-        timeZone: timezoneId,
-        hour12: true
-      });
-      
-      setHoveredTimezone({
-        id: timezoneId,
-        name: region.name,
-        formatted: formatter.format(date),
-        isBusinessHours: isWorkHours,
-        isDaylight
-      });
-    } else {
-      setHoveredTimezone(null);
-    }
-  }, []);
   
   // Optimize the selection of timezone boundaries
   const selectedTimezoneBoundaries = useMemo(() => {
@@ -514,7 +523,7 @@ export function WorldMapSelector() {
             maxZoom={6}
           >
             {/* Base geography - use our fallback if needed */}
-            <SafeGeographies onMapClick={handleMapClick} />
+            <SafeGeographies onMapClick={handleMapClick} onMapHover={handleMapHover} />
             
             {/* Draw selected timezone boundaries */}
             {selectedTimezoneBoundaries.map(boundary => (
@@ -576,26 +585,73 @@ export function WorldMapSelector() {
   );
 }
 
-function SafeGeographies({ onMapClick }: { onMapClick: (e: React.MouseEvent, geo: any) => void }) {
+function SafeGeographies({ 
+  onMapClick,
+  onMapHover 
+}: { 
+  onMapClick: (e: React.MouseEvent, geo: any) => void,
+  onMapHover: (coordinates: [number, number] | null) => void 
+}) {
   const [geojson, setGeojson] = useState<any>(FALLBACK_GEOJSON);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  
+  // Add dark mode detection
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  
+  // Check for dark mode preference
+  useEffect(() => {
+    // Check initial state
+    if (typeof window !== 'undefined') {
+      // Check for dark mode from HTML data attribute (set by theme provider)
+      const isDark = document.documentElement.classList.contains('dark');
+      setIsDarkMode(isDark);
+      
+      // Set up a mutation observer to track theme changes
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.attributeName === 'class') {
+            const isDark = document.documentElement.classList.contains('dark');
+            setIsDarkMode(isDark);
+          }
+        });
+      });
+      
+      observer.observe(document.documentElement, { attributes: true });
+      
+      return () => {
+        observer.disconnect();
+      };
+    }
+  }, []);
   
   useEffect(() => {
     // Try to load the map data
-    fetch("/data/world-110m.json")
+    const controller = new AbortController();
+    const signal = controller.signal;
+    
+    setLoading(true);
+    fetch("/data/world-110m.json", { signal })
       .then(res => {
-        if (!res.ok) throw new Error("Could not load map data");
+        if (!res.ok) throw new Error(`Error ${res.status}: Could not load map data`);
         return res.json();
       })
       .then(data => {
         if (data && typeof data === 'object') {
           setGeojson(data);
+          setLoadError(null);
+        } else {
+          throw new Error("Invalid map data format");
         }
       })
       .catch(error => {
+        if (error.name === 'AbortError') return;
+        
         console.error("Failed to load world-110m.json:", error);
+        setLoadError(`Primary map data failed to load: ${error.message}`);
+        
         // Try the fallback file
-        fetch("/data/fallback-world.json")
+        fetch("/data/fallback-world.json", { signal })
           .then(res => {
             if (!res.ok) throw new Error("Could not load fallback map");
             return res.json();
@@ -604,26 +660,55 @@ function SafeGeographies({ onMapClick }: { onMapClick: (e: React.MouseEvent, geo
             if (data && typeof data === 'object') {
               console.log("Using fallback world map");
               setGeojson(data);
+              setLoadError(null);
+            } else {
+              throw new Error("Invalid fallback map data format");
             }
           })
           .catch(fallbackError => {
+            if (fallbackError.name === 'AbortError') return;
+            
             console.error("Failed to load fallback map:", fallbackError);
-            // Keep using the hardcoded fallback
+            setLoadError(`Fallback map failed to load: ${fallbackError.message}`);
+            // Keep using the hardcoded fallback from FALLBACK_GEOJSON
           })
           .finally(() => {
-            setLoading(false);
+            if (!signal.aborted) {
+              setLoading(false);
+            }
           });
       })
       .finally(() => {
-        if (loading) setLoading(false);
+        if (!signal.aborted) {
+          setLoading(false);
+        }
       });
-  }, [loading]);
+      
+    return () => {
+      controller.abort();
+    };
+  }, []);
   
   if (loading) {
     return (
       <g>
-        <text x="50%" y="50%" textAnchor="middle" fill="#6b7280">
-          Loading map...
+        <rect x="0" y="0" width="100%" height="100%" fill="transparent" />
+        <text x="50%" y="50%" textAnchor="middle" fill="#6b7280" fontSize="14px">
+          Loading map data...
+        </text>
+      </g>
+    );
+  }
+  
+  if (loadError && !geojson) {
+    return (
+      <g>
+        <rect x="0" y="0" width="100%" height="100%" fill="transparent" />
+        <text x="50%" y="45%" textAnchor="middle" fill="#ef4444" fontSize="14px">
+          Error loading map
+        </text>
+        <text x="50%" y="55%" textAnchor="middle" fill="#6b7280" fontSize="12px">
+          Using simplified fallback
         </text>
       </g>
     );
@@ -636,29 +721,47 @@ function SafeGeographies({ onMapClick }: { onMapClick: (e: React.MouseEvent, geo
           <Geography
             key={geo.rsmKey || (geo.properties ? geo.properties.name : 'world')}
             geography={geo}
-            fill="#EAEAEC"
-            stroke="#D6D6DA"
+            fill={isDarkMode ? "#374151" : "#EAEAEC"} 
+            stroke={isDarkMode ? "#6B7280" : "#D6D6DA"}
             style={{
               default: { 
-                fill: "#EAEAEC", 
-                stroke: "#D6D6DA", 
+                fill: isDarkMode ? "#374151" : "#EAEAEC", 
+                stroke: isDarkMode ? "#6B7280" : "#D6D6DA", 
                 strokeWidth: 0.5,
                 outline: "none"
               },
               hover: { 
-                fill: "#F5F5F5", 
-                stroke: "#D6D6DA", 
+                fill: isDarkMode ? "#4B5563" : "#F5F5F5", 
+                stroke: isDarkMode ? "#9CA3AF" : "#D6D6DA", 
                 strokeWidth: 0.5,
                 outline: "none"
               },
               pressed: { 
-                fill: "#E0E0E0", 
-                stroke: "#D6D6DA", 
+                fill: isDarkMode ? "#1F2937" : "#E0E0E0", 
+                stroke: isDarkMode ? "#6B7280" : "#D6D6DA", 
                 strokeWidth: 0.5,
                 outline: "none"
               }
             }}
             onClick={(e) => onMapClick(e, geo)}
+            onMouseEnter={(e) => {
+              const { centroid } = geo.geometry;
+              // Check if the geography has a centroid
+              if (centroid && Array.isArray(centroid) && centroid.length === 2) {
+                // Get the coordinates in the right format [lng, lat]
+                const coordinates: [number, number] = [centroid[0], centroid[1]];
+                onMapHover(coordinates);
+              } else if (geo.geometry && geo.geometry.type === 'Polygon' && 
+                        geo.geometry.coordinates && 
+                        geo.geometry.coordinates.length > 0) {
+                // For polygons, calculate center point
+                const coords = geo.geometry.coordinates[0];
+                const centerLng = coords.reduce((sum: number, p: number[]) => sum + p[0], 0) / coords.length;
+                const centerLat = coords.reduce((sum: number, p: number[]) => sum + p[1], 0) / coords.length;
+                onMapHover([centerLng, centerLat]);
+              }
+            }}
+            onMouseLeave={() => onMapHover(null)}
           />
         )) : (
           // Render a fallback rectangle if no geographies are available

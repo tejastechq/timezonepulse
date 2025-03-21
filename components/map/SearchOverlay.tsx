@@ -49,6 +49,9 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({ onSelectTimezone, onClose
   const resultsRef = useRef<HTMLDivElement>(null);
   const highlightedResultRef = useRef<HTMLDivElement>(null);
   
+  // State for tracking search status
+  const [searchStatus, setSearchStatus] = useState<'idle' | 'searching' | 'no-results' | 'has-results'>('idle');
+  
   const toggleSearch = () => {
     setIsVisible(!isVisible);
     if (!isVisible) {
@@ -105,25 +108,35 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({ onSelectTimezone, onClose
   useEffect(() => {
     if (!searchQuery.trim()) {
       setResults([]);
+      setSearchStatus('idle');
       return;
     }
     
-    const matches = TIMEZONE_REGIONS
-      .map(region => ({
-        id: region.id,
-        name: region.name,
-        location: `${region.id.replace(/_/g, ' ').replace(/\//g, ' ')}`,
-        matchScore: Math.max(
-          fuzzyMatch(region.name, searchQuery),
-          fuzzyMatch(region.id.replace(/_/g, ' ').replace(/\//g, ' '), searchQuery)
-        )
-      }))
-      .filter(region => region.matchScore > 0)
-      .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, 5);
+    // Set searching state
+    setSearchStatus('searching');
     
-    setResults(matches);
-    setHighlightedIndex(matches.length > 0 ? 0 : -1);
+    // Debounce search for better performance
+    const timer = setTimeout(() => {
+      const matches = TIMEZONE_REGIONS
+        .map(region => ({
+          id: region.id,
+          name: region.name,
+          location: `${region.id.replace(/_/g, ' ').replace(/\//g, ' ')}`,
+          matchScore: Math.max(
+            fuzzyMatch(region.name, searchQuery),
+            fuzzyMatch(region.id.replace(/_/g, ' ').replace(/\//g, ' '), searchQuery)
+          )
+        }))
+        .filter(region => region.matchScore > 0)
+        .sort((a, b) => b.matchScore - a.matchScore)
+        .slice(0, 5);
+      
+      setResults(matches);
+      setHighlightedIndex(matches.length > 0 ? 0 : -1);
+      setSearchStatus(matches.length > 0 ? 'has-results' : 'no-results');
+    }, 250); // 250ms debounce
+    
+    return () => clearTimeout(timer);
   }, [searchQuery]);
   
   // Handle keyboard navigation
@@ -248,9 +261,36 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({ onSelectTimezone, onClose
             </div>
           )}
           
-          {searchQuery && results.length === 0 && (
-            <div className="p-4 text-center text-gray-500">
-              No results found
+          {/* No results state */}
+          {searchStatus === 'no-results' && searchQuery.trim() !== '' && (
+            <div className="p-4 text-center border-t border-gray-200">
+              <p className="text-gray-600 text-sm">No matching timezone found</p>
+              <p className="text-gray-500 text-xs mt-1">Try using a major city name or search by continent</p>
+            </div>
+          )}
+          
+          {/* Idle state with suggestions */}
+          {searchStatus === 'idle' && (
+            <div className="p-3 border-t border-gray-200">
+              <p className="text-xs text-gray-500 mb-2">Popular timezones:</p>
+              <div className="flex flex-wrap gap-1">
+                {['New York', 'London', 'Tokyo', 'Sydney', 'Delhi'].map(suggestion => (
+                  <button
+                    key={suggestion}
+                    className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded-md"
+                    onClick={() => setSearchQuery(suggestion)}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Search in progress indicator */}
+          {searchStatus === 'searching' && results.length === 0 && (
+            <div className="flex justify-center items-center p-4 border-t border-gray-200">
+              <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
             </div>
           )}
         </div>

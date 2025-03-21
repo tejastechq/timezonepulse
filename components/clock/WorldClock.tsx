@@ -122,6 +122,42 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
   // Add state for map visibility
   const [showMap, setShowMap] = useState(false);
   
+  // Track if map data is preloaded
+  const [isMapDataPreloaded, setIsMapDataPreloaded] = useState(false);
+  
+  // Preload the map data
+  useEffect(() => {
+    // Only preload once
+    if (isMapDataPreloaded) return;
+    
+    // Start preloading map data after initial render
+    const preloadTimer = setTimeout(() => {
+      const preloadMapData = async () => {
+        try {
+          // Preload the map component
+          import('../map/WorldMapSelector')
+            .then(() => {
+              // After component is loaded, preload the map data
+              fetch('/data/world-110m.json', { priority: 'low' })
+                .catch(() => {
+                  // Silently handle failure - we'll retry when actually needed
+                  console.log('Map data preloading failed, will retry when needed');
+                });
+            });
+          
+          setIsMapDataPreloaded(true);
+        } catch (error) {
+          // Silently fail - we'll retry when the map is actually shown
+          console.log('Map preloading failed, will retry when needed');
+        }
+      };
+      
+      preloadMapData();
+    }, 3000); // Delay by 3 seconds after initial page load
+    
+    return () => clearTimeout(preloadTimer);
+  }, [isMapDataPreloaded]);
+  
   // Toggle map visibility
   const toggleMap = useCallback(() => {
     setShowMap(prev => !prev);
