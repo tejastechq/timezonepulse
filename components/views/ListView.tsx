@@ -21,6 +21,7 @@ interface ListViewProps {
   highlightedTime: Date | null;
   handleTimeSelection: (time: Date | null) => void;
   roundToNearestIncrement: (date: Date, increment: number) => Date;
+  removeTimezone?: (id: string) => void;
 }
 
 /**
@@ -43,7 +44,8 @@ export default function ListView({
   localTime,
   highlightedTime,
   handleTimeSelection,
-  roundToNearestIncrement
+  roundToNearestIncrement,
+  removeTimezone: externalRemoveTimezone
 }: ListViewProps) {
   const timeColumnsContainerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -66,7 +68,10 @@ export default function ListView({
   const [editingTimezoneId, setEditingTimezoneId] = useState<string | null>(null);
   
   // Get timezone actions from store
-  const { addTimezone, removeTimezone } = useTimezoneStore();
+  const { addTimezone, removeTimezone: storeRemoveTimezone } = useTimezoneStore();
+
+  // Use the external removeTimezone function if provided, otherwise use the one from the store
+  const removeTimezone = externalRemoveTimezone || storeRemoveTimezone;
 
   // Increase default timer from 60 to 120 seconds to give user more time
   const [timeRemaining, setTimeRemaining] = useState<number>(120);

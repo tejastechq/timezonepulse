@@ -24,6 +24,7 @@ interface ListViewProps {
   highlightedTime: Date | null;
   handleTimeSelection: (time: Date | null) => void;
   roundToNearestIncrement: (date: Date, increment: number) => Date;
+  removeTimezone?: (id: string) => void;
 }
 
 interface ClocksViewProps {
@@ -277,6 +278,7 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
                 highlightedTime={highlightedTime}
                 handleTimeSelection={handleTimeSelection}
                 roundToNearestIncrement={roundToNearestIncrement}
+                removeTimezone={removeTimezone}
               />
             </div>
           )}
@@ -287,17 +289,32 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
                 selectedTimezones={timezones}
                 userLocalTimezone={localTimezone}
                 setSelectedTimezones={(newTimezones) => {
-                  // Filter out the local timezone
-                  const nonLocalTimezones = newTimezones.filter(tz => tz.id !== localTimezone);
-                  
-                  // Get only new timezones that aren't already in the store
-                  const existingIds = new Set(timezones.map(tz => tz.id));
-                  const newTimezoneItems = nonLocalTimezones.filter(tz => !existingIds.has(tz.id));
-                  
-                  // Add each new timezone
-                  newTimezoneItems.forEach(tz => {
-                    addTimezone(tz);
-                  });
+                  // Check if we're removing a timezone (new list is shorter than current list)
+                  if (newTimezones.length < timezones.length) {
+                    // Find the timezone(s) that were removed
+                    const currentIds = new Set(timezones.map(tz => tz.id));
+                    const newIds = new Set(newTimezones.map(tz => tz.id));
+                    
+                    // Get IDs that are in current but not in new (these were removed)
+                    currentIds.forEach(id => {
+                      if (!newIds.has(id) && id !== localTimezone) {
+                        removeTimezone(id);
+                      }
+                    });
+                  } else {
+                    // Adding new timezones (original implementation)
+                    // Filter out the local timezone
+                    const nonLocalTimezones = newTimezones.filter(tz => tz.id !== localTimezone);
+                    
+                    // Get only new timezones that aren't already in the store
+                    const existingIds = new Set(timezones.map(tz => tz.id));
+                    const newTimezoneItems = nonLocalTimezones.filter(tz => !existingIds.has(tz.id));
+                    
+                    // Add each new timezone
+                    newTimezoneItems.forEach(tz => {
+                      addTimezone(tz);
+                    });
+                  }
                 }}
               />
             </div>
@@ -309,17 +326,32 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
                 selectedTimezones={timezones}
                 userLocalTimezone={localTimezone}
                 setSelectedTimezones={(newTimezones) => {
-                  // Filter out the local timezone
-                  const nonLocalTimezones = newTimezones.filter(tz => tz.id !== localTimezone);
-                  
-                  // Get only new timezones that aren't already in the store
-                  const existingIds = new Set(timezones.map(tz => tz.id));
-                  const newTimezoneItems = nonLocalTimezones.filter(tz => !existingIds.has(tz.id));
-                  
-                  // Add each new timezone
-                  newTimezoneItems.forEach(tz => {
-                    addTimezone(tz);
-                  });
+                  // Check if we're removing a timezone (new list is shorter than current list)
+                  if (newTimezones.length < timezones.length) {
+                    // Find the timezone(s) that were removed
+                    const currentIds = new Set(timezones.map(tz => tz.id));
+                    const newIds = new Set(newTimezones.map(tz => tz.id));
+                    
+                    // Get IDs that are in current but not in new (these were removed)
+                    currentIds.forEach(id => {
+                      if (!newIds.has(id) && id !== localTimezone) {
+                        removeTimezone(id);
+                      }
+                    });
+                  } else {
+                    // Adding new timezones (original implementation)
+                    // Filter out the local timezone
+                    const nonLocalTimezones = newTimezones.filter(tz => tz.id !== localTimezone);
+                    
+                    // Get only new timezones that aren't already in the store
+                    const existingIds = new Set(timezones.map(tz => tz.id));
+                    const newTimezoneItems = nonLocalTimezones.filter(tz => !existingIds.has(tz.id));
+                    
+                    // Add each new timezone
+                    newTimezoneItems.forEach(tz => {
+                      addTimezone(tz);
+                    });
+                  }
                 }}
               />
             </div>
