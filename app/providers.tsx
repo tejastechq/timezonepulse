@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ThemeProvider } from 'next-themes';
 import { useTimezoneStore } from '@/store/timezoneStore';
 import { ViewProvider } from './contexts/ViewContext';
@@ -45,14 +46,18 @@ export function Providers({ children }: ProvidersProps) {
 
   // Ensure hydration happens after component mount
   useEffect(() => {
-    // Initialize global error handlers
-    initGlobalErrorHandlers();
-    
-    // Hydrate timezone store
-    hydrate();
-    
-    // Mark as mounted to fix hydration mismatches
-    setMounted(true);
+    try {
+      // Initialize global error handlers
+      initGlobalErrorHandlers();
+      
+      // Hydrate timezone store
+      hydrate();
+    } catch (error) {
+      console.error("Error during providers initialization:", error);
+    } finally {
+      // Mark as mounted to fix hydration mismatches
+      setMounted(true);
+    }
     
     // Cleanup resources on unmount
     return () => {
@@ -82,12 +87,14 @@ export function Providers({ children }: ProvidersProps) {
         >
           <ViewProvider>
             <DashboardProvider>
-              {/* Initialize client-side performance tracking */}
-              <ClientInitializer />
+              {/* Only render performance tracking on client */}
+              {typeof window !== 'undefined' && <ClientInitializer />}
               {children}
             </DashboardProvider>
           </ViewProvider>
         </ThemeProvider>
+        {/* Add React Query DevTools in non-production environments */}
+        {process.env.NODE_ENV !== 'production' && <ReactQueryDevtools />}
       </QueryClientProvider>
     </ErrorBoundary>
   );

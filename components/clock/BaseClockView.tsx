@@ -150,7 +150,6 @@ interface BaseClockViewProps {
   minHeight?: string;
 }
 
-// million-ignore
 function BaseClockView({
   selectedTimezones,
   userLocalTimezone,

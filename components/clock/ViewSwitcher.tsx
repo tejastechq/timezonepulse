@@ -6,7 +6,6 @@ import { useView, ViewType } from '@/app/contexts/ViewContext';
 /**
  * ViewSwitcher component for switching between different views
  */
-// million-ignore
 export default function ViewSwitcher() {
   const { currentView, setCurrentView } = useView();
 

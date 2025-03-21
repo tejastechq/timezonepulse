@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, memo } from 'react';
+import React, { useEffect, useState, useRef, useMemo, memo } from 'react';
 import { DateTime } from 'luxon';
 import { motion } from 'framer-motion';
 
@@ -15,7 +15,6 @@ interface AnalogClockProps {
  * Component for displaying an analog clock with enhanced aesthetics
  * Optimized with memoization to prevent unnecessary re-renders
  */
-// million-ignore
 function AnalogClock({ 
   time, 
   size = 200, 

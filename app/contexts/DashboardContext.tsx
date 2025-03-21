@@ -69,6 +69,8 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error("Error initializing dashboard preferences:", error);
+      // Reset to default state if there's an error
+      setDashboardVisibility(defaultVisibility);
     } finally {
       setInitialized(true);
     }
@@ -108,6 +110,16 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     toggleDashboard,
     isDashboardVisible
   }), [dashboardVisibility, toggleDashboard, isDashboardVisible]);
+
+  // If we're still on server or haven't initialized on client yet,
+  // we can render a simpler provider to avoid hydration mismatches
+  if (!isClient) {
+    return (
+      <DashboardContext.Provider value={contextValue}>
+        {children}
+      </DashboardContext.Provider>
+    );
+  }
 
   return (
     <DashboardContext.Provider value={contextValue}>

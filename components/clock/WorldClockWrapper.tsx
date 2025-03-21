@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useEffect } from 'react';
 import { useTimezoneStore } from '@/store/timezoneStore';
 import WorldClock from './WorldClock';
@@ -11,7 +12,6 @@ import { IntegrationsProvider } from '@/app/contexts/IntegrationsContext';
  * WorldClockWrapper component that wraps the WorldClock component with context providers
  * and handles hydration. The heading is now rendered by a Server Component in the parent.
  */
-// million-ignore
 export default function WorldClockWrapper() {
   const { hydrate } = useTimezoneStore();
 

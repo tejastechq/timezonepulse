@@ -35,7 +35,6 @@ interface ListViewProps {
  * - Allow adding/editing events directly from the interface
  * - Support recurring events and notifications
  */
-// million-ignore
 export default function ListView({
   selectedTimezones,
   userLocalTimezone,

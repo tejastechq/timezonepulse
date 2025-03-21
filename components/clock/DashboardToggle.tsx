@@ -1,8 +1,11 @@
+// This component should be directly imported without webpack optimizations
 'use client';
 
-import React from 'react';
-import { useDashboard } from '@/app/contexts/DashboardContext';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useView } from '@/app/contexts/ViewContext';
+import { useDashboard } from '@/app/contexts/DashboardContext';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 /**
  * DashboardToggle component for toggling the dashboard visibility

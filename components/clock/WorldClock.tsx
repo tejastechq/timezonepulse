@@ -1,19 +1,21 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { useTimezoneStore } from '@/store/timezoneStore';
+import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
+import { useTimezoneStore, ViewMode } from '@/store/timezoneStore';
 import { DateTime } from 'luxon';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useView } from '@/app/contexts/ViewContext';
 import { useDashboard } from '@/app/contexts/DashboardContext';
+import { useIntegrations } from '@/app/contexts/IntegrationsContext';
 import dynamic from 'next/dynamic';
 import { ListView, ClocksView, DigitalView } from '../views';
 import { getLocalTimezone } from '@/lib/utils/timezone';
-import { useWebVitalsReport, optimizeLayoutStability } from '@/lib/utils/performance';
+import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
 import type { Timezone } from '@/store/timezoneStore';
 // Import the static server component heading
 import WorldClockHeading from './WorldClockHeading';
+import DashboardToggle from './DashboardToggle';
 
 // Define interfaces for the view components based on their implementations
 interface ListViewProps {
@@ -39,9 +41,8 @@ interface DigitalViewProps {
 }
 
 /**
- * NOTE: Using original components directly
- * Million.js optimization is applied via next.config.js with skip filters
- * to exclude components with hook compatibility issues
+ * Using original view components directly
+ * Components are optimized using React's built-in memoization techniques
  */
 const OptimizedListView = ListView;
 const OptimizedClocksView = ClocksView;
@@ -49,7 +50,7 @@ const OptimizedDigitalView = DigitalView;
 
 // Dynamically import less critical components to reduce initial load
 const ViewSwitcher = dynamic(() => import('./ViewSwitcher'), { ssr: true });
-const DashboardToggle = dynamic(() => import('./DashboardToggle'), { ssr: true });
+// Import DashboardToggle directly to avoid webpack optimization issues
 const ContextualInfo = dynamic(() => import('./ContextualInfo'), { ssr: false });
 const PersonalNotes = dynamic(() => import('./PersonalNotes'), { ssr: false });
 const NotificationButton = dynamic(() => import('./NotificationButton'), { ssr: false });
@@ -74,13 +75,12 @@ interface WorldClockProps {
   skipHeading?: boolean;
 }
 
-// million-ignore
 export default function WorldClock({ skipHeading = false }: WorldClockProps) {
   // Hydration safe rendering
   const [isClient, setIsClient] = useState(false);
   
   // Use web vitals reporting hook
-  useWebVitalsReport();
+  useWebVitals();
 
   // Get state from the timezone store
   const {

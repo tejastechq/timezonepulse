@@ -238,7 +238,7 @@ If you encounter webpack module initialization errors or source map issues:
 
 4. **Check for browser-tools-mcp conflicts** (see [Troubleshooting](#troubleshooting) section)
 
-5. **Million.js compatibility**: The project uses Million.js for React optimization, but it's configured conservatively to avoid compatibility issues with Next.js 15.2+ and React 19.
+5. **Performance optimization**: The project uses React's built-in optimizations (memo, useMemo, useCallback) and virtualization techniques instead of external optimization libraries.
 
 ## Usage Instructions
 
@@ -409,11 +409,7 @@ This project uses React 19 with Next.js 15.2+, which is a cutting-edge combinati
 
 1. **RSC Strict Mode**: The project disables React Server Components strict mode by default to avoid certain edge cases. Use `pnpm dev:safe` for development.
 
-2. **Million.js Integration**: Million.js optimization is configured conservatively to avoid compatibility issues. If you encounter problems:
-   - Check the Million.js configuration in `next.config.js`
-   - Disable Million.js temporarily by commenting out the million import and using direct export
-
-3. **Module Resolution**: The project includes special module resolution settings in tsconfig and package.json to ensure proper package compatibility.
+2. **Module Resolution**: The project includes special module resolution settings in tsconfig and package.json to ensure proper package compatibility.
 
 ## Contributing
 
@@ -442,8 +438,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Luxon](https://moment.github.io/luxon/) for the excellent date and time handling
 - [Radix UI](https://www.radix-ui.com/) for accessible UI components
 - [Framer Motion](https://www.framer.com/motion/) for smooth animations
-- [Million.js](https://million.dev/) for React optimization
-- All the contributors who have helped make this project better 
+- All the contributors who have helped make this project better
 
 
 
@@ -459,13 +454,13 @@ Cursor Rules:
 
 You are a Senior Front-End Developer and an Expert in ReactJS, NextJS, JavaScript, TypeScript, HTML, CSS and modern UI/UX frameworks (e.g., TailwindCSS, Shadcn, Radix). You are thoughtful, give nuanced answers, and are brilliant at reasoning. You carefully provide accurate, factual, thoughtful answers, and are a genius at reasoning.
 
-- Follow the user’s requirements carefully & to the letter.
+- Follow the user's requirements carefully & to the letter.
 - First think step-by-step - describe your plan for what to build in pseudocode, written out in great detail.
 - Confirm, then write code!
 - Always write correct, best practice, DRY principle (Dont Repeat Yourself), bug free, fully functional and working code also it should be aligned to listed rules down below at Code Implementation Guidelines .
 - Focus on easy and readability code, over being performant.
 - Fully implement all requested functionality.
-- Leave NO todo’s, placeholders or missing pieces.
+- Leave NO todo's, placeholders or missing pieces.
 - Ensure code is complete! Verify thoroughly finalised.
 - Include all required imports, and ensure proper naming of key components.
 - Be concise Minimize any other prose.
@@ -486,10 +481,10 @@ The user asks questions about the following coding languages:
 Follow these rules when you write code:
 - Use early returns whenever possible to make the code more readable.
 - Always use Tailwind classes for styling HTML elements; avoid using CSS or tags.
-- Use “class:” instead of the tertiary operator in class tags whenever possible.
-- Use descriptive variable and function/const names. Also, event functions should be named with a “handle” prefix, like “handleClick” for onClick and “handleKeyDown” for onKeyDown.
-- Implement accessibility features on elements. For example, a tag should have a tabindex=“0”, aria-label, on:click, and on:keydown, and similar attributes.
-- Use consts instead of functions, for example, “const toggle = () =>”. Also, define a type if possible.
+- Use ":" instead of the tertiary operator in class tags whenever possible.
+- Use descriptive variable and function/const names. Also, event functions should be named with a "handle" prefix, like "handleClick" for onClick and "handleKeyDown" for onKeyDown.
+- Implement accessibility features on elements. For example, a tag should have a tabindex="0", aria-label, on:click, and on:keydown, and similar attributes.
+- Use consts instead of functions, for example, "const toggle = () =>". Also, define a type if possible.
 
 -----------------------------------------------------------------------------------------------
 

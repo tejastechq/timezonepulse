@@ -12,7 +12,7 @@
  * - FCP (First Contentful Paint): When first content is painted
  */
 
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 
 // Types for web vitals metrics
 export type MetricName = 'LCP' | 'FID' | 'CLS' | 'TTFB' | 'FCP' | 'INP';
@@ -26,91 +26,102 @@ export interface WebVitalMetric {
 }
 
 /**
- * Report web vitals to analytics
+ * Interface for core web vitals metrics reporting
  */
-export function reportWebVitalsToAnalytics(metric: WebVitalMetric): void {
-  // Log in development, send to analytics in production
-  if (process.env.NODE_ENV === 'development') {
-    console.log(`Web Vital: ${metric.name}`, metric);
-  } else {
-    // In production, send to your analytics platform
-    // Example of sending to an analytics endpoint
-    fetch('/api/analytics/vitals', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(metric),
-      // Use keepalive to ensure the request completes even during page navigation
-      keepalive: true,
-    }).catch(err => {
-      // Silent fail for analytics
-      console.error('Failed to report web vital:', err);
-    });
-    
-    // Report to console for debugging production issues
-    if (metric.name === 'LCP') {
-      console.log(`LCP: ${Math.round(metric.value)}`);
-    }
-  }
+interface WebVitalsMetric {
+  id: string;
+  name: string;
+  value: number;
+  delta: number;
+  entries: PerformanceEntry[];
 }
 
 /**
- * Hook to measure and report web vitals
+ * Send web vitals data to analytics
+ * 
+ * @param metric - Web vitals metric to report
  */
-export function useWebVitalsReport(): void {
-  useEffect(() => {
-    async function reportWebVitals() {
-      const { onCLS, onFID, onLCP, onTTFB, onFCP, onINP } = await import('web-vitals');
-      
-      onCLS(metric => reportWebVitalsToAnalytics({ 
-        name: 'CLS', 
-        value: metric.value, 
-        delta: metric.delta,
-        id: metric.id,
-        rating: metric.rating
-      }));
-      
-      onFID(metric => reportWebVitalsToAnalytics({ 
-        name: 'FID', 
-        value: metric.value, 
-        delta: metric.delta,
-        id: metric.id,
-        rating: metric.rating
-      }));
-      
-      onLCP(metric => reportWebVitalsToAnalytics({ 
-        name: 'LCP', 
-        value: metric.value, 
-        delta: metric.delta,
-        id: metric.id,
-        rating: metric.rating
-      }));
-      
-      onTTFB(metric => reportWebVitalsToAnalytics({ 
-        name: 'TTFB', 
-        value: metric.value, 
-        delta: metric.delta,
-        id: metric.id,
-        rating: metric.rating
-      }));
-      
-      onFCP(metric => reportWebVitalsToAnalytics({ 
-        name: 'FCP', 
-        value: metric.value, 
-        delta: metric.delta,
-        id: metric.id,
-        rating: metric.rating
-      }));
-      
-      // Add INP monitoring (Interaction to Next Paint)
-      onINP(metric => reportWebVitalsToAnalytics({ 
-        name: 'INP', 
-        value: metric.value, 
-        delta: metric.delta,
-        id: metric.id,
-        rating: metric.rating
-      }));
+const reportWebVitalsToAnalytics = (metric: { 
+  name: string;
+  id: string;
+  value: number;
+}) => {
+  // Only report in production to avoid noise during development
+  if (process.env.NODE_ENV !== 'production') return;
+  
+  // Check for analytics availability
+  if (window && typeof window.gtag === 'function') {
+    window.gtag('event', metric.name, {
+      event_category: 'web-vitals',
+      event_label: metric.id,
+      value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
+      non_interaction: true,
+    });
+  }
+
+  // If Sentry is available, report there too
+  try {
+    if (window && window.Sentry) {
+      window.Sentry.captureMessage(`WebVitals: ${metric.name} - ${Math.round(metric.value)}`);
     }
+  } catch (error) {
+    console.error('Failed to report to Sentry:', error);
+  }
+};
+
+/**
+ * Hook to collect and report web vitals metrics
+ */
+export function useWebVitals() {
+  useEffect(() => {
+    // Only run in browser environment
+    if (typeof window === 'undefined') return;
     
+    async function reportWebVitals() {
+      try {
+        const { onCLS, onFID, onLCP, onTTFB, onFCP, onINP } = await import('web-vitals');
+        
+        onCLS(metric => reportWebVitalsToAnalytics({ 
+          name: 'CLS', 
+          id: metric.id, 
+          value: metric.value 
+        }));
+        
+        onFID(metric => reportWebVitalsToAnalytics({ 
+          name: 'FID', 
+          id: metric.id, 
+          value: metric.value 
+        }));
+        
+        onLCP(metric => reportWebVitalsToAnalytics({ 
+          name: 'LCP', 
+          id: metric.id, 
+          value: metric.value 
+        }));
+        
+        onTTFB(metric => reportWebVitalsToAnalytics({ 
+          name: 'TTFB', 
+          id: metric.id, 
+          value: metric.value 
+        }));
+        
+        onFCP(metric => reportWebVitalsToAnalytics({ 
+          name: 'FCP', 
+          id: metric.id, 
+          value: metric.value 
+        }));
+        
+        onINP(metric => reportWebVitalsToAnalytics({ 
+          name: 'INP', 
+          id: metric.id, 
+          value: metric.value 
+        }));
+      } catch (error) {
+        console.error('Error loading web-vitals:', error);
+      }
+    }
+
+    // Call the async function
     reportWebVitals();
   }, []);
 }

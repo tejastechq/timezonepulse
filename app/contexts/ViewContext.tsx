@@ -48,6 +48,8 @@ export function ViewProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error) {
       console.error('Error reading from localStorage:', error);
+      // Reset to default if there's an error
+      setCurrentView('list');
     } finally {
       setInitialized(true);
     }
@@ -72,6 +74,16 @@ export function ViewProvider({ children }: { children: React.ReactNode }) {
     currentView,
     setCurrentView: handleViewChange,
   }), [currentView, handleViewChange]);
+
+  // Return a simpler provider if we're still on server-side
+  // to avoid hydration mismatches
+  if (!isClient) {
+    return (
+      <ViewContext.Provider value={{ currentView: 'list', setCurrentView: () => {} }}>
+        {children}
+      </ViewContext.Provider>
+    );
+  }
 
   return (
     <ViewContext.Provider value={contextValue}>

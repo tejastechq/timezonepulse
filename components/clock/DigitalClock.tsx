@@ -13,7 +13,6 @@ interface DigitalClockProps {
  * Component for displaying a digital clock
  * Optimized with memoization to prevent unnecessary re-renders
  */
-// million-ignore
 function DigitalClock({ time, timezone, highlightedTime }: DigitalClockProps) {
   // Format the time for display - memoized to prevent recalculation on every render
   const { timeDisplay, dateDisplay, isHighlighted } = useMemo(() => {

@@ -17,7 +17,6 @@ interface ClocksViewProps {
  * Uses BaseClockView for shared functionality
  * Optimized with memoization to prevent unnecessary re-renders
  */
-// million-ignore
 function ClocksView(props: ClocksViewProps) {
   // Get theme from next-themes
   const { resolvedTheme } = useTheme();

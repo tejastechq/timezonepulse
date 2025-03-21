@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 /**
  * NotificationButton component for displaying and managing notifications
  */
-// million-ignore
 export default function NotificationButton() {
   const { activeNotifications, dismissNotification } = useIntegrations();
   const [isOpen, setIsOpen] = useState(false);

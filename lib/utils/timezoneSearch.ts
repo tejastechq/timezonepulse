@@ -145,30 +145,65 @@ export function getTimezoneContext(timezone: Timezone, userTimezone: string): {
   isBusinessHours: boolean;
   currentTime: string;
 } {
-  const now = new Date();
-  const userTime = new Date(now.toLocaleString('en-US', { timeZone: userTimezone }));
-  const tzTime = new Date(now.toLocaleString('en-US', { timeZone: timezone.id }));
-  
-  // Calculate offset in hours
-  const offsetMs = tzTime.getTime() - userTime.getTime();
-  const offsetHours = Math.round(offsetMs / (1000 * 60 * 60));
-  const offsetStr = offsetHours === 0 ? 'Same time' : 
-    `${offsetHours > 0 ? '+' : ''}${offsetHours}h`;
+  try {
+    const now = new Date();
+    
+    // Handle missing or invalid timezone data with fallbacks
+    const safeUserTimezone = userTimezone && typeof userTimezone === 'string' ? userTimezone : 'UTC';
+    const safeTimezoneId = timezone && timezone.id && typeof timezone.id === 'string' ? timezone.id : 'UTC';
+    
+    // Use try-catch for each timezone conversion
+    let userTime: Date;
+    try {
+      userTime = new Date(now.toLocaleString('en-US', { timeZone: safeUserTimezone }));
+    } catch (error) {
+      console.error(`Error converting to user timezone ${safeUserTimezone}:`, error);
+      userTime = new Date();
+    }
+    
+    let tzTime: Date;
+    try {
+      tzTime = new Date(now.toLocaleString('en-US', { timeZone: safeTimezoneId }));
+    } catch (error) {
+      console.error(`Error converting to timezone ${safeTimezoneId}:`, error);
+      tzTime = new Date();
+    }
+    
+    // Calculate offset in hours
+    const offsetMs = tzTime.getTime() - userTime.getTime();
+    const offsetHours = Math.round(offsetMs / (1000 * 60 * 60));
+    const offsetStr = offsetHours === 0 ? 'Same time' : 
+      `${offsetHours > 0 ? '+' : ''}${offsetHours}h`;
 
-  // Check if current time is within business hours (9 AM to 5 PM)
-  const hour = tzTime.getHours();
-  const isBusinessHours = hour >= 9 && hour < 17;
+    // Check if current time is within business hours (9 AM to 5 PM)
+    const hour = tzTime.getHours();
+    const isBusinessHours = hour >= 9 && hour < 17;
 
-  // Format current time
-  const currentTime = tzTime.toLocaleTimeString('en-US', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-  });
+    // Format current time
+    let currentTime: string;
+    try {
+      currentTime = tzTime.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      });
+    } catch (error) {
+      console.error('Error formatting time:', error);
+      currentTime = 'Unavailable';
+    }
 
-  return {
-    offset: offsetStr,
-    isBusinessHours,
-    currentTime,
-  };
+    return {
+      offset: offsetStr,
+      isBusinessHours,
+      currentTime,
+    };
+  } catch (error) {
+    console.error('Error in getTimezoneContext:', error);
+    // Return safe fallback values
+    return {
+      offset: 'Unknown',
+      isBusinessHours: false,
+      currentTime: 'Unavailable',
+    };
+  }
 }
