@@ -5,8 +5,8 @@
 :root {
   --background: #f8f8f8;
   --foreground: #333333;
-  --glass-light: rgba(255, 255, 255, 0.7);
-  --glass-dark: rgba(30, 30, 30, 0.7);
+  --glass-light: rgba(255, 255, 255, 0.25);
+  --glass-dark: rgba(15, 15, 25, 0.35);
   --glass-border-light: rgba(255, 255, 255, 0.5);
   --glass-border-dark: rgba(50, 50, 50, 0.5);
   --glass-shadow-light: rgba(0, 0, 0, 0.05);
@@ -24,6 +24,62 @@ body {
   color: var(--foreground);
   background-color: var(--background);
   overflow-x: hidden;
+  position: relative;
+}
+
+/* Dynamic background with gradient and shapes for glassmorphism effect */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(41, 84, 163, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(138, 43, 226, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 40% 80%, rgba(0, 128, 128, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 75% 60%, rgba(255, 145, 0, 0.05) 0%, transparent 40%);
+  z-index: -2;
+  pointer-events: none;
+}
+
+/* Floating colored shapes for visual interest */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(25, 118, 210, 0.03) 0%, rgba(25, 118, 210, 0.03) 8%, transparent 8.5%),
+    radial-gradient(circle at 90% 5%, rgba(106, 27, 154, 0.03) 0%, rgba(106, 27, 154, 0.03) 4%, transparent 4.5%),
+    radial-gradient(circle at 80% 80%, rgba(0, 150, 136, 0.03) 0%, rgba(0, 150, 136, 0.03) 6%, transparent 6.5%),
+    radial-gradient(circle at 20% 60%, rgba(255, 87, 34, 0.03) 0%, rgba(255, 87, 34, 0.03) 5%, transparent 5.5%),
+    radial-gradient(circle at 50% 30%, rgba(41, 121, 255, 0.03) 0%, rgba(41, 121, 255, 0.03) 7%, transparent 7.5%),
+    radial-gradient(circle at 70% 50%, rgba(233, 30, 99, 0.03) 0%, rgba(233, 30, 99, 0.03) 4%, transparent 4.5%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Dark mode modifications for background */
+.dark body::before {
+  background: 
+    radial-gradient(circle at 20% 30%, rgba(56, 189, 248, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(167, 139, 250, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 75% 60%, rgba(251, 146, 60, 0.05) 0%, transparent 40%);
+}
+
+.dark body::after {
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.04) 0%, rgba(56, 189, 248, 0.04) 8%, transparent 8.5%),
+    radial-gradient(circle at 90% 5%, rgba(167, 139, 250, 0.04) 0%, rgba(167, 139, 250, 0.04) 4%, transparent 4.5%),
+    radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0.04) 6%, transparent 6.5%),
+    radial-gradient(circle at 20% 60%, rgba(251, 146, 60, 0.04) 0%, rgba(251, 146, 60, 0.04) 5%, transparent 5.5%),
+    radial-gradient(circle at 50% 30%, rgba(59, 130, 246, 0.04) 0%, rgba(59, 130, 246, 0.04) 7%, transparent 7.5%),
+    radial-gradient(circle at 70% 50%, rgba(236, 72, 153, 0.04) 0%, rgba(236, 72, 153, 0.04) 4%, transparent 4.5%);
 }
 
 /* Custom utility classes */
@@ -35,9 +91,24 @@ body {
 
 /* Enhanced Glassmorphism effects */
 .glass-card {
-  @apply backdrop-blur-lg border border-opacity-50 shadow-lg transition-all duration-300;
+  @apply relative border border-opacity-50 shadow-lg transition-all duration-300;
   position: relative;
   overflow: hidden;
+  /* Explicitly set backdrop-filter properties with fallback */
+  background-color: var(--glass-light); /* Fallback */
+}
+
+/* Apply backdrop-filter only for browsers that support it */
+@supports ((-webkit-backdrop-filter: blur(8px)) or (backdrop-filter: blur(8px))) {
+  .glass-card {
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    background-color: var(--glass-light); /* Override with more transparent bg */
+  }
+  
+  .glass-card.glass-card-dark {
+    background-color: var(--glass-dark);
+  }
 }
 
 .glass-card::before {
@@ -55,6 +126,7 @@ body {
   );
   transition: left 0.7s ease-in-out;
   pointer-events: none;
+  z-index: 0;
 }
 
 .glass-card:hover::before {
@@ -62,7 +134,7 @@ body {
 }
 
 .glass-card-light {
-  background-color: var(--glass-light);
+  background-color: rgba(255, 255, 255, 0.2);
   border-color: var(--glass-border-light);
   box-shadow: 
     0 4px 6px -1px var(--glass-shadow-light),
@@ -82,7 +154,7 @@ body {
 }
 
 .glass-card-dark {
-  background-color: var(--glass-dark);
+  background-color: rgba(15, 15, 25, 0.25);
   border-color: var(--glass-border-dark);
   box-shadow: 
     0 4px 6px -1px var(--glass-shadow-dark),
@@ -219,6 +291,19 @@ body {
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
+}
+
+/* Make card contents visible above the background */
+.glass-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Ensure proper isolation for backdrop-filter */
+@supports (backdrop-filter: blur(8px)) {
+  .glass-card {
+    isolation: isolate;
+  }
 }
 
 /* Handle reduced motion preferences with CSS */

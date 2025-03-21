@@ -47,7 +47,15 @@ function ClockCard({
   const isNightTime = useMemo(() => hour >= 20 || hour < 6, [hour]);
   
   // Glass card classes based on theme and time
-  const glassClasses = `glass-card ${isNightTime || resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'}`;
+  const glassClasses = `glass-card backdrop-blur-fix ${isNightTime || resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'}`;
+  
+  // In-line style for enhanced transparency control
+  const cardStyle = {
+    isolation: 'isolate',
+    backgroundColor: isNightTime || resolvedTheme === 'dark' 
+      ? 'rgba(15, 15, 25, 0.2)' 
+      : 'rgba(255, 255, 255, 0.15)'
+  };
   
   return (
     <motion.div
@@ -63,8 +71,9 @@ function ClockCard({
         ${isNightTime ? 'text-white' : 'text-gray-900 dark:text-white'}
         transition-all duration-200
       `}
+      style={cardStyle}
     >
-      <div className="flex justify-between items-start mb-2">
+      <div className="flex justify-between items-start mb-2 relative z-[2]">
         <div>
           <h3 className="text-lg font-semibold">{timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">{timezone.id}</p>
@@ -90,7 +99,7 @@ function ClockCard({
             
             <DropdownMenu.Portal>
               <DropdownMenu.Content
-                className="min-w-[200px] glass-card glass-card-light dark:glass-card-dark rounded-lg shadow-lg py-1.5 border border-gray-200 dark:border-gray-700"
+                className="min-w-[200px] glass-card backdrop-blur-fix glass-card-light dark:glass-card-dark rounded-lg shadow-lg py-1.5 border border-gray-200 dark:border-gray-700"
                 sideOffset={5}
                 align="end"
               >
@@ -121,15 +130,15 @@ function ClockCard({
         </div>
       </div>
       
-      <p className="text-sm mb-4">{dateDisplay}</p>
+      <p className="text-sm mb-4 relative z-[2]">{dateDisplay}</p>
       
       {/* Clock display */}
-      <div className="flex justify-center items-center mb-4">
+      <div className="flex justify-center items-center mb-4 relative z-[2]">
         {renderClock(zonedTime.toJSDate(), timezone.id)}
       </div>
       
       {/* Status indicators */}
-      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
+      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 relative z-[2]">
         <span>
           {isBusinessHours ? 'Business Hours' : isNightTime ? 'Night Time' : 'Off Hours'}
         </span>

@@ -5,6 +5,15 @@ module.exports = {
     './components/**/*.{js,ts,jsx,tsx}',
   ],
   darkMode: 'class',
+  safelist: [
+    'backdrop-blur-sm',
+    'backdrop-blur',
+    'backdrop-blur-md',
+    'backdrop-blur-lg',
+    'backdrop-blur-xl',
+    'backdrop-blur-2xl',
+    'backdrop-blur-3xl',
+  ],
   theme: {
     extend: {
       colors: {
@@ -36,7 +45,27 @@ module.exports = {
       textColor: {
         foreground: 'var(--foreground)',
       },
+      backdropFilter: {
+        'none': 'none',
+        'sm': 'blur(4px)',
+        'DEFAULT': 'blur(8px)',
+        'md': 'blur(12px)',
+        'lg': 'blur(16px)',
+        'xl': 'blur(24px)',
+        '2xl': 'blur(40px)',
+        '3xl': 'blur(64px)',
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    function ({ addUtilities }) {
+      const newUtilities = {
+        '.backdrop-blur-fix': {
+          'backdrop-filter': 'blur(8px)',
+          '-webkit-backdrop-filter': 'blur(8px)',
+        },
+      }
+      addUtilities(newUtilities)
+    }
+  ],
 } 

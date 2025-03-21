@@ -148,19 +148,25 @@ function BaseClockView({
             transition={{ duration: 0.2 }}
             whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
             onClick={handleOpenSelector}
-            className={`glass-card ${
+            className={`glass-card backdrop-blur-fix ${
               resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'
             } rounded-lg border-2 border-dashed border-gray-300 
                       dark:border-gray-700 p-4 h-full min-h-[${minHeight}] flex flex-col items-center justify-center
                       hover:border-primary-500 dark:hover:border-primary-500
                       transition-all duration-200 cursor-pointer`}
+            style={{
+              isolation: 'isolate',
+              backgroundColor: resolvedTheme === 'dark'
+                ? 'rgba(15, 15, 25, 0.2)'
+                : 'rgba(255, 255, 255, 0.15)'
+            }}
             aria-label="Add Timezone or Region - Track time for another region"
           >
-            <div className="rounded-full bg-primary-100/80 dark:bg-primary-900/30 backdrop-blur-sm p-3 mb-3 shadow-md">
+            <div className="rounded-full bg-primary-100/80 dark:bg-primary-900/30 backdrop-blur-sm p-3 mb-3 shadow-md relative z-[2]">
               <Plus className="h-6 w-6 text-primary-600 dark:text-primary-400" />
             </div>
-            <p className="text-gray-600 dark:text-gray-300 font-medium">Add Timezone or Region</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1">
+            <p className="text-gray-600 dark:text-gray-300 font-medium relative z-[2]">Add Timezone or Region</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1 relative z-[2]">
               Track time for another region
             </p>
           </motion.button>
