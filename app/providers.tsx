@@ -4,7 +4,6 @@ import React, { useState, useEffect, type ReactNode } from 'react';
 import { ThemeProvider } from 'next-themes';
 import { useTimezoneStore } from '@/store/timezoneStore';
 import { ViewProvider } from './contexts/ViewContext';
-import { DashboardProvider } from './contexts/DashboardContext';
 import { ClientInitializer } from '@/components/performance/ClientInitializer';
 import ErrorBoundary from '@/components/error/ErrorBoundary';
 import { initGlobalErrorHandlers } from '@/lib/utils/errorHandler';
@@ -63,11 +62,9 @@ export function Providers({ children }: ProvidersProps) {
         }
       >
         <ViewProvider>
-          <DashboardProvider>
-            {/* Only render performance tracking on client */}
-            {typeof window !== 'undefined' && <ClientInitializer />}
-            {children}
-          </DashboardProvider>
+          {/* Only render performance tracking on client */}
+          {typeof window !== 'undefined' && <ClientInitializer />}
+          {children}
         </ViewProvider>
       </ThemeProvider>
     </ErrorBoundary>

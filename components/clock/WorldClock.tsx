@@ -5,7 +5,6 @@ import { useTimezoneStore, ViewMode } from '@/store/timezoneStore';
 import { DateTime } from 'luxon';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useView } from '@/app/contexts/ViewContext';
-import { useDashboard } from '@/app/contexts/DashboardContext';
 import { useIntegrations } from '@/app/contexts/IntegrationsContext';
 import dynamic from 'next/dynamic';
 import { ListView, ClocksView, DigitalView } from '../views';
@@ -15,7 +14,6 @@ import { trackPerformance } from '@/app/sentry';
 import type { Timezone } from '@/store/timezoneStore';
 // Import the static server component heading
 import WorldClockHeading from './WorldClockHeading';
-import DashboardToggle from './DashboardToggle';
 
 // Define interfaces for the view components based on their implementations
 interface ListViewProps {
@@ -50,7 +48,6 @@ const OptimizedDigitalView = DigitalView;
 
 // Dynamically import less critical components to reduce initial load
 const ViewSwitcher = dynamic(() => import('./ViewSwitcher'), { ssr: true });
-// DashboardToggle is imported directly at the top of the file for better reliability
 const ContextualInfo = dynamic(() => import('./ContextualInfo'), { ssr: false });
 const PersonalNotes = dynamic(() => import('./PersonalNotes'), { ssr: false });
 const NotificationButton = dynamic(() => import('./NotificationButton'), { ssr: false });
@@ -94,10 +91,7 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
 
   // Get view state from the view context
   const { currentView, setCurrentView } = useView();
-
-  // Get dashboard state from the dashboard context
-  const { isDashboardVisible } = useDashboard();
-
+  
   // State for the current time - initialize with null to avoid hydration mismatch
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   
@@ -106,9 +100,6 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
   
   // State for tracking if the component has mounted
   const [mounted, setMounted] = useState(false);
-  
-  // State for tracking if the dashboard is animating
-  const [isDashboardAnimating, setIsDashboardAnimating] = useState(false);
   
   // State for tracking if the view is transitioning
   const [isViewTransitioning, setIsViewTransitioning] = useState(false);
@@ -217,18 +208,6 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
     return dt.set({ minute: roundedMinutes, second: 0, millisecond: 0 }).toJSDate();
   }, []);
 
-  // Handle dashboard animation
-  useEffect(() => {
-    if (isDashboardVisible(currentView)) {
-      setIsDashboardAnimating(true);
-    } else {
-      const timer = setTimeout(() => {
-        setIsDashboardAnimating(false);
-      }, 300); // Match this with your CSS transition duration
-      return () => clearTimeout(timer);
-    }
-  }, [isDashboardVisible, currentView]);
-
   // Handle view transition animation - respect user's reduced motion setting
   useEffect(() => {
     // Use our data attribute approach to check if reduced motion is preferred
@@ -250,30 +229,32 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
   // Handle hydration mismatch by rendering placeholder until client-side render
   if (!isClient || !currentTime) {
     return (
-      <div className="p-8 w-full">
+      <div 
+        ref={clockContainerRef}
+        className="w-full transition-all duration-300 ease-in-out mx-auto px-6"
+      >
+        {/* Clock heading */}
         {!skipHeading && <WorldClockHeading />}
-        <ViewPlaceholder />
+        
+        <div className="min-h-96 flex items-center justify-center">
+          <div className="w-24 h-24 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div
-      className="p-8 w-full"
+    <div 
       ref={clockContainerRef}
-      role="application"
-      aria-label="World Clock Application"
+      className="w-full transition-all duration-300 ease-in-out mx-auto px-6"
     >
+      {/* Clock heading */}
       {!skipHeading && <WorldClockHeading />}
-
-      {/* View Switcher and Notification Button */}
+      
       <div className="flex justify-between items-center mb-4 h-12">
         <ViewSwitcher />
         <NotificationButton />
       </div>
-
-      {/* Dashboard Toggle Button */}
-      <DashboardToggle />
 
       {/* Dynamic View Rendering - Using Suspense for better loading experience */}
       <div className="flex justify-center w-full">
@@ -327,88 +308,24 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
               <OptimizedDigitalView
                 selectedTimezones={timezones}
                 userLocalTimezone={localTimezone}
-                setSelectedTimezones={(updatedTimezones) => {
-                  // This is a workaround since we don't have a direct setTimezones function
-                  // We'll use removeTimezone to achieve the same effect
-                  const timezonesToRemove = timezones.filter(
-                    tz => !updatedTimezones.some(updatedTz => updatedTz.id === tz.id)
-                  );
+                setSelectedTimezones={(newTimezones) => {
+                  // Filter out the local timezone
+                  const nonLocalTimezones = newTimezones.filter(tz => tz.id !== localTimezone);
                   
-                  timezonesToRemove.forEach(tz => removeTimezone(tz.id));
+                  // Get only new timezones that aren't already in the store
+                  const existingIds = new Set(timezones.map(tz => tz.id));
+                  const newTimezoneItems = nonLocalTimezones.filter(tz => !existingIds.has(tz.id));
+                  
+                  // Add each new timezone
+                  newTimezoneItems.forEach(tz => {
+                    addTimezone(tz);
+                  });
                 }}
               />
             </div>
           )}
         </Suspense>
       </div>
-
-      {/* Dashboard with Animation - Using AnimatePresence for smooth transitions */}
-      <AnimatePresence>
-        {(isDashboardVisible(currentView) || isDashboardAnimating) && (
-          <motion.div
-            className={`
-              flex justify-center w-full mt-8 pb-12
-              ${isDashboardVisible(currentView) ? 'dashboard-enter-active' : 'dashboard-exit-active'}
-            `}
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ 
-              duration: document.documentElement.dataset.prefersReducedMotion === 'true' || prefersReducedMotion ? 0 : 0.3 
-            }}
-            aria-hidden={!isDashboardVisible(currentView)}
-          >
-            <div
-              className={`
-                grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full max-w-7xl dashboard-container
-                ${isDashboardVisible(currentView) ? 'visible' : ''}
-              `}
-              role="region"
-              aria-label="Information for Timezones"
-            >
-              {/* Info for Local Time */}
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col">
-                <h3 className="font-bold text-center mb-2">Your Time</h3>
-                <div className="mt-2">
-                  <ContextualInfo timezone={localTimezone} />
-                  <PersonalNotes timezone={localTimezone} />
-                </div>
-              </div>
-
-              {/* Info for Selected Timezones */}
-              {timezones
-                .filter(tz => tz.id !== localTimezone)
-                // Ensure each timezone ID is unique by filtering duplicates
-                .filter((tz, index, self) => index === self.findIndex(t => t.id === tz.id))
-                .map((tz) => (
-                  <div
-                    key={tz.id}
-                    className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg flex flex-col"
-                  >
-                    <h3 className="font-bold text-center mb-2">{tz.name.split('/').pop()?.replace('_', ' ') || tz.name}</h3>
-                    <div className="mt-2">
-                      <ContextualInfo timezone={tz.id} />
-                      <PersonalNotes timezone={tz.id} />
-                    </div>
-                  </div>
-                ))
-              }
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Keyboard Navigation Help - Only show in list view */}
-      {currentView === 'list' && (
-        <div className="fixed bottom-4 left-4 text-sm text-gray-400 bg-gray-800 p-2 rounded-lg shadow-lg opacity-0 hover:opacity-100 transition-opacity duration-200">
-          <p>Keyboard Navigation:</p>
-          <ul className="list-disc list-inside">
-            <li>↑↓: Navigate 30 minutes</li>
-            <li>Page Up/Down: Navigate hours</li>
-            <li>Home: Current time</li>
-          </ul>
-        </div>
-      )}
     </div>
   );
 } 

@@ -123,7 +123,7 @@ function BaseClockView({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full"
+      className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 auto-rows-auto">
         <AnimatePresence>

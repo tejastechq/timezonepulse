@@ -5,7 +5,6 @@ import { useEffect } from 'react';
 import { useTimezoneStore } from '@/store/timezoneStore';
 import WorldClock from './WorldClock';
 import { ViewProvider } from '@/app/contexts/ViewContext';
-import { DashboardProvider } from '@/app/contexts/DashboardContext';
 import { IntegrationsProvider } from '@/app/contexts/IntegrationsContext';
 
 /**
@@ -23,11 +22,9 @@ export default function WorldClockWrapper() {
   // Skip rendering the heading here since it's rendered by the Server Component
   return (
     <ViewProvider>
-      <DashboardProvider>
-        <IntegrationsProvider>
-          <WorldClock skipHeading={true} />
-        </IntegrationsProvider>
-      </DashboardProvider>
+      <IntegrationsProvider>
+        <WorldClock skipHeading={true} />
+      </IntegrationsProvider>
     </ViewProvider>
   );
 } 
