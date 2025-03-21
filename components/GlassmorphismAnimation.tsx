@@ -2,6 +2,12 @@
 
 import { useEffect, useRef } from 'react';
 
+// Add interface at the top of the file
+interface GlassCardState {
+  isAnimating: boolean;
+  cooldownTimer: NodeJS.Timeout | null;
+}
+
 /**
  * GlassmorphismAnimation Component
  * 
@@ -10,11 +16,10 @@ import { useEffect, useRef } from 'react';
  * only trigger once per hover with proper cleanup.
  */
 export function GlassmorphismAnimation() {
-  // Use a ref to store the animation state map to persist across renders
-  const animationStateMapRef = useRef(new WeakMap<Element, { 
-    isAnimating: boolean, 
-    cooldownTimer: NodeJS.Timeout | null 
-  }>());
+  // Store animation state for all cards
+  const animationStateMapRef = useRef(new Map<Element, GlassCardState>());
+  // Store event listener references
+  const eventListenersRef = useRef(new Map<Element, (event: Event) => void>());
   
   useEffect(() => {
     const COOLDOWN_PERIOD = 800; // ms to wait before allowing another animation
@@ -83,25 +88,37 @@ export function GlassmorphismAnimation() {
       // Initialize state
       getOrCreateState(card);
       
-      // Add event listeners
-      card.addEventListener('mouseenter', handleMouseEnter);
+      // Create a wrapper function and store its reference
+      const eventHandler = (event: Event) => {
+        handleMouseEnter(event as MouseEvent);
+      };
+      
+      // Store the function reference so we can remove it later
+      eventListenersRef.current.set(card, eventHandler);
+      
+      // Add event listener
+      card.addEventListener('mouseenter', eventHandler);
     }
     
     /**
      * Clean up event listeners for a glass card
      */
     function cleanupCard(card: Element) {
-      // Remove event listeners
-      card.removeEventListener('mouseenter', handleMouseEnter);
+      // Get the stored function reference
+      const eventHandler = eventListenersRef.current.get(card);
+      
+      if (eventHandler) {
+        // Remove event listener using the same function reference
+        card.removeEventListener('mouseenter', eventHandler);
+        // Clean up the stored reference
+        eventListenersRef.current.delete(card);
+      }
       
       // Clear any pending timers
       const state = animationStateMapRef.current.get(card);
       if (state?.cooldownTimer) {
         clearTimeout(state.cooldownTimer);
       }
-      
-      // Remove from state map
-      animationStateMapRef.current.delete(card);
     }
     
     // Initial setup for existing cards

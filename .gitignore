@@ -5,8 +5,6 @@
 
 # testing
 /coverage
-/browser-tools-mcp
-/browsermcpscreenshots
 
 # next.js
 /.next/
@@ -34,9 +32,4 @@ yarn-error.log*
 
 # typescript
 *.tsbuildinfo
-next-env.d.ts
-
-# Browser Tools MCP (if not part of the main project)
-# Uncomment if this directory should not be committed to git
-# browser-tools-mcp/
-# browsermcpscreenshots/ 
+next-env.d.ts 

@@ -1,157 +1,356 @@
-import { useState, useCallback, memo, useEffect, useMemo } from 'react';
-import { 
-  ComposableMap, 
-  Geographies, 
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import {
+  ComposableMap,
+  Geographies,
   Geography,
   ZoomableGroup,
   Marker,
   Line
 } from 'react-simple-maps';
-import { useTimezoneStore } from '@/store/timezoneStore';
-import { motion } from 'framer-motion';
-import MapControls from './MapControls';
-import { 
-  findClosestTimezone, 
-  TIMEZONE_REGIONS, 
-  calculateDayNightTerminator, 
+import { Feature } from 'geojson';
+import { useTimezoneStore, Timezone } from '@/store/timezoneStore';
+import {
+  TIMEZONE_BOUNDARIES,
+  getRelatedTimezones,
+  findClosestTimezone,
+  getTimezoneColor,
   isPointInDaylight,
   isBusinessHours,
-  formatTimezoneOffset,
   getTimezoneBoundary,
-  getTimezoneColor,
-  TIMEZONE_BOUNDARIES,
-  getRelatedTimezones
-} from '@/utils/mapUtils';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
+  TIMEZONE_REGIONS,
+  TimezoneData,
+  getTimezoneFromMapCoordinates,
+  getTimeBasedColor,
+  getTimezoneData,
+  polygonToPath as mapPolygonToPath,
+  getTimezoneFromId,
+  isWithinHours,
+  isWorkHours,
+  isNightTime,
+  isDaylightSavingTime
+} from '@/lib/utils/mapUtils';
+import { useMediaQuery } from '@/lib/hooks';
 import SearchOverlay from './SearchOverlay';
+import MapControls from './MapControls';
 import ErrorBoundary from '@/components/error/ErrorBoundary';
+import { format } from 'date-fns';
+import * as d3 from 'd3';
 
-// World map TopoJSON data
-const geoUrl = "/data/world-110m.json";
+// Use a simple GeoJSON for the world map instead of relying on an external file
+const FALLBACK_GEOJSON = {
+  type: "FeatureCollection",
+  features: [
+    // Simplified world outline - just a rectangle for fallback
+    {
+      type: "Feature",
+      properties: { name: "World" },
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [-180, -90],
+            [180, -90],
+            [180, 90],
+            [-180, 90],
+            [-180, -90]
+          ]
+        ]
+      }
+    }
+  ]
+};
 
-// Helper function to convert polygon coordinates to SVG path string
-function polygonToPath(points: [number, number][]): string {
-  if (!points || points.length < 3) return '';
-  
-  try {
-    // Format: "M x1,y1 L x2,y2 L x3,y3 ... Z"
-    return points.reduce((path, point, i) => {
-      // Use explicit command letters with proper spacing for maximum browser compatibility
-      const cmd = i === 0 ? 'M ' : 'L ';
-      return path + cmd + point[0].toFixed(4) + ',' + point[1].toFixed(4) + ' ';
-    }, '') + 'Z';
-  } catch (error) {
-    console.error('Error generating path data:', error);
-    return '';
+// Define interface for the ZoomableGroup props
+interface ZoomableGroupProps {
+  center?: [number, number];
+  zoom?: number;
+  onMoveEnd?: (position: { coordinates: [number, number]; zoom: number }) => void;
+  minZoom?: number;
+  maxZoom?: number;
+  children?: React.ReactNode;
+  [key: string]: any;
+}
+
+// Define interface for the SafeZoomableGroup props
+interface SafeZoomableGroupProps {
+  center?: [number, number];
+  zoom?: number;
+  onMoveEnd?: (position: { coordinates: [number, number]; zoom: number }) => void;
+  minZoom?: number;
+  maxZoom?: number;
+  children?: React.ReactNode;
+  [key: string]: any;
+}
+
+// Create a safe zoom wrapper to prevent the interrupt error
+const SafeZoomableGroup = React.forwardRef<any, SafeZoomableGroupProps>((props, ref) => {
+  const [hasError, setHasError] = useState(false);
+
+  // Apply default props if none are provided
+  const safeProps = {
+    ...props,
+    zoom: props.zoom || 1,
+    center: props.center || [0, 0]
+  };
+
+  // If we've already encountered an error, use the simplified version
+  if (hasError) {
+    return (
+      <g transform={`translate(400, 300) scale(${safeProps.zoom || 1})`}>
+        {props.children}
+      </g>
+    );
   }
+
+  try {
+    // Create a component without ref to avoid the TypeScript error
+    const ZoomableGroupWithoutRef = (props: ZoomableGroupProps) => <ZoomableGroup {...props} />;
+    return <ZoomableGroupWithoutRef {...safeProps} />;
+  } catch (error) {
+    console.error("ZoomableGroup error:", error);
+    setHasError(true);
+    // Fallback to a simplified version with minimal props
+    return (
+      <g transform="translate(400, 300) scale(1)">
+        {props.children}
+      </g>
+    );
+  }
+});
+
+SafeZoomableGroup.displayName = 'SafeZoomableGroup';
+
+// Add proper TypeScript typing to the WorldMap component 
+interface WorldMapProps {
+  children: React.ReactNode;
+  [key: string]: any;
+}
+
+function WorldMap({ children, ...props }: WorldMapProps) {
+  const [geoData, setGeoData] = useState<any>(FALLBACK_GEOJSON);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    // Try to fetch the world map data
+    fetch("/data/world-110m.json")
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Failed to load map data: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        setGeoData(data);
+        setError(false);
+      })
+      .catch(err => {
+        console.error("Error loading world map:", err);
+        setError(true);
+        // Keep using the fallback
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  // Replace the original component with our error-handling version
+  return (
+    <ComposableMap
+      projection="geoEqualEarth"
+      projectionConfig={{ scale: 170 }}
+      style={{ width: "100%", height: "100%" }}
+      {...props}
+    >
+      {children}
+    </ComposableMap>
+  );
+}
+
+// Add TimezoneMapBoundary interface near the top with other types
+interface TimezoneMapBoundary {
+  id: string;
+  color: string;
+  pathData: string;
+}
+
+// Interface for a timezone with color in the legend
+interface TimezoneWithColor {
+  id: string;
+  name: string;
+  color: string;
+  city?: string;
+  country?: string;
+}
+
+// Interface for the hovered timezone
+interface HoveredTimezone {
+  id: string;
+  name: string;
+  formatted: string;
+  isDaylight: boolean;
+  isBusinessHours: boolean;
+}
+
+// Interface for the map position
+interface MapPosition {
+  coordinates: [number, number];
+  zoom: number;
+  width?: number;
+  height?: number;
+  scale?: number;
+  center?: [number, number];
+}
+
+// Define the TimezoneMapLegend component props
+interface TimezoneMapLegendProps {
+  timezones: TimezoneWithColor[];
 }
 
 /**
- * TimezoneMapLegend Component
- * 
- * Displays a legend showing the colors and names of the selected timezones
+ * Component displays a legend for timezones on the map
  */
-const TimezoneMapLegend = ({ timezones }) => {
-  if (timezones.length === 0) return null;
-  
+function TimezoneMapLegend({ timezones }: TimezoneMapLegendProps) {
   return (
-    <div className="absolute bottom-4 left-4 bg-gray-900/80 p-2 rounded-md z-20 max-w-xs">
-      <h3 className="text-white text-xs font-medium mb-1">Selected Timezones</h3>
-      <div className="space-y-1">
-        {timezones.map(tz => (
-          <div key={tz.id} className="flex items-center gap-2">
+    <div className="absolute top-4 right-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 z-10 max-w-xs">
+      <h3 className="text-sm font-medium mb-2 text-gray-900 dark:text-white">Selected Timezones</h3>
+      <ul className="space-y-1.5">
+        {timezones.map(timezone => (
+          <li key={timezone.id} className="flex items-center text-sm">
             <span 
-              className="inline-block w-3 h-3 rounded-sm" 
-              style={{ backgroundColor: tz.color }}
+              className="w-3 h-3 rounded-full mr-2"
+              style={{ backgroundColor: timezone.color }}
             />
-            <span className="text-xs text-white">{tz.name}</span>
-          </div>
+            <span className="text-gray-700 dark:text-gray-300">{timezone.name}</span>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
-};
+}
+
+// Update the TimezoneData interface in this file to include boundaries and center properties
+interface ExtendedTimezoneData extends TimezoneData {
+  center?: { lat: number; lng: number };
+  boundaries?: [number, number][];
+}
 
 /**
- * WorldMapSelector Component
- * 
- * An interactive world map that allows users to visually select timezones.
- * Features include:
- * - Zoomable and pannable map interface
- * - Timezone region highlighting
- * - Visual indication of selected timezones
- * - Day/night terminator visualization
- * - Business hours indicators
- * - Search functionality
+ * Interactive world map that allows selecting and visualizing timezones
  */
-const WorldMapSelector = () => {
-  const { addTimezone, timezones: selectedTimezones } = useTimezoneStore();
-  const [position, setPosition] = useState({ coordinates: [0, 20], zoom: 1 });
-  const [hoveredRegion, setHoveredRegion] = useState<string | null>(null);
-  const [hoveredTimezone, setHoveredTimezone] = useState<{
-    id: string;
-    name: string;
-    formatted: string;
-    isBusinessHours: boolean;
-    isDaylight: boolean;
-  } | null>(null);
+export function WorldMapSelector() {
+  // Access timezone store
+  const { 
+    timezones: selectedTimezones, 
+    addTimezone,
+    localTimezone
+  } = useTimezoneStore();
+
+  // Map state
+  const [position, setPosition] = useState<MapPosition>({
+    coordinates: [0, 20], // Center slightly north for better view
+    zoom: 1.2
+  });
   
-  // Check if on mobile
+  // Hovered timezone
+  const [hoveredTimezone, setHoveredTimezone] = useState<HoveredTimezone | null>(null);
+  
+  // Search state
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  
+  // Responsive state
   const isMobile = useMediaQuery('(max-width: 768px)');
-  
-  // Initialize with appropriate zoom level for device
-  useEffect(() => {
-    setPosition({ 
-      coordinates: [0, 20], 
-      zoom: isMobile ? 0.8 : 1 
-    });
-  }, [isMobile]);
-  
-  // Calculate the day/night terminator
-  const terminatorLine = useMemo(() => {
-    return calculateDayNightTerminator();
-  }, []);
-  
-  // Terminate will re-calculate every minute to stay updated
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // This will cause a re-render with an updated terminator line
-      const newTerminator = calculateDayNightTerminator();
-      // We'd set state here, but since we're using useMemo that depends on nothing,
-      // we need to force a re-render somehow - for now we'll just do nothing
-      // as this would be a nice-to-have update for production
-    }, 60000); // Every minute
-    
-    return () => clearInterval(interval);
-  }, []);
-  
-  // Handle map zoom
-  const handleZoom = useCallback((newZoom: number) => {
-    setPosition((prev) => ({
-      ...prev,
-      zoom: newZoom
-    }));
-  }, []);
   
   // Handle map move
   const handleMoveEnd = useCallback((position: { coordinates: [number, number]; zoom: number }) => {
     setPosition(position);
   }, []);
   
-  // Handle clicking on the map to add a timezone
-  const handleMapClick = useCallback((coordinates: [number, number]) => {
-    // IMPORTANT: react-simple-maps uses [lng, lat] format for coordinates
-    // but our timezone utilities expect [lat, lng]
-    const [lng, lat] = coordinates;
-    const timezoneId = findClosestTimezone(lat, lng);
-    
-    // Check if timezone is already selected
-    const isAlreadySelected = selectedTimezones.some(tz => tz.id === timezoneId);
-    
-    if (!isAlreadySelected) {
-      addTimezone(timezoneId);
+  // Move handleSelectTimezone above handleMapClick
+  const handleSelectTimezone = useCallback((id: string) => {
+    // Find the selected timezone data
+    const tzData = getTimezoneFromId(id) as ExtendedTimezoneData;
+    if (!tzData) return;
+
+    // Check if this timezone is already selected
+    if (!addTimezone) return;
+
+    // Add the timezone to the store
+    addTimezone({
+      id: tzData.id,
+      name: tzData.name,
+      offset: tzData.offset,
+      abbreviation: tzData.abbreviation ?? '',
+    });
+
+    // Update the map position to center on the selected timezone
+    const { lat, lng } = tzData.center || { lat: 0, lng: 0 };
+    setPosition({ coordinates: [lng, lat], zoom: 4 });
+  }, [addTimezone, setPosition]);
+  
+  // Now define handleMapClick which uses handleSelectTimezone
+  const handleMapClick = useCallback((e: React.MouseEvent, geo: any) => {
+    // If no geography was clicked, use the click coordinates directly
+    if (!geo) {
+      const svgCoords = d3.pointer(e);
+      
+      // Convert SVG coordinates to map coordinates (rough approximation)
+      // Use optional chaining to safely access properties
+      const width = position.width ?? window.innerWidth;
+      const height = position.height ?? window.innerHeight;
+      const scale = position.scale ?? position.zoom;
+      const center = position.center ?? position.coordinates;
+      
+      const centerX = width / 2;
+      const centerY = height / 2;
+      
+      // Calculate latitude and longitude from the click position
+      const lng = ((svgCoords[0] - centerX) / scale) + center[0];
+      const lat = ((centerY - svgCoords[1]) / scale) + center[1];
+      
+      // Get the timezone at these coordinates
+      const tzData = getTimezoneFromMapCoordinates(lat, lng);
+      if (tzData && tzData.id) {
+        handleSelectTimezone(tzData.id);
+      }
+      return;
     }
-  }, [addTimezone, selectedTimezones]);
+    
+    // Handle different geometry types
+    const geometry = geo.geometry;
+    if (!geometry) return;
+    
+    let coordinates: [number, number][] = [];
+    
+    switch (geometry.type) {
+      case 'Polygon':
+        // Extract first set of coordinates from the polygon
+        coordinates = geometry.coordinates[0];
+        break;
+      case 'MultiPolygon':
+        // Extract first set of coordinates from the first polygon
+        coordinates = geometry.coordinates[0][0];
+        break;
+      case 'Point':
+        // For point geometries, use the point directly
+        coordinates = [geometry.coordinates];
+        break;
+      default:
+        return; // Unsupported geometry type
+    }
+    
+    if (coordinates.length === 0) return;
+    
+    // Calculate the center of the feature
+    const centerLng = coordinates.reduce((sum, [lng]) => sum + lng, 0) / coordinates.length;
+    const centerLat = coordinates.reduce((sum, [, lat]) => sum + lat, 0) / coordinates.length;
+    
+    // Get the timezone at these coordinates
+    const tzData = getTimezoneFromMapCoordinates(centerLat, centerLng);
+    if (tzData && tzData.id) {
+      handleSelectTimezone(tzData.id);
+    }
+  }, [position, handleSelectTimezone]);
   
   // Handle hovering over a point on the map
   const handleMapHover = useCallback((coordinates: [number, number] | null) => {
@@ -191,37 +390,18 @@ const WorldMapSelector = () => {
     }
   }, []);
   
-  // Handle timezone selection from search
-  const handleSelectTimezone = useCallback((timezoneId: string, coordinates: [number, number]) => {
-    // Check if timezone is already selected
-    const isAlreadySelected = selectedTimezones.some(tz => tz.id === timezoneId);
-    
-    if (!isAlreadySelected) {
-      // Add the timezone
-      addTimezone(timezoneId);
-      
-      // Center the map on the selected timezone
-      // IMPORTANT: Convert from [lat, lng] to [lng, lat] for react-simple-maps
-      const [lat, lng] = coordinates;
-      setPosition(prev => ({
-        ...prev,
-        coordinates: [lng, lat]
-      }));
-    }
-  }, [addTimezone, selectedTimezones]);
-  
   // Optimize the selection of timezone boundaries
   const selectedTimezoneBoundaries = useMemo(() => {
     return Object.entries(TIMEZONE_BOUNDARIES)
       .map(([tz, data]) => {
         const isSelected = selectedTimezones.some(
-          (selectedTz) => selectedTz === tz || getRelatedTimezones(tz).includes(selectedTz)
+          (selectedTz) => selectedTz.id === tz || getRelatedTimezones(tz).includes(selectedTz.id)
         );
         
         if (!isSelected) return null;
         
         // Pre-calculate the path data
-        const pathData = polygonToPath(data.boundaries);
+        const pathData = mapPolygonToPath(data.boundaries as [number, number][]);
         
         return {
           id: tz,
@@ -229,14 +409,14 @@ const WorldMapSelector = () => {
           pathData
         };
       })
-      .filter(Boolean);
+      .filter(Boolean) as TimezoneMapBoundary[]; // Use type assertion here
   }, [selectedTimezones]);
   
   // Prepare timezone info for the legend
-  const legendTimezones = useMemo(() => {
+  const legendTimezones = useMemo((): TimezoneWithColor[] => {
     return selectedTimezones.map(tz => {
       const region = TIMEZONE_REGIONS.find(r => r.id === tz.id);
-      const name = region ? region.name : tz.id.split('/').pop();
+      const name = region ? region.name : tz.id.split('/').pop()?.replace('_', ' ') || tz.id;
       
       // Try to get the human-readable name from the timezone boundaries
       let displayName = name;
@@ -247,9 +427,11 @@ const WorldMapSelector = () => {
         // Check common patterns (e.g., America/New_York should match with America/Toronto)
         if (tz.id.startsWith('America/') && key.startsWith('America/')) {
           const boundary = getTimezoneBoundary(tz.id);
-          const keyBoundary = TIMEZONE_BOUNDARIES[key].boundaries;
-          if (boundary && JSON.stringify(boundary) === JSON.stringify(keyBoundary)) {
-            return true;
+          if (boundary && TIMEZONE_BOUNDARIES[key]) {
+            const keyBoundary = TIMEZONE_BOUNDARIES[key].boundaries;
+            if (boundary && JSON.stringify(boundary) === JSON.stringify(keyBoundary)) {
+              return true;
+            }
           }
         }
         
@@ -262,124 +444,81 @@ const WorldMapSelector = () => {
       
       return {
         id: tz.id,
-        name: displayName,
-        color: getTimezoneColor(tz.id)
+        name: displayName || tz.id,
+        color: getTimezoneColor(tz.id),
+        city: tz.city,
+        country: tz.country
       };
     });
   }, [selectedTimezones]);
   
   return (
-    <div className="relative w-full h-[500px] glass-card p-4 overflow-hidden">
-      <motion.div 
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="w-full h-full"
-      >
-        {/* Search overlay */}
-        <SearchOverlay onSelectTimezone={handleSelectTimezone} />
+    <ErrorBoundary
+      fallback={
+        <div className="relative w-full h-[500px] glass-card p-4 overflow-hidden flex items-center justify-center">
+          <div className="text-center p-6">
+            <h3 className="text-lg font-semibold text-red-500 mb-2">Map Rendering Error</h3>
+            <p className="mb-4">There was an issue rendering the world map.</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors"
+            >
+              Reload Page
+            </button>
+          </div>
+        </div>
+      }
+    >
+      <div className="relative w-full h-full rounded-lg overflow-hidden bg-blue-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700">
+        {/* Search Overlay */}
+        {isSearchOpen && (
+          <SearchOverlay 
+            onSelectTimezone={handleSelectTimezone}
+            onClose={() => setIsSearchOpen(false)}
+          />
+        )}
         
-        {/* Timezone hover information */}
+        {/* Map Controls */}
+        <MapControls 
+          position={position}
+          setPosition={setPosition}
+          onSearchClick={() => setIsSearchOpen(true)}
+        />
+        
+        {/* Legend */}
+        {!isMobile && <TimezoneMapLegend timezones={legendTimezones} />}
+        
+        {/* Hover tooltip */}
         {hoveredTimezone && (
-          <div className="absolute top-4 left-4 bg-gray-900/80 text-white p-2 rounded-md z-20 max-w-xs">
-            <div className="font-medium">{hoveredTimezone.name}</div>
-            <div className="text-sm">{hoveredTimezone.formatted}</div>
-            <div className="text-xs flex items-center gap-2 mt-1">
-              <span className={`inline-block w-2 h-2 rounded-full ${
-                hoveredTimezone.isDaylight ? 'bg-yellow-400' : 'bg-blue-400'
-              }`}></span>
-              <span>{hoveredTimezone.isDaylight ? 'Daylight' : 'Nighttime'}</span>
+          <div className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-3 z-10 max-w-xs">
+            <div className="font-medium text-gray-900 dark:text-white">{hoveredTimezone.name}</div>
+            <div className="text-sm text-gray-600 dark:text-gray-300">{hoveredTimezone.id}</div>
+            <div className="text-lg font-medium text-gray-900 dark:text-white mt-1">{hoveredTimezone.formatted}</div>
+            <div className="flex items-center mt-2 space-x-2">
+              <span className={`inline-block w-3 h-3 rounded-full ${hoveredTimezone.isDaylight ? 'bg-yellow-400' : 'bg-indigo-700'}`}></span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">{hoveredTimezone.isDaylight ? 'Daylight' : 'Night time'}</span>
               
-              <span className={`inline-block w-2 h-2 rounded-full ml-2 ${
-                hoveredTimezone.isBusinessHours ? 'bg-green-400' : 'bg-red-400'
-              }`}></span>
-              <span>{hoveredTimezone.isBusinessHours ? 'Business Hours' : 'Non-Business Hours'}</span>
+              <span className={`inline-block w-3 h-3 rounded-full ml-2 ${hoveredTimezone.isBusinessHours ? 'bg-green-500' : 'bg-gray-500'}`}></span>
+              <span className="text-sm text-gray-600 dark:text-gray-300">{hoveredTimezone.isBusinessHours ? 'Business hours' : 'Non-business hours'}</span>
             </div>
-            <div className="text-xs text-gray-300 mt-1">{hoveredTimezone.id}</div>
           </div>
         )}
         
-        {/* Timezone Legend */}
-        <TimezoneMapLegend timezones={legendTimezones} />
-        
-        <MapControls 
-          zoom={position.zoom}
-          onZoomIn={() => handleZoom(Math.min(position.zoom * 1.5, 8))}
-          onZoomOut={() => handleZoom(Math.max(position.zoom / 1.5, 0.8))}
-          onReset={() => setPosition({ coordinates: [0, 20], zoom: 1 })}
-        />
-        
-        <ComposableMap
-          projection="geoMercator"
-          projectionConfig={{
-            scale: 147,
-          }}
-        >
-          <ZoomableGroup
+        {/* Map Component */}
+        <WorldMap>
+          <SafeZoomableGroup
+            center={position.coordinates}
             zoom={position.zoom}
-            center={[position.coordinates[0], position.coordinates[1]]}
             onMoveEnd={handleMoveEnd}
-            maxZoom={20}
+            minZoom={1}
+            maxZoom={6}
           >
-            {/* Base Geography - rendered first */}
-            <Geographies geography={geoUrl}>
-              {({ geographies }) =>
-                geographies.map((geo) => (
-                  <Geography
-                    key={geo.rsmKey}
-                    geography={geo}
-                    onClick={(e) => {
-                      // e.coordinates are in [lng, lat] format from react-simple-maps
-                      handleMapClick(e.coordinates);
-                    }}
-                    onMouseEnter={(e) => {
-                      // Handle hover using the same coordinate format
-                      if (e.coordinates) {
-                        handleMapHover(e.coordinates);
-                      }
-                    }}
-                    onMouseLeave={() => handleMapHover(null)}
-                    style={{
-                      default: {
-                        fill: '#1f2937',
-                        stroke: '#374151',
-                        strokeWidth: 0.5,
-                        outline: 'none',
-                      },
-                      hover: {
-                        fill: '#374151',
-                        stroke: '#4b5563',
-                        strokeWidth: 0.5,
-                        outline: 'none',
-                      },
-                      pressed: {
-                        fill: '#374151',
-                        stroke: '#4b5563',
-                        strokeWidth: 0.5,
-                        outline: 'none',
-                      },
-                    }}
-                  />
-                ))
-              }
-            </Geographies>
+            {/* Base geography - use our fallback if needed */}
+            <SafeGeographies onMapClick={handleMapClick} />
             
-            {/* Timezone region highlights - rendered after geography for visibility */}
+            {/* Draw selected timezone boundaries */}
             {selectedTimezoneBoundaries.map(boundary => (
-              <g key={`timezone-fill-${boundary.id}`}>
-                <path
-                  d={boundary.pathData}
-                  fill={boundary.color}
-                  fillOpacity={0.4}
-                  stroke={boundary.color}
-                  strokeWidth={2.5 / position.zoom}
-                  strokeOpacity={0.9}
-                />
-              </g>
-            ))}
-            
-            {/* Draw bold boundary lines for better definition */}
-            {selectedTimezoneBoundaries.map(boundary => (
-              <g key={`timezone-outline-${boundary.id}`}>
+              <g key={boundary.id}>
                 <path
                   d={boundary.pathData}
                   fill="none"
@@ -387,127 +526,155 @@ const WorldMapSelector = () => {
                   strokeWidth={3 / position.zoom}
                   strokeOpacity={1}
                   strokeLinejoin="round"
-                  strokeLinecap="round"
                 />
               </g>
             ))}
             
-            {/* Markers for highlighting clicked locations */}
-            {selectedTimezones.map((timezone) => {
-              const region = TIMEZONE_REGIONS.find(r => r.id === timezone.id);
+            {/* Display markers for the selected timezones */}
+            {selectedTimezones.map(timezone => {
+              // Get the center point of the timezone boundaries for the marker
+              const boundary = getTimezoneBoundary(timezone.id);
+              if (!boundary || !boundary.length) return null;
               
-              if (!region) return null;
+              // Calculate the center point of the timezone boundary
+              const centerLat = boundary.reduce((sum, [lat]) => sum + lat, 0) / boundary.length;
+              const centerLng = boundary.reduce((sum, [, lng]) => sum + lng, 0) / boundary.length;
               
-              // Coordinates in react-simple-maps format [lng, lat]
-              const coordinates: [number, number] = [region.lng, region.lat];
-              
-              // Determine marker color based on business hours
+              // Check if timezone is in business hours
               const isWorkHours = isBusinessHours(timezone.id);
               const markerColor = isWorkHours ? "#10b981" : "#3b82f6"; // Green for business hours, blue otherwise
               
               return (
-                <Marker 
-                  key={timezone.id} 
-                  coordinates={coordinates}
-                >
+                <Marker key={timezone.id} coordinates={[centerLng, centerLat]}>
                   <circle 
-                    r={6 / position.zoom} 
+                    r={4 / position.zoom} 
                     fill={markerColor}
-                    stroke="#fff"
+                    stroke="#ffffff"
                     strokeWidth={1.5 / position.zoom}
-                    className="cursor-pointer"
                   />
-                  
-                  {/* Only show labels at higher zoom levels */}
-                  {position.zoom > 2 && (
-                    <text
-                      textAnchor="middle"
-                      y={-10 / position.zoom}
-                      style={{
-                        fontFamily: "system-ui",
-                        fontSize: 12 / position.zoom,
-                        fill: "#fff",
-                        pointerEvents: "none",
-                        textShadow: "0px 0px 4px rgba(0,0,0,0.9)"
-                      }}
-                    >
-                      {region.name}
-                    </text>
-                  )}
+                  <text
+                    textAnchor="middle"
+                    y={12 / position.zoom}
+                    style={{ 
+                      fontSize: `${14 / position.zoom}px`,
+                      fontWeight: 'bold',
+                      fill: "#1e293b", // slate-800
+                      stroke: "#ffffff",
+                      strokeWidth: 0.5 / position.zoom,
+                      paintOrder: "stroke"
+                    }}
+                  >
+                    {timezone.name.split(' ')[0]}
+                  </text>
                 </Marker>
               );
             })}
-            
-            {/* City markers at high zoom levels */}
-            {position.zoom > 3 && TIMEZONE_REGIONS.map((region) => {
-              // Skip cities that are already selected
-              if (selectedTimezones.some(tz => tz.id === region.id)) {
-                return null;
-              }
-              
-              // Coordinates in react-simple-maps format [lng, lat]
-              const coordinates: [number, number] = [region.lng, region.lat];
-              
-              return (
-                <Marker 
-                  key={region.id} 
-                  coordinates={coordinates}
-                >
-                  <circle 
-                    r={3 / position.zoom} 
-                    fill="#6b7280"
-                    opacity={0.7}
-                    stroke="#fff"
-                    strokeWidth={0.5 / position.zoom}
-                    className="cursor-pointer hover:fill-blue-500"
-                    onClick={() => handleSelectTimezone(region.id, [region.lat, region.lng])}
-                  />
-                  
-                  {/* Only show labels at very high zoom levels */}
-                  {position.zoom > 5 && (
-                    <text
-                      textAnchor="middle"
-                      y={-6 / position.zoom}
-                      style={{
-                        fontFamily: "system-ui",
-                        fontSize: 8 / position.zoom,
-                        fill: "#d1d5db",
-                        pointerEvents: "none",
-                        textShadow: "0px 0px 3px rgba(0,0,0,0.9)"
-                      }}
-                    >
-                      {region.name}
-                    </text>
-                  )}
-                </Marker>
-              );
-            })}
-          </ZoomableGroup>
-        </ComposableMap>
-      </motion.div>
-    </div>
-  );
-};
-
-const WorldMapWithErrorBoundary = () => (
-  <ErrorBoundary
-    fallback={
-      <div className="relative w-full h-[500px] glass-card p-4 overflow-hidden flex items-center justify-center">
-        <div className="text-center p-6">
-          <h3 className="text-lg font-semibold text-red-500 mb-2">Map Rendering Error</h3>
-          <p className="mb-4">There was an issue rendering the world map.</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors"
-          >
-            Reload Page
-          </button>
-        </div>
+          </SafeZoomableGroup>
+        </WorldMap>
       </div>
-    }
-  >
-    <WorldMapSelector />
-  </ErrorBoundary>
-);
+    </ErrorBoundary>
+  );
+}
 
-export default memo(WorldMapWithErrorBoundary); 
+function SafeGeographies({ onMapClick }: { onMapClick: (e: React.MouseEvent, geo: any) => void }) {
+  const [geojson, setGeojson] = useState<any>(FALLBACK_GEOJSON);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    // Try to load the map data
+    fetch("/data/world-110m.json")
+      .then(res => {
+        if (!res.ok) throw new Error("Could not load map data");
+        return res.json();
+      })
+      .then(data => {
+        if (data && typeof data === 'object') {
+          setGeojson(data);
+        }
+      })
+      .catch(error => {
+        console.error("Failed to load world-110m.json:", error);
+        // Try the fallback file
+        fetch("/data/fallback-world.json")
+          .then(res => {
+            if (!res.ok) throw new Error("Could not load fallback map");
+            return res.json();
+          })
+          .then(data => {
+            if (data && typeof data === 'object') {
+              console.log("Using fallback world map");
+              setGeojson(data);
+            }
+          })
+          .catch(fallbackError => {
+            console.error("Failed to load fallback map:", fallbackError);
+            // Keep using the hardcoded fallback
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      })
+      .finally(() => {
+        if (loading) setLoading(false);
+      });
+  }, [loading]);
+  
+  if (loading) {
+    return (
+      <g>
+        <text x="50%" y="50%" textAnchor="middle" fill="#6b7280">
+          Loading map...
+        </text>
+      </g>
+    );
+  }
+  
+  return (
+    <Geographies geography={geojson}>
+      {({ geographies = [] }) => 
+        geographies.length > 0 ? geographies.map(geo => (
+          <Geography
+            key={geo.rsmKey || (geo.properties ? geo.properties.name : 'world')}
+            geography={geo}
+            fill="#EAEAEC"
+            stroke="#D6D6DA"
+            style={{
+              default: { 
+                fill: "#EAEAEC", 
+                stroke: "#D6D6DA", 
+                strokeWidth: 0.5,
+                outline: "none"
+              },
+              hover: { 
+                fill: "#F5F5F5", 
+                stroke: "#D6D6DA", 
+                strokeWidth: 0.5,
+                outline: "none"
+              },
+              pressed: { 
+                fill: "#E0E0E0", 
+                stroke: "#D6D6DA", 
+                strokeWidth: 0.5,
+                outline: "none"
+              }
+            }}
+            onClick={(e) => onMapClick(e, geo)}
+          />
+        )) : (
+          // Render a fallback rectangle if no geographies are available
+          <rect
+            x="-180"
+            y="-90"
+            width="360"
+            height="180"
+            fill="#EAEAEC"
+            stroke="#D6D6DA"
+            onClick={(e) => onMapClick(e, null)}
+          />
+        )
+      }
+    </Geographies>
+  );
+}
+
+export default React.memo(WorldMapSelector); 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import { TIMEZONE_REGIONS } from '@/utils/mapUtils';
+import { TIMEZONE_REGIONS } from '@/lib/utils/mapUtils';
 
 // SVG paths for search and close icons
 const SEARCH_ICON = (
@@ -21,22 +21,25 @@ const CLOSE_ICON = (
 type SearchResult = {
   id: string;
   name: string;
-  lat: number;
-  lng: number;
-  matchScore: number;
+  location: string;
+  matchScore?: number;
 };
 
 interface SearchOverlayProps {
-  onSelectTimezone: (timezoneId: string, coordinates: [number, number]) => void;
+  onSelectTimezone: (timezoneId: string) => void;
+  onClose?: () => void;
 }
 
 /**
- * SearchOverlay Component
+ * SearchOverlay component for searching and selecting timezones on the map
  * 
- * A search input that allows users to find specific cities and timezones.
+ * This component provides a search interface that appears as an overlay on the map.
+ * Users can search for timezones by name, country, or city, and select results
+ * to add to their tracked timezones.
+ * 
  * Features fuzzy search, keyboard navigation, and mobile-friendly design.
  */
-export const SearchOverlay = ({ onSelectTimezone }: SearchOverlayProps) => {
+const SearchOverlay: React.FC<SearchOverlayProps> = ({ onSelectTimezone, onClose }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -53,6 +56,7 @@ export const SearchOverlay = ({ onSelectTimezone }: SearchOverlayProps) => {
     } else {
       setSearchQuery('');
       setResults([]);
+      if (onClose) onClose();
     }
   };
   
@@ -106,7 +110,9 @@ export const SearchOverlay = ({ onSelectTimezone }: SearchOverlayProps) => {
     
     const matches = TIMEZONE_REGIONS
       .map(region => ({
-        ...region,
+        id: region.id,
+        name: region.name,
+        location: `${region.id.replace(/_/g, ' ').replace(/\//g, ' ')}`,
         matchScore: Math.max(
           fuzzyMatch(region.name, searchQuery),
           fuzzyMatch(region.id.replace(/_/g, ' ').replace(/\//g, ' '), searchQuery)
@@ -122,7 +128,7 @@ export const SearchOverlay = ({ onSelectTimezone }: SearchOverlayProps) => {
   
   // Handle keyboard navigation
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (results.length === 0) return;
+    if (results.length === 0 && e.key !== 'Escape') return;
     
     switch (e.key) {
       case 'ArrowDown':
@@ -142,13 +148,15 @@ export const SearchOverlay = ({ onSelectTimezone }: SearchOverlayProps) => {
       case 'Enter':
         if (highlightedIndex >= 0 && highlightedIndex < results.length) {
           const selected = results[highlightedIndex];
-          handleSelectResult(selected);
+          handleResultClick(selected);
         }
         break;
         
       case 'Escape':
         setIsVisible(false);
         setSearchQuery('');
+        setResults([]);
+        if (onClose) onClose();
         break;
         
       default:
@@ -157,11 +165,12 @@ export const SearchOverlay = ({ onSelectTimezone }: SearchOverlayProps) => {
   };
   
   // Handle selecting a search result
-  const handleSelectResult = (result: SearchResult) => {
-    onSelectTimezone(result.id, [result.lat, result.lng]);
+  const handleResultClick = (result: SearchResult) => {
+    onSelectTimezone(result.id);
     setIsVisible(false);
     setSearchQuery('');
     setResults([]);
+    if (onClose) onClose();
   };
   
   // Scroll to ensure highlighted result is visible
@@ -230,10 +239,10 @@ export const SearchOverlay = ({ onSelectTimezone }: SearchOverlayProps) => {
                   className={`p-3 cursor-pointer ${
                     index === highlightedIndex ? 'bg-blue-50' : 'hover:bg-gray-50'
                   }`}
-                  onClick={() => handleSelectResult(result)}
+                  onClick={() => handleResultClick(result)}
                 >
                   <div className="font-medium">{result.name}</div>
-                  <div className="text-xs text-gray-500">{result.id.replace(/_/g, ' ')}</div>
+                  <div className="text-xs text-gray-500">{result.location}</div>
                 </div>
               ))}
             </div>

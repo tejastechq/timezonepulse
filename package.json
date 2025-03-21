@@ -16,10 +16,8 @@
     "dev:clean": "pnpm clean && pnpm dev",
     "dev:analyze": "cross-env ANALYZE=true next dev",
     "build:analyze": "cross-env ANALYZE=true next build",
-    "fix-env": "node fix-env.js",
-    "dev:fixed": "npm run fix-env && npm run clean && next dev",
+    "dev:fixed": "pnpm clean && next dev",
     "dev:safe": "cross-env NEXT_RSC_STRICT_MODE=false next dev",
-    "postinstall": "npm run fix-env",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
@@ -132,11 +130,13 @@
     "@types/node": "^20.11.16",
     "@types/react": "^18.2.52",
     "@types/react-dom": "^18.2.18",
+    "@types/react-simple-maps": "^3.0.6",
     "@types/testing-library__jest-dom": "^5.14.9",
     "@typescript-eslint/eslint-plugin": "^6.20.0",
     "@typescript-eslint/parser": "^6.20.0",
     "autoprefixer": "^10.4.17",
     "cross-env": "^7.0.3",
+    "date-fns": "^4.1.0",
     "eslint": "8.56.0",
     "eslint-config-next": "14.1.0",
     "eslint-config-prettier": "^9.1.0",
@@ -171,27 +171,11 @@
     "overrides": {
       "react": "19.0.0",
       "react-dom": "19.0.0"
-    },
-    "neverBuiltDependencies": [
-      "@modelcontextprotocol/sdk"
-    ],
-    "packageExtensions": {
-      "@modelcontextprotocol/*": {
-        "peerDependencies": {
-          "react": "*",
-          "react-dom": "*"
-        }
-      }
     }
   },
   "resolutions": {
     "react": "19.0.0",
     "react-dom": "19.0.0"
-  },
-  "workspaces": {
-    "nohoist": [
-      "**/@modelcontextprotocol/**"
-    ]
   },
   "engines": {
     "node": ">=18.17.0"

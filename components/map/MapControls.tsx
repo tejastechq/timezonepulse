@@ -1,43 +1,55 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, Dispatch, SetStateAction } from 'react';
 
 // Import icons for the controls
 // We'll use simple Unicode characters for now, but in a real implementation
 // you would typically use an icon library like react-icons
 
-interface MapControlsProps {
+interface MapPosition {
+  coordinates: [number, number];
   zoom: number;
-  onZoomIn: () => void;
-  onZoomOut: () => void;
-  onReset: () => void;
+}
+
+interface MapControlsProps {
+  position: MapPosition;
+  setPosition: Dispatch<SetStateAction<MapPosition>>;
+  onSearchClick?: () => void;
 }
 
 /**
  * MapControls component providing zoom and reset controls for the interactive map
  */
 const MapControls: React.FC<MapControlsProps> = ({ 
-  zoom, 
-  onZoomIn, 
-  onZoomOut, 
-  onReset 
+  position, 
+  setPosition,
+  onSearchClick
 }) => {
   // Memoized handlers to prevent unnecessary re-renders
   const handleZoomIn = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent event bubbling
-    onZoomIn();
-  }, [onZoomIn]);
+    setPosition(prev => ({
+      ...prev,
+      zoom: Math.min(prev.zoom + 0.5, 8) // Limit max zoom
+    }));
+  }, [setPosition]);
   
   const handleZoomOut = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent event bubbling
-    onZoomOut();
-  }, [onZoomOut]);
-  
+    setPosition(prev => ({
+      ...prev,
+      zoom: Math.max(prev.zoom - 0.5, 1) // Limit min zoom
+    }));
+  }, [setPosition]);
+
   const handleReset = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent event bubbling
-    onReset();
-  }, [onReset]);
+    setPosition({
+      coordinates: [0, 20],
+      zoom: 1
+    });
+  }, [setPosition]);
   
   // Format zoom level for display
-  const zoomPercentage = Math.round(zoom * 100);
+  const zoomPercentage = Math.round(position.zoom * 100);
   
   return (
     <div 
@@ -49,7 +61,7 @@ const MapControls: React.FC<MapControlsProps> = ({
         onClick={handleZoomIn}
         className="p-2 text-white hover:bg-gray-700 transition-colors"
         aria-label="Zoom in"
-        disabled={zoom >= 8}
+        disabled={position.zoom >= 8}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
           <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
@@ -64,7 +76,7 @@ const MapControls: React.FC<MapControlsProps> = ({
         onClick={handleZoomOut}
         className="p-2 text-white hover:bg-gray-700 transition-colors"
         aria-label="Zoom out"
-        disabled={zoom <= 0.5}
+        disabled={position.zoom <= 0.5}
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
           <path fillRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" clipRule="evenodd" />

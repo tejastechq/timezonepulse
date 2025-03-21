@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, MotionProps } from 'framer-motion';
 import { Timezone } from '@/store/timezoneStore';
 import { DateTime } from 'luxon';
 import { isInDST } from '@/lib/utils/timezone';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Edit2, Settings } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import type { MotionStyle } from 'framer-motion';
 
 // Define props interface
 interface ClockCardProps {
@@ -50,7 +51,7 @@ function ClockCard({
   const glassClasses = `glass-card backdrop-blur-fix ${isNightTime || resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'}`;
   
   // In-line style for enhanced transparency control
-  const cardStyle = {
+  const cardStyle: MotionStyle = {
     isolation: 'isolate',
     backgroundColor: isNightTime || resolvedTheme === 'dark' 
       ? 'rgba(15, 15, 25, 0.2)' 

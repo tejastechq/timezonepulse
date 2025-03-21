@@ -1,79 +1,88 @@
 import { DateTime } from 'luxon';
-import { Timezone } from '@/store/timezoneStore';
+import { Timezone as TimezoneItem } from '@/store/timezoneStore';
+
+// Define the TimezoneRegion interface
+interface TimezoneRegion {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  coordinates: [number, number];
+}
 
 // Comprehensive timezone mapping with major cities
 // This provides a good balance of coverage without requiring server-side data
-export const TIMEZONE_REGIONS = [
+export const TIMEZONE_REGIONS: TimezoneRegion[] = [
   // North America
-  { id: 'America/Los_Angeles', name: 'Los Angeles', lat: 34.05, lng: -118.24 },
-  { id: 'America/Vancouver', name: 'Vancouver', lat: 49.28, lng: -123.12 },
-  { id: 'America/Denver', name: 'Denver', lat: 39.74, lng: -104.99 },
-  { id: 'America/Phoenix', name: 'Phoenix', lat: 33.45, lng: -112.07 },
-  { id: 'America/Chicago', name: 'Chicago', lat: 41.88, lng: -87.63 },
-  { id: 'America/Mexico_City', name: 'Mexico City', lat: 19.43, lng: -99.13 },
-  { id: 'America/New_York', name: 'New York', lat: 40.71, lng: -74.01 },
-  { id: 'America/Toronto', name: 'Toronto', lat: 43.65, lng: -79.38 },
-  { id: 'America/Halifax', name: 'Halifax', lat: 44.65, lng: -63.58 },
+  { id: 'America/Los_Angeles', name: 'Los Angeles', lat: 34.05, lng: -118.24, coordinates: [34.05, -118.24] },
+  { id: 'America/Vancouver', name: 'Vancouver', lat: 49.28, lng: -123.12, coordinates: [49.28, -123.12] },
+  { id: 'America/Denver', name: 'Denver', lat: 39.74, lng: -104.99, coordinates: [39.74, -104.99] },
+  { id: 'America/Phoenix', name: 'Phoenix', lat: 33.45, lng: -112.07, coordinates: [33.45, -112.07] },
+  { id: 'America/Chicago', name: 'Chicago', lat: 41.88, lng: -87.63, coordinates: [41.88, -87.63] },
+  { id: 'America/Mexico_City', name: 'Mexico City', lat: 19.43, lng: -99.13, coordinates: [19.43, -99.13] },
+  { id: 'America/New_York', name: 'New York', lat: 40.71, lng: -74.01, coordinates: [40.71, -74.01] },
+  { id: 'America/Toronto', name: 'Toronto', lat: 43.65, lng: -79.38, coordinates: [43.65, -79.38] },
+  { id: 'America/Halifax', name: 'Halifax', lat: 44.65, lng: -63.58, coordinates: [44.65, -63.58] },
   
   // South America
-  { id: 'America/Santiago', name: 'Santiago', lat: -33.45, lng: -70.67 },
-  { id: 'America/Sao_Paulo', name: 'São Paulo', lat: -23.55, lng: -46.63 },
-  { id: 'America/Buenos_Aires', name: 'Buenos Aires', lat: -34.61, lng: -58.38 },
-  { id: 'America/Lima', name: 'Lima', lat: -12.05, lng: -77.04 },
+  { id: 'America/Santiago', name: 'Santiago', lat: -33.45, lng: -70.67, coordinates: [-33.45, -70.67] },
+  { id: 'America/Sao_Paulo', name: 'São Paulo', lat: -23.55, lng: -46.63, coordinates: [-23.55, -46.63] },
+  { id: 'America/Buenos_Aires', name: 'Buenos Aires', lat: -34.61, lng: -58.38, coordinates: [-34.61, -58.38] },
+  { id: 'America/Lima', name: 'Lima', lat: -12.05, lng: -77.04, coordinates: [-12.05, -77.04] },
   
   // Europe
-  { id: 'Europe/London', name: 'London', lat: 51.51, lng: -0.13 },
-  { id: 'Europe/Lisbon', name: 'Lisbon', lat: 38.72, lng: -9.13 },
-  { id: 'Europe/Dublin', name: 'Dublin', lat: 53.35, lng: -6.26 },
-  { id: 'Europe/Paris', name: 'Paris', lat: 48.85, lng: 2.35 },
-  { id: 'Europe/Madrid', name: 'Madrid', lat: 40.42, lng: -3.70 },
-  { id: 'Europe/Rome', name: 'Rome', lat: 41.90, lng: 12.50 },
-  { id: 'Europe/Berlin', name: 'Berlin', lat: 52.52, lng: 13.40 },
-  { id: 'Europe/Amsterdam', name: 'Amsterdam', lat: 52.37, lng: 4.89 },
-  { id: 'Europe/Zurich', name: 'Zurich', lat: 47.38, lng: 8.54 },
-  { id: 'Europe/Stockholm', name: 'Stockholm', lat: 59.33, lng: 18.06 },
-  { id: 'Europe/Helsinki', name: 'Helsinki', lat: 60.17, lng: 24.94 },
-  { id: 'Europe/Warsaw', name: 'Warsaw', lat: 52.23, lng: 21.01 },
-  { id: 'Europe/Athens', name: 'Athens', lat: 37.98, lng: 23.73 },
-  { id: 'Europe/Istanbul', name: 'Istanbul', lat: 41.01, lng: 28.97 },
-  { id: 'Europe/Moscow', name: 'Moscow', lat: 55.75, lng: 37.62 },
+  { id: 'Europe/London', name: 'London', lat: 51.51, lng: -0.13, coordinates: [51.51, -0.13] },
+  { id: 'Europe/Lisbon', name: 'Lisbon', lat: 38.72, lng: -9.13, coordinates: [38.72, -9.13] },
+  { id: 'Europe/Dublin', name: 'Dublin', lat: 53.35, lng: -6.26, coordinates: [53.35, -6.26] },
+  { id: 'Europe/Paris', name: 'Paris', lat: 48.85, lng: 2.35, coordinates: [48.85, 2.35] },
+  { id: 'Europe/Madrid', name: 'Madrid', lat: 40.42, lng: -3.70, coordinates: [40.42, -3.70] },
+  { id: 'Europe/Rome', name: 'Rome', lat: 41.90, lng: 12.50, coordinates: [41.90, 12.50] },
+  { id: 'Europe/Berlin', name: 'Berlin', lat: 52.52, lng: 13.40, coordinates: [52.52, 13.40] },
+  { id: 'Europe/Amsterdam', name: 'Amsterdam', lat: 52.37, lng: 4.89, coordinates: [52.37, 4.89] },
+  { id: 'Europe/Zurich', name: 'Zurich', lat: 47.38, lng: 8.54, coordinates: [47.38, 8.54] },
+  { id: 'Europe/Stockholm', name: 'Stockholm', lat: 59.33, lng: 18.06, coordinates: [59.33, 18.06] },
+  { id: 'Europe/Helsinki', name: 'Helsinki', lat: 60.17, lng: 24.94, coordinates: [60.17, 24.94] },
+  { id: 'Europe/Warsaw', name: 'Warsaw', lat: 52.23, lng: 21.01, coordinates: [52.23, 21.01] },
+  { id: 'Europe/Athens', name: 'Athens', lat: 37.98, lng: 23.73, coordinates: [37.98, 23.73] },
+  { id: 'Europe/Istanbul', name: 'Istanbul', lat: 41.01, lng: 28.97, coordinates: [41.01, 28.97] },
+  { id: 'Europe/Moscow', name: 'Moscow', lat: 55.75, lng: 37.62, coordinates: [55.75, 37.62] },
   
   // Africa
-  { id: 'Africa/Lagos', name: 'Lagos', lat: 6.45, lng: 3.40 },
-  { id: 'Africa/Cairo', name: 'Cairo', lat: 30.04, lng: 31.24 },
-  { id: 'Africa/Johannesburg', name: 'Johannesburg', lat: -26.20, lng: 28.05 },
-  { id: 'Africa/Nairobi', name: 'Nairobi', lat: -1.29, lng: 36.82 },
-  { id: 'Africa/Casablanca', name: 'Casablanca', lat: 33.57, lng: -7.59 },
+  { id: 'Africa/Lagos', name: 'Lagos', lat: 6.45, lng: 3.40, coordinates: [6.45, 3.40] },
+  { id: 'Africa/Cairo', name: 'Cairo', lat: 30.04, lng: 31.24, coordinates: [30.04, 31.24] },
+  { id: 'Africa/Johannesburg', name: 'Johannesburg', lat: -26.20, lng: 28.05, coordinates: [-26.20, 28.05] },
+  { id: 'Africa/Nairobi', name: 'Nairobi', lat: -1.29, lng: 36.82, coordinates: [-1.29, 36.82] },
+  { id: 'Africa/Casablanca', name: 'Casablanca', lat: 33.57, lng: -7.59, coordinates: [33.57, -7.59] },
   
   // Asia
-  { id: 'Asia/Dubai', name: 'Dubai', lat: 25.20, lng: 55.27 },
-  { id: 'Asia/Riyadh', name: 'Riyadh', lat: 24.71, lng: 46.67 },
-  { id: 'Asia/Karachi', name: 'Karachi', lat: 24.86, lng: 67.01 },
-  { id: 'Asia/Mumbai', name: 'Mumbai', lat: 19.08, lng: 72.88 },
-  { id: 'Asia/Kolkata', name: 'New Delhi', lat: 28.61, lng: 77.21 },
-  { id: 'Asia/Dhaka', name: 'Dhaka', lat: 23.76, lng: 90.39 },
-  { id: 'Asia/Bangkok', name: 'Bangkok', lat: 13.75, lng: 100.50 },
-  { id: 'Asia/Jakarta', name: 'Jakarta', lat: -6.21, lng: 106.85 },
-  { id: 'Asia/Singapore', name: 'Singapore', lat: 1.35, lng: 103.82 },
-  { id: 'Asia/Hong_Kong', name: 'Hong Kong', lat: 22.32, lng: 114.17 },
-  { id: 'Asia/Shanghai', name: 'Shanghai', lat: 31.23, lng: 121.47 },
-  { id: 'Asia/Seoul', name: 'Seoul', lat: 37.57, lng: 126.98 },
-  { id: 'Asia/Tokyo', name: 'Tokyo', lat: 35.68, lng: 139.76 },
+  { id: 'Asia/Dubai', name: 'Dubai', lat: 25.20, lng: 55.27, coordinates: [25.20, 55.27] },
+  { id: 'Asia/Riyadh', name: 'Riyadh', lat: 24.71, lng: 46.67, coordinates: [24.71, 46.67] },
+  { id: 'Asia/Karachi', name: 'Karachi', lat: 24.86, lng: 67.01, coordinates: [24.86, 67.01] },
+  { id: 'Asia/Mumbai', name: 'Mumbai', lat: 19.08, lng: 72.88, coordinates: [19.08, 72.88] },
+  { id: 'Asia/Kolkata', name: 'New Delhi', lat: 28.61, lng: 77.21, coordinates: [28.61, 77.21] },
+  { id: 'Asia/Dhaka', name: 'Dhaka', lat: 23.76, lng: 90.39, coordinates: [23.76, 90.39] },
+  { id: 'Asia/Bangkok', name: 'Bangkok', lat: 13.75, lng: 100.50, coordinates: [13.75, 100.50] },
+  { id: 'Asia/Jakarta', name: 'Jakarta', lat: -6.21, lng: 106.85, coordinates: [-6.21, 106.85] },
+  { id: 'Asia/Singapore', name: 'Singapore', lat: 1.35, lng: 103.82, coordinates: [1.35, 103.82] },
+  { id: 'Asia/Hong_Kong', name: 'Hong Kong', lat: 22.32, lng: 114.17, coordinates: [22.32, 114.17] },
+  { id: 'Asia/Shanghai', name: 'Shanghai', lat: 31.23, lng: 121.47, coordinates: [31.23, 121.47] },
+  { id: 'Asia/Seoul', name: 'Seoul', lat: 37.57, lng: 126.98, coordinates: [37.57, 126.98] },
+  { id: 'Asia/Tokyo', name: 'Tokyo', lat: 35.68, lng: 139.76, coordinates: [35.68, 139.76] },
   
   // Oceania
-  { id: 'Australia/Perth', name: 'Perth', lat: -31.95, lng: 115.86 },
-  { id: 'Australia/Adelaide', name: 'Adelaide', lat: -34.93, lng: 138.60 },
-  { id: 'Australia/Melbourne', name: 'Melbourne', lat: -37.81, lng: 144.96 },
-  { id: 'Australia/Sydney', name: 'Sydney', lat: -33.87, lng: 151.21 },
-  { id: 'Australia/Brisbane', name: 'Brisbane', lat: -27.47, lng: 153.03 },
-  { id: 'Pacific/Auckland', name: 'Auckland', lat: -36.85, lng: 174.76 },
-  { id: 'Pacific/Fiji', name: 'Fiji', lat: -17.71, lng: 178.06 },
-  { id: 'Pacific/Honolulu', name: 'Honolulu', lat: 21.31, lng: -157.86 }
+  { id: 'Australia/Perth', name: 'Perth', lat: -31.95, lng: 115.86, coordinates: [-31.95, 115.86] },
+  { id: 'Australia/Adelaide', name: 'Adelaide', lat: -34.93, lng: 138.60, coordinates: [-34.93, 138.60] },
+  { id: 'Australia/Melbourne', name: 'Melbourne', lat: -37.81, lng: 144.96, coordinates: [-37.81, 144.96] },
+  { id: 'Australia/Sydney', name: 'Sydney', lat: -33.87, lng: 151.21, coordinates: [-33.87, 151.21] },
+  { id: 'Australia/Brisbane', name: 'Brisbane', lat: -27.47, lng: 153.03, coordinates: [-27.47, 153.03] },
+  { id: 'Pacific/Auckland', name: 'Auckland', lat: -36.85, lng: 174.76, coordinates: [-36.85, 174.76] },
+  { id: 'Pacific/Fiji', name: 'Fiji', lat: -17.71, lng: 178.06, coordinates: [-17.71, 178.06] },
+  { id: 'Pacific/Honolulu', name: 'Honolulu', lat: 21.31, lng: -157.86, coordinates: [21.31, -157.86] }
 ];
 
 // Timezone boundaries for major regions (approximate)
 // These are simplified polygons representing approximate timezone boundaries
-export const TIMEZONE_BOUNDARIES = {
+export const TIMEZONE_BOUNDARIES: Record<string, { name: string; color: string; boundaries: number[][] }> = {
   // North America
   'America/Los_Angeles': {
     name: 'Pacific Time',
@@ -189,6 +198,75 @@ export const TIMEZONE_BOUNDARIES = {
     ]
   }
 };
+
+// Rename our custom local interface to avoid conflict
+export interface TimezoneData {
+  id: string;
+  name: string;
+  offset: string;
+  isDST: boolean;
+  city?: string;
+  country?: string;
+  abbreviation?: string;
+  isNightTime?: boolean;
+  isWorkHours?: boolean;
+}
+
+/**
+ * Converts degrees to radians
+ */
+export function deg2rad(degrees: number): number {
+  return degrees * (Math.PI / 180);
+}
+
+/**
+ * Calculates the distance between two coordinates using the Haversine formula
+ */
+export const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+};
+
+/**
+ * Helper function to calculate distance between coordinates using simple euclidean distance
+ */
+function calculateEuclideanDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  return Math.sqrt(Math.pow(lat1 - lat2, 2) + Math.pow(lng1 - lng2, 2));
+}
+
+/**
+ * Gets timezone ID for given coordinates using a simple distance-based approach
+ * 
+ * @param lat - Latitude coordinate
+ * @param lng - Longitude coordinate
+ * @returns The timezone ID or null if not found
+ */
+export function getTimezoneForCoordinates(lat: number, lng: number): string | null {
+  try {
+    // Find the closest timezone to the given coordinates
+    let closestRegion = null;
+    let minDistance = Number.MAX_VALUE;
+    
+    for (const region of TIMEZONE_REGIONS) {
+      const distance = calculateEuclideanDistance(lat, lng, region.lat, region.lng);
+      if (distance < minDistance) {
+        minDistance = distance;
+        closestRegion = region;
+      }
+    }
+    
+    return closestRegion ? closestRegion.id : null;
+  } catch (error) {
+    console.error('Error getting timezone:', error);
+    return null;
+  }
+}
 
 /**
  * Gets the boundary polygon for a timezone
@@ -338,24 +416,40 @@ export function getTimezoneColor(timezoneId: string): string {
 /**
  * Finds the closest timezone region to the given coordinates
  */
-export const findClosestTimezone = (lat: number, lng: number): string => {
-  let closestRegion = TIMEZONE_REGIONS[0];
-  let minDistance = Number.MAX_VALUE;
+export function findClosestTimezone(lat: number, lng: number): string {
+  const point = [lat, lng];
+  const timezones = Object.keys(TIMEZONE_REGIONS);
   
-  for (const region of TIMEZONE_REGIONS) {
-    const distance = Math.sqrt(
-      Math.pow(region.lat - lat, 2) + 
-      Math.pow(region.lng - lng, 2)
+  let closestTimezone = '';
+  let shortestDistance = Number.MAX_VALUE;
+  
+  timezones.forEach((timezone) => {
+    // Get the timezone region
+    const region = TIMEZONE_REGIONS.find(r => r.id === timezone);
+    
+    // Skip timezones without proper coordinates
+    if (!region || !region.coordinates) return;
+    
+    // Get timezone coordinates
+    const tzCoords = region.coordinates;
+    
+    // Calculate distance to this timezone's central point
+    const distance = calculateDistance(
+      point[0], 
+      point[1],
+      tzCoords[0],
+      tzCoords[1]
     );
     
-    if (distance < minDistance) {
-      minDistance = distance;
-      closestRegion = region;
+    // Check if this is the closest so far
+    if (distance < shortestDistance) {
+      shortestDistance = distance;
+      closestTimezone = timezone;
     }
-  }
+  });
   
-  return closestRegion.id;
-};
+  return closestTimezone;
+}
 
 /**
  * Calculate the day/night terminator points for the current time
@@ -468,13 +562,14 @@ export const isPointInDaylight = (lat: number, lng: number, date = new Date()): 
 /**
  * Get timezone info for a given timezone
  */
-export const getTimezoneInfo = (timezoneId: string): Timezone | null => {
+export const getTimezoneInfo = (timezoneId: string): TimezoneData | null => {
   const region = TIMEZONE_REGIONS.find(r => r.id === timezoneId);
   if (!region) return null;
   
   const now = DateTime.now().setZone(timezoneId);
   const isDST = now.isInDST;
-  const offset = now.offset / 60; // Convert to hours
+  const offsetHours = now.offset / 60; // Convert to hours
+  const offset = `${offsetHours >= 0 ? '+' : ''}${offsetHours}`;
   
   return {
     id: timezoneId,
@@ -485,21 +580,48 @@ export const getTimezoneInfo = (timezoneId: string): Timezone | null => {
 };
 
 /**
- * Determines if the given time is within business hours (9AM-5PM) in the specified timezone
+ * Calculates if a coordinate is within boundary hours (like business hours)
+ * 
+ * @param timezone - Timezone object
+ * @param startHour - Starting hour (0-23)
+ * @param endHour - Ending hour (0-23)
+ * @returns Whether the current time in that timezone is within the hours
  */
-export const isBusinessHours = (timezoneId: string, date = new Date()): boolean => {
-  const localTime = DateTime.fromJSDate(date).setZone(timezoneId);
-  const hour = localTime.hour;
-  const dayOfWeek = localTime.weekday;
+export function isWithinHours(timezone: TimezoneData, startHour: number, endHour: number): boolean {
+  // Use the timezone id to get the current time in that timezone
+  const dateTime = DateTime.now().setZone(timezone.id);
+  const hour = dateTime.hour;
   
-  // Check if weekend (6 = Saturday, 7 = Sunday in Luxon)
-  if (dayOfWeek === 6 || dayOfWeek === 7) {
-    return false;
-  }
+  return hour >= startHour && hour < endHour;
+}
+
+/**
+ * Checks if the current time in a timezone is considered "business hours" (9 AM - 5 PM)
+ * 
+ * @param timezone - Timezone object
+ * @returns Whether the current time in that timezone is within business hours
+ */
+export function isWorkHours(timezone: TimezoneData): boolean {
+  // Use the timezone id to get the current time in that timezone
+  const dateTime = DateTime.now().setZone(timezone.id);
+  const hour = dateTime.hour;
   
-  // Check if within 9 AM - 5 PM local time
   return hour >= 9 && hour < 17;
-};
+}
+
+/**
+ * Checks if the current time in a timezone is considered "night" (7 PM - 7 AM)
+ * 
+ * @param timezone - Timezone object
+ * @returns Whether the current time in that timezone is night time
+ */
+export function isNightTime(timezone: TimezoneData): boolean {
+  // Use the timezone id to get the current time in that timezone
+  const dateTime = DateTime.now().setZone(timezone.id);
+  const hour = dateTime.hour;
+  
+  return hour >= 19 || hour < 7;
+}
 
 /**
  * Format a timezone offset as a string (+/-HH:MM)
@@ -514,83 +636,81 @@ export const formatTimezoneOffset = (offsetHours: number): string => {
 };
 
 /**
- * Gets timezone ID for given coordinates using a simple distance-based approach
- * 
- * @param lat - Latitude coordinate
- * @param lng - Longitude coordinate
- * @returns The timezone ID or null if not found
- */
-export function getTimezoneForCoordinates(lat: number, lng: number): string | null {
-  try {
-    // Simple distance calculation
-    function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number) {
-      return Math.sqrt(Math.pow(lat1 - lat2, 2) + Math.pow(lng1 - lng2, 2));
-    }
-    
-    // Find the closest timezone to the given coordinates
-    let closestRegion = null;
-    let minDistance = Number.MAX_VALUE;
-    
-    for (const region of TIMEZONE_REGIONS) {
-      const distance = calculateDistance(lat, lng, region.lat, region.lng);
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestRegion = region;
-      }
-    }
-    
-    return closestRegion ? closestRegion.id : null;
-  } catch (error) {
-    console.error('Error getting timezone:', error);
-    return null;
-  }
-}
-
-/**
  * Gets formatted timezone data for display
  * 
- * @param tzId - Timezone identifier (e.g., "America/New_York")
- * @returns A Timezone object or null if there was an error
+ * @param timezoneId - Timezone identifier (e.g., "America/New_York")
+ * @returns A TimezoneData object or null if there was an error
  */
-export function getTimezoneData(tzId: string): Timezone | null {
+export function getTimezoneData(timezoneId: string): TimezoneData | null {
   try {
-    // Create a DateTime object in the specified timezone
-    const now = DateTime.now().setZone(tzId);
+    // Create a date in the specified timezone
+    const date = new Date();
+    const options = { timeZone: timezoneId, hour12: false };
     
-    // Format the timezone name to be more readable
-    const name = tzId.replace(/_/g, ' ').split('/').pop() || tzId;
+    // Check if the timezone is in DST
+    const now = DateTime.now().setZone(timezoneId);
+    const isDST = now.isInDST;
     
-    // Get the timezone abbreviation
-    const abbreviation = now.toFormat('ZZZZ');
+    // Extract timezone offset from the date
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezoneId,
+      timeZoneName: 'shortOffset'
+    });
     
-    // Generate the formatted time string
-    const formatted = now.toFormat('h:mm a');
+    const offsetMatch = formatter.format(date).match(/GMT([+-]\d+)/);
+    const offset = offsetMatch ? offsetMatch[1] : '+00:00';
     
-    // Create the timezone object
+    // Extract timezone abbreviation
+    const abbreviationFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: timezoneId,
+      timeZoneName: 'short'
+    });
+    
+    const parts = abbreviationFormatter.formatToParts(date);
+    const abbreviation = parts.find(part => part.type === 'timeZoneName')?.value || '';
+    
+    // Check if it's nighttime in this timezone
+    const hours = new Date(date.toLocaleString('en-US', options)).getHours();
+    const isNightTime = hours < 6 || hours >= 18;
+    
+    // Check if it's work hours (9 AM to 5 PM local time)
+    const isWorkHours = hours >= 9 && hours < 17;
+    
+    // Parse timezone ID to get city and possible country
+    const parts2 = timezoneId.split('/');
+    let city = parts2[parts2.length - 1].replace(/_/g, ' ');
+    let country = parts2[0];
+    
+    if (parts2.length > 1) {
+      country = parts2[0] === 'Etc' ? 'UTC' : parts2[0];
+    }
+    
+    // Return formatted timezone data
     return {
-      id: tzId,
-      name,
+      id: timezoneId,
+      name: `${city}, ${country}`,
+      city,
+      country,
+      offset: offset,
       abbreviation,
-      offset: now.offset,
-      datetime: now.toJSDate(),
-      formatted,
+      isNightTime,
+      isWorkHours,
+      isDST
     };
   } catch (error) {
-    console.error('Error formatting timezone data:', error);
+    console.error('Error getting timezone data:', error);
     return null;
   }
 }
 
 /**
- * Gets timezone data for a point on the map
+ * Gets timezone data from map coordinates
  * 
- * @param coordinates - [longitude, latitude] coordinates
+ * @param lat - Latitude
+ * @param lng - Longitude
  * @returns A Timezone object or null if not found or error
  */
-export function getTimezoneFromMapCoordinates(coordinates: [number, number]): Timezone | null {
-  // Convert coordinates from [longitude, latitude] to [latitude, longitude]
-  const [lng, lat] = coordinates;
-  
+export function getTimezoneFromMapCoordinates(lat: number, lng: number): TimezoneData | null {
   // Get the timezone ID for these coordinates
   const tzId = getTimezoneForCoordinates(lat, lng);
   
@@ -603,28 +723,13 @@ export function getTimezoneFromMapCoordinates(coordinates: [number, number]): Ti
 }
 
 /**
- * Calculates if a coordinate is within boundary hours (like business hours)
- * 
- * @param timezone - Timezone object
- * @param startHour - Starting hour (0-23)
- * @param endHour - Ending hour (0-23)
- * @returns Whether the current time in that timezone is within the hours
- */
-export function isWithinHours(timezone: Timezone, startHour: number, endHour: number): boolean {
-  const dateTime = DateTime.fromJSDate(timezone.datetime);
-  const hour = dateTime.hour;
-  
-  return hour >= startHour && hour < endHour;
-}
-
-/**
  * Checks if a timezone is in daylight saving time
  * 
  * @param timezone - Timezone object
  * @returns Whether the timezone is currently in DST
  */
-export function isDaylightSavingTime(timezone: Timezone): boolean {
-  const dateTime = DateTime.fromJSDate(timezone.datetime);
+export function isDaylightSavingTime(timezone: TimezoneData): boolean {
+  const dateTime = DateTime.now().setZone(timezone.id);
   return dateTime.isInDST;
 }
 
@@ -634,8 +739,8 @@ export function isDaylightSavingTime(timezone: Timezone): boolean {
  * @param timezone - Timezone object
  * @returns A color string (hex or CSS color)
  */
-export function getTimeBasedColor(timezone: Timezone): string {
-  const dateTime = DateTime.fromJSDate(timezone.datetime);
+export function getTimeBasedColor(timezone: TimezoneData): string {
+  const dateTime = DateTime.now().setZone(timezone.id);
   const hour = dateTime.hour;
   
   // Night (10 PM - 6 AM)
@@ -703,4 +808,49 @@ export function getRelatedTimezones(timezoneId: string): string[] {
   
   // If no relationships found, just return the timezone itself
   return [timezoneId];
+}
+
+/**
+ * Determines if the given time is within business hours (9AM-5PM) in the specified timezone
+ * 
+ * @param timezoneId - Timezone identifier (e.g., 'America/New_York')
+ * @param date - Date object to check (defaults to current time)
+ * @returns Whether the time is within business hours
+ */
+export const isBusinessHours = (timezoneId: string, date = new Date()): boolean => {
+  const localTime = DateTime.fromJSDate(date).setZone(timezoneId);
+  const hour = localTime.hour;
+  const dayOfWeek = localTime.weekday;
+  
+  // Check if weekend (6 = Saturday, 7 = Sunday in Luxon)
+  if (dayOfWeek === 6 || dayOfWeek === 7) {
+    return false;
+  }
+  
+  // Check if within 9 AM - 5 PM local time
+  return hour >= 9 && hour < 17;
+};
+
+/**
+ * Converts a polygon array of coordinates to an SVG path string
+ * @param polygon An array of [longitude, latitude] coordinate pairs
+ * @returns SVG path string
+ */
+export function polygonToPath(polygon: number[][]): string {
+  return polygon.map(([lng, lat]) => `${lng},${lat}`).join(' ');
+}
+
+/**
+ * Gets timezone data from timezone ID
+ * 
+ * @param id - Timezone ID (e.g., "America/New_York")
+ * @returns TimezoneData object or null if not found
+ */
+export function getTimezoneFromId(id: string): TimezoneData | null {
+  try {
+    return getTimezoneData(id);
+  } catch (error) {
+    console.error(`Error getting timezone data for ID ${id}:`, error);
+    return null;
+  }
 } 

@@ -5,6 +5,15 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { getLocalTimezone } from '@/lib/utils/timezone';
 
 /**
+ * App version info to track state consistency
+ */
+export const APP_VERSION = {
+  version: '0.1.0',
+  buildId: typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_BUILD_ID || 'dev' : 'client',
+  timestamp: Date.now()
+};
+
+/**
  * Interface for a timezone in our application
  */
 export interface Timezone {
@@ -29,13 +38,21 @@ interface TimezoneState {
   viewMode: ViewMode;
   highlightedTime: Date | null;
   localTimezone: string;
+  appVersion: typeof APP_VERSION;
   addTimezone: (timezone: Timezone) => void;
   removeTimezone: (id: string) => void;
   setViewMode: (mode: ViewMode) => void;
   setHighlightedTime: (time: Date | null) => void;
   reorderTimezones: (fromIndex: number, toIndex: number) => void;
   hydrate: () => void;
+  resetStore: () => void;
 }
+
+// Get a storage key that's unique to the current origin to prevent cross-port persistence issues
+const getStorageKey = () => {
+  if (typeof window === 'undefined') return 'timezone-storage';
+  return `timezone-storage-${window.location.origin.replace(/[^a-z0-9]/gi, '-')}`;
+};
 
 /**
  * Zustand store for managing timezones with persistence
@@ -46,7 +63,8 @@ export const useTimezoneStore = create<TimezoneState>()(
       // Get the user's local timezone
       const localTz = getLocalTimezone();
       
-      return {
+      // Function to create initial state
+      const getInitialState = () => ({
         // Initial state
         timezones: [
           // Always include local timezone as first option
@@ -123,6 +141,11 @@ export const useTimezoneStore = create<TimezoneState>()(
         viewMode: 'analog',
         highlightedTime: null,
         localTimezone: localTz,
+        appVersion: { ...APP_VERSION, timestamp: Date.now() },
+      });
+      
+      return {
+        ...getInitialState(),
         
         // Actions
         addTimezone: (timezone: Timezone) => 
@@ -162,16 +185,39 @@ export const useTimezoneStore = create<TimezoneState>()(
           
         // Hydration function for client-side
         hydrate: () => {
-          // This is intentionally empty as the persist middleware
-          // will handle the hydration automatically
-          // We just need this function to be called on the client
+          // Update version on hydration to track state freshness
+          set((state) => ({
+            appVersion: { ...APP_VERSION, timestamp: Date.now() }
+          }));
+        },
+        
+        // Reset store to initial state
+        resetStore: () => {
+          // This completely resets the store to initial values
+          set(getInitialState());
         }
       };
     },
     {
-      name: 'timezone-storage',
+      name: getStorageKey(),
       skipHydration: true,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => {
+        if (typeof window === 'undefined') {
+          // Return mock storage for SSR
+          return {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {}
+          };
+        }
+        return localStorage;
+      }),
+      // Filter out certain fields from persistence
+      partialize: (state) => ({
+        timezones: state.timezones,
+        viewMode: state.viewMode,
+        localTimezone: state.localTimezone
+      }),
     }
   )
 );
@@ -180,4 +226,7 @@ export const useTimezoneStore = create<TimezoneState>()(
 export const useViewMode = () => useTimezoneStore((state) => state.viewMode);
 
 // Helper hook to get the highlighted time
-export const useHighlightedTime = () => useTimezoneStore((state) => state.highlightedTime); 
+export const useHighlightedTime = () => useTimezoneStore((state) => state.highlightedTime);
+
+// Helper hook to get the app version (for debugging)
+export const useAppVersion = () => useTimezoneStore((state) => state.appVersion); 
