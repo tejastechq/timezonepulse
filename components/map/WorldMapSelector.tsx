@@ -19,20 +19,31 @@ import {
   formatTimezoneOffset,
   getTimezoneBoundary,
   getTimezoneColor,
-  TIMEZONE_BOUNDARIES
+  TIMEZONE_BOUNDARIES,
+  getRelatedTimezones
 } from '@/utils/mapUtils';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import SearchOverlay from './SearchOverlay';
+import ErrorBoundary from '@/components/error/ErrorBoundary';
 
 // World map TopoJSON data
 const geoUrl = "/data/world-110m.json";
 
-// Helper function to convert polygon coordinates to SVG path
-function polygonToPath(points) {
-  if (!points || points.length === 0) return "";
-  return points.map((point, i) => 
-    `${i === 0 ? 'M' : 'L'}${point[0]},${point[1]}`
-  ).join(' ') + 'Z';
+// Helper function to convert polygon coordinates to SVG path string
+function polygonToPath(points: [number, number][]): string {
+  if (!points || points.length < 3) return '';
+  
+  try {
+    // Format: "M x1,y1 L x2,y2 L x3,y3 ... Z"
+    return points.reduce((path, point, i) => {
+      // Use explicit command letters with proper spacing for maximum browser compatibility
+      const cmd = i === 0 ? 'M ' : 'L ';
+      return path + cmd + point[0].toFixed(4) + ',' + point[1].toFixed(4) + ' ';
+    }, '') + 'Z';
+  } catch (error) {
+    console.error('Error generating path data:', error);
+    return '';
+  }
 }
 
 /**
@@ -129,7 +140,9 @@ const WorldMapSelector = () => {
   
   // Handle clicking on the map to add a timezone
   const handleMapClick = useCallback((coordinates: [number, number]) => {
-    const [lat, lng] = coordinates;
+    // IMPORTANT: react-simple-maps uses [lng, lat] format for coordinates
+    // but our timezone utilities expect [lat, lng]
+    const [lng, lat] = coordinates;
     const timezoneId = findClosestTimezone(lat, lng);
     
     // Check if timezone is already selected
@@ -147,7 +160,8 @@ const WorldMapSelector = () => {
       return;
     }
     
-    const [lat, lng] = coordinates;
+    // IMPORTANT: Convert from [lng, lat] to [lat, lng] for our utilities
+    const [lng, lat] = coordinates;
     const timezoneId = findClosestTimezone(lat, lng);
     const region = TIMEZONE_REGIONS.find(r => r.id === timezoneId);
     
@@ -187,69 +201,36 @@ const WorldMapSelector = () => {
       addTimezone(timezoneId);
       
       // Center the map on the selected timezone
+      // IMPORTANT: Convert from [lat, lng] to [lng, lat] for react-simple-maps
+      const [lat, lng] = coordinates;
       setPosition(prev => ({
         ...prev,
-        coordinates: [coordinates[1], coordinates[0]] // Note: react-simple-maps uses [lng, lat]
+        coordinates: [lng, lat]
       }));
     }
   }, [addTimezone, selectedTimezones]);
   
-  // Get timezone boundaries for selected timezones
-  const timezoneBoundaries = useMemo(() => {
-    return selectedTimezones
-      .map(timezone => {
-        const boundary = getTimezoneBoundary(timezone.id);
-        if (boundary) {
-          return {
-            id: timezone.id,
-            boundary,
-            color: getTimezoneColor(timezone.id)
-          };
-        }
-        return null;
+  // Optimize the selection of timezone boundaries
+  const selectedTimezoneBoundaries = useMemo(() => {
+    return Object.entries(TIMEZONE_BOUNDARIES)
+      .map(([tz, data]) => {
+        const isSelected = selectedTimezones.some(
+          (selectedTz) => selectedTz === tz || getRelatedTimezones(tz).includes(selectedTz)
+        );
+        
+        if (!isSelected) return null;
+        
+        // Pre-calculate the path data
+        const pathData = polygonToPath(data.boundaries);
+        
+        return {
+          id: tz,
+          color: data.color,
+          pathData
+        };
       })
       .filter(Boolean);
   }, [selectedTimezones]);
-  
-  // Process timezone boundaries for Line components
-  const timezoneBoundaryLines = useMemo(() => {
-    return timezoneBoundaries.flatMap(tzBoundary => {
-      const boundary = tzBoundary.boundary;
-      const lines = [];
-      
-      // Create lines between each point and the next (connect the dots)
-      for (let i = 0; i < boundary.length; i++) {
-        const current = boundary[i];
-        const next = boundary[(i + 1) % boundary.length]; // Wrap around to first point
-        
-        lines.push({
-          id: `${tzBoundary.id}-line-${i}`,
-          from: current,
-          to: next,
-          color: tzBoundary.color
-        });
-      }
-      
-      // Add more cross lines to create a filled appearance
-      // Connect every point with every other point for a dense fill
-      if (boundary.length > 3) {
-        for (let i = 0; i < boundary.length; i++) {
-          for (let j = i + 2; j < boundary.length; j++) {
-            if (j !== (i + 1) % boundary.length) { // Skip adjacent points (already covered above)
-              lines.push({
-                id: `${tzBoundary.id}-cross-${i}-${j}`,
-                from: boundary[i],
-                to: boundary[j],
-                color: tzBoundary.color
-              });
-            }
-          }
-        }
-      }
-      
-      return lines;
-    });
-  }, [timezoneBoundaries]);
   
   // Prepare timezone info for the legend
   const legendTimezones = useMemo(() => {
@@ -329,120 +310,89 @@ const WorldMapSelector = () => {
         
         <ComposableMap
           projection="geoMercator"
-          projectionConfig={{ scale: 150 }}
-          className="w-full h-full"
+          projectionConfig={{
+            scale: 147,
+          }}
         >
           <ZoomableGroup
             zoom={position.zoom}
-            center={position.coordinates as [number, number]}
+            center={[position.coordinates[0], position.coordinates[1]]}
             onMoveEnd={handleMoveEnd}
+            maxZoom={20}
           >
-            {/* Timezone solid fill background */}
-            {timezoneBoundaries.map(tzBoundary => {
-              const boundary = tzBoundary.boundary;
-              if (!boundary || boundary.length < 3) return null;
-              
-              // Create an SVG path for the boundary
-              const pathData = polygonToPath(boundary);
-              
-              return (
-                <g key={`fill-${tzBoundary.id}`}>
-                  <path
-                    d={pathData}
-                    fill={tzBoundary.color}
-                    fillOpacity={0.3}
-                    stroke="none"
-                  />
-                </g>
-              );
-            })}
-            
-            {/* Day/Night Terminator Line */}
-            <Line
-              coordinates={terminatorLine.map(([lat, lng]) => [lng, lat])} // Note: react-simple-maps uses [lng, lat]
-              stroke="#fef3c7" // Amber color
-              strokeWidth={1.5 / position.zoom}
-              strokeDasharray="5,5"
-              strokeLinecap="round"
-            />
-            
-            {/* Timezone Region Highlights using Line components */}
-            {timezoneBoundaryLines.map(line => (
-              <Line
-                key={line.id}
-                coordinates={[line.from, line.to]}
-                stroke={line.color}
-                strokeWidth={2.5 / position.zoom} // Increased from 1.5
-                strokeOpacity={0.8} // Increased from 0.6
-              />
-            ))}
-            
-            {/* Timezone fill areas - approximated with many parallel lines */}
-            {timezoneBoundaries.map(tzBoundary => {
-              const boundary = tzBoundary.boundary;
-              const center = boundary.reduce(
-                (acc, [lng, lat]) => [acc[0] + lng / boundary.length, acc[1] + lat / boundary.length],
-                [0, 0]
-              );
-              
-              // Create radial lines from center to each point to create a fill effect
-              return boundary.map((point, i) => (
-                <Line
-                  key={`${tzBoundary.id}-fill-${i}`}
-                  coordinates={[center, point]}
-                  stroke={tzBoundary.color}
-                  strokeWidth={2 / position.zoom} // Increased from 1
-                  strokeOpacity={0.4} // Increased from 0.2
-                />
-              ));
-            })}
-            
-            {/* Base Geography */}
+            {/* Base Geography - rendered first */}
             <Geographies geography={geoUrl}>
               {({ geographies }) =>
-                geographies.map(geo => {
-                  // Extract centroid or use a default
-                  const centroid = geo.properties?.centroid || [0, 0];
-                  const [centerLng, centerLat] = centroid;
-                  
-                  // Check if this region is in daylight
-                  const isDay = isPointInDaylight(centerLat, centerLng);
-                  
-                  // Base color on day/night
-                  const fillColor = isDay ? 
-                    "#2a4365" : // Dark blue for day
-                    "#111827"; // Very dark blue/black for night
-                  
-                  return (
-                    <Geography
-                      key={geo.rsmKey}
-                      geography={geo}
-                      fill={fillColor}
-                      stroke="#374151"
-                      strokeWidth={0.5 / position.zoom}
-                      style={{
-                        default: { outline: "none" },
-                        hover: { fill: "#4b5563", outline: "none" },
-                        pressed: { fill: "#6b7280", outline: "none" },
-                      }}
-                      onMouseEnter={() => {
-                        if (centroid) {
-                          handleMapHover([centerLat, centerLng]);
-                        }
-                      }}
-                      onMouseLeave={() => handleMapHover(null)}
-                      onClick={() => {
-                        if (centroid) {
-                          handleMapClick([centerLat, centerLng]);
-                        }
-                      }}
-                    />
-                  );
-                })
+                geographies.map((geo) => (
+                  <Geography
+                    key={geo.rsmKey}
+                    geography={geo}
+                    onClick={(e) => {
+                      // e.coordinates are in [lng, lat] format from react-simple-maps
+                      handleMapClick(e.coordinates);
+                    }}
+                    onMouseEnter={(e) => {
+                      // Handle hover using the same coordinate format
+                      if (e.coordinates) {
+                        handleMapHover(e.coordinates);
+                      }
+                    }}
+                    onMouseLeave={() => handleMapHover(null)}
+                    style={{
+                      default: {
+                        fill: '#1f2937',
+                        stroke: '#374151',
+                        strokeWidth: 0.5,
+                        outline: 'none',
+                      },
+                      hover: {
+                        fill: '#374151',
+                        stroke: '#4b5563',
+                        strokeWidth: 0.5,
+                        outline: 'none',
+                      },
+                      pressed: {
+                        fill: '#374151',
+                        stroke: '#4b5563',
+                        strokeWidth: 0.5,
+                        outline: 'none',
+                      },
+                    }}
+                  />
+                ))
               }
             </Geographies>
             
-            {/* Selected timezone markers */}
+            {/* Timezone region highlights - rendered after geography for visibility */}
+            {selectedTimezoneBoundaries.map(boundary => (
+              <g key={`timezone-fill-${boundary.id}`}>
+                <path
+                  d={boundary.pathData}
+                  fill={boundary.color}
+                  fillOpacity={0.4}
+                  stroke={boundary.color}
+                  strokeWidth={2.5 / position.zoom}
+                  strokeOpacity={0.9}
+                />
+              </g>
+            ))}
+            
+            {/* Draw bold boundary lines for better definition */}
+            {selectedTimezoneBoundaries.map(boundary => (
+              <g key={`timezone-outline-${boundary.id}`}>
+                <path
+                  d={boundary.pathData}
+                  fill="none"
+                  stroke={boundary.color}
+                  strokeWidth={3 / position.zoom}
+                  strokeOpacity={1}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              </g>
+            ))}
+            
+            {/* Markers for highlighting clicked locations */}
             {selectedTimezones.map((timezone) => {
               const region = TIMEZONE_REGIONS.find(r => r.id === timezone.id);
               
@@ -539,4 +489,25 @@ const WorldMapSelector = () => {
   );
 };
 
-export default memo(WorldMapSelector); 
+const WorldMapWithErrorBoundary = () => (
+  <ErrorBoundary
+    fallback={
+      <div className="relative w-full h-[500px] glass-card p-4 overflow-hidden flex items-center justify-center">
+        <div className="text-center p-6">
+          <h3 className="text-lg font-semibold text-red-500 mb-2">Map Rendering Error</h3>
+          <p className="mb-4">There was an issue rendering the world map.</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors"
+          >
+            Reload Page
+          </button>
+        </div>
+      </div>
+    }
+  >
+    <WorldMapSelector />
+  </ErrorBoundary>
+);
+
+export default memo(WorldMapWithErrorBoundary); 

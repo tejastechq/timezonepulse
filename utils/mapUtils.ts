@@ -79,28 +79,32 @@ export const TIMEZONE_BOUNDARIES = {
     name: 'Pacific Time',
     color: '#3b82f6', // blue
     boundaries: [
-      [-125, 49], [-125, 32], [-117, 32], [-114.5, 32.5], [-114, 35], [-114, 49], [-125, 49]
+      [-135, 60], [-135, 30], [-125, 30], [-120, 32], [-118, 32.5], [-117, 32.5], [-116, 33], 
+      [-115, 33.5], [-114.5, 35], [-114, 38], [-114, 42], [-117, 49], [-120, 52], [-125, 55], [-135, 60]
     ]
   },
   'America/Denver': {
     name: 'Mountain Time',
     color: '#10b981', // green
     boundaries: [
-      [-114, 49], [-114, 35], [-114.5, 32.5], [-109, 31.5], [-105, 31.5], [-103, 32], [-103, 49], [-114, 49]
+      [-114, 60], [-114, 42], [-114, 38], [-114.5, 35], [-115, 33.5], [-114, 32], [-107, 31], 
+      [-105, 30], [-103, 30], [-103, 49], [-103, 60], [-114, 60]
     ]
   },
   'America/Chicago': {
     name: 'Central Time',
     color: '#f59e0b', // amber
     boundaries: [
-      [-103, 49], [-103, 32], [-101, 30], [-97, 26], [-95, 26], [-90, 29], [-89, 31], [-89, 49], [-103, 49]
+      [-103, 60], [-103, 49], [-103, 30], [-101, 28], [-99, 26], [-97, 25.5], [-95, 26], 
+      [-92, 28], [-90, 29], [-88, 30], [-88, 36], [-89, 41], [-89, 49], [-89, 60], [-103, 60]
     ]
   },
   'America/New_York': {
     name: 'Eastern Time',
     color: '#8b5cf6', // purple
     boundaries: [
-      [-89, 49], [-89, 31], [-90, 29], [-85, 30], [-81, 25], [-78, 25], [-75, 36], [-75, 45], [-80, 49], [-89, 49]
+      [-89, 60], [-89, 49], [-89, 41], [-88, 36], [-88, 30], [-83, 27], [-82, 26], [-80, 25], 
+      [-76, 25], [-76, 31], [-75, 35], [-75, 45], [-77, 47], [-77, 60], [-89, 60]
     ]
   },
   
@@ -109,21 +113,24 @@ export const TIMEZONE_BOUNDARIES = {
     name: 'GMT/UTC',
     color: '#ef4444', // red
     boundaries: [
-      [-10, 60], [-10, 50], [-5, 45], [0, 43], [2, 43], [2, 50], [2, 60], [-10, 60]
+      [-12, 65], [-12, 48], [-8, 40], [-2, 36], [0, 36], [2, 42], [2, 50], [1, 53],
+      [0, 55], [-2, 58], [-5, 60], [-8, 62], [-12, 65]
     ]
   },
   'Europe/Paris': {
     name: 'Central European Time',
     color: '#f97316', // orange
     boundaries: [
-      [2, 60], [2, 43], [3, 43], [8, 43], [13, 42], [15, 42], [15, 50], [15, 60], [2, 60]
+      [2, 70], [2, 50], [2, 42], [0, 36], [4, 36], [8, 36], [14, 38], [19, 40], 
+      [22, 45], [22, 52], [20, 58], [14, 65], [8, 70], [2, 70]
     ]
   },
   'Europe/Moscow': {
     name: 'Moscow Time',
     color: '#0ea5e9', // sky blue
     boundaries: [
-      [30, 60], [30, 45], [35, 45], [40, 45], [40, 60], [30, 60]
+      [22, 70], [22, 52], [22, 45], [26, 40], [30, 40], [36, 40], [40, 40], 
+      [45, 45], [48, 50], [48, 58], [42, 65], [35, 70], [22, 70]
     ]
   },
   
@@ -132,46 +139,53 @@ export const TIMEZONE_BOUNDARIES = {
     name: 'Japan Standard Time',
     color: '#ec4899', // pink
     boundaries: [
-      [129, 46], [129, 30], [132, 30], [140, 33], [146, 38], [146, 46], [129, 46]
+      [127, 34], [130, 30], [132, 30], [134, 31], [136, 32], [138, 33], [140, 34], 
+      [142, 35], [145, 40], [147, 44], [145, 48], [141, 47], [137, 44], [133, 40], [130, 36], [127, 34]
     ]
   },
   'Asia/Shanghai': {
     name: 'China Standard Time',
     color: '#a855f7', // purple
     boundaries: [
-      [73, 53], [73, 18], [80, 18], [104, 18], [120, 18], [128, 30], [135, 40], [135, 53], [73, 53]
+      [73, 55], [73, 45], [75, 35], [80, 28], [85, 25], [90, 22], [95, 20], [100, 18], 
+      [105, 18], [110, 18], [115, 20], [120, 22], [125, 30], [130, 35], [130, 40],
+      [125, 45], [120, 50], [115, 52], [110, 55], [90, 55], [80, 55], [73, 55]
     ]
   },
   'Asia/Kolkata': {
     name: 'Indian Standard Time',
     color: '#14b8a6', // teal
     boundaries: [
-      [68, 36], [68, 8], [74, 8], [88, 8], [97, 15], [97, 36], [68, 36]
+      [68, 40], [68, 30], [70, 22], [72, 15], [75, 8], [80, 8], [85, 10], 
+      [90, 14], [92, 18], [92, 22], [90, 28], [85, 33], [80, 36], [72, 38], [68, 40]
     ]
   },
   
   // Australia
   'Australia/Sydney': {
-    name: 'Australian Eastern Time',
-    color: '#22c55e', // green
+    name: 'Eastern Australia Time',
+    color: '#06b6d4', // cyan
     boundaries: [
-      [141, -28], [141, -39], [148, -39], [154, -35], [154, -28], [150, -22], [141, -28]
+      [141, -45], [141, -38], [142, -34], [145, -30], [148, -28], [150, -28], [153, -28], 
+      [155, -30], [155, -34], [153, -38], [150, -40], [148, -42], [145, -44], [141, -45]
     ]
   },
   
-  // Additional regions
+  // Additional
   'America/Sao_Paulo': {
     name: 'Brasilia Time',
-    color: '#fbbf24', // yellow-500
+    color: '#84cc16', // lime 
     boundaries: [
-      [-58, 5], [-58, -33], [-48, -33], [-35, -18], [-35, 0], [-50, 5], [-58, 5]
+      [-60, -20], [-55, -15], [-50, -10], [-45, -8], [-40, -10], [-35, -15], 
+      [-35, -25], [-40, -30], [-45, -33], [-50, -33], [-55, -30], [-60, -25], [-60, -20]
     ]
   },
   'Africa/Cairo': {
     name: 'Eastern European Time',
     color: '#d946ef', // fuchsia
     boundaries: [
-      [22, 37], [22, 24], [35, 24], [35, 37], [22, 37]
+      [22, 38], [22, 32], [25, 28], [30, 22], [35, 22], [38, 24], [38, 30], 
+      [35, 34], [30, 36], [25, 38], [22, 38]
     ]
   }
 };
@@ -641,4 +655,52 @@ export function getTimeBasedColor(timezone: Timezone): string {
   
   // Evening (5 PM - 10 PM)
   return "#7c3aed"; // violet-600
+}
+
+/**
+ * Get related timezones that should share the same boundary and color
+ * @param timezoneId The IANA timezone identifier
+ * @returns Array of related timezone IDs
+ */
+export function getRelatedTimezones(timezoneId: string): string[] {
+  // Map of timezone relationships
+  const timezoneMap: Record<string, string[]> = {
+    // North America
+    'America/Los_Angeles': ['America/Vancouver', 'America/Tijuana', 'America/Dawson', 'America/Whitehorse'],
+    'America/Denver': ['America/Phoenix', 'America/Edmonton', 'America/Yellowknife', 'America/Boise'],
+    'America/Chicago': ['America/Mexico_City', 'America/Winnipeg', 'America/Regina', 'America/Monterrey'],
+    'America/New_York': ['America/Toronto', 'America/Montreal', 'America/Detroit', 'America/Halifax', 'America/Indiana/Indianapolis'],
+    
+    // Europe
+    'Europe/London': ['Europe/Dublin', 'Europe/Lisbon', 'Atlantic/Reykjavik', 'Africa/Casablanca'],
+    'Europe/Paris': ['Europe/Berlin', 'Europe/Madrid', 'Europe/Rome', 'Europe/Amsterdam', 'Europe/Brussels', 
+                     'Europe/Vienna', 'Europe/Stockholm', 'Europe/Zurich', 'Europe/Warsaw', 'Europe/Prague', 
+                     'Europe/Budapest', 'Europe/Copenhagen'],
+    'Europe/Moscow': ['Europe/Kiev', 'Europe/Minsk', 'Europe/Tallinn', 'Europe/Riga', 'Europe/Vilnius'],
+    
+    // Asia
+    'Asia/Tokyo': ['Asia/Seoul', 'Asia/Pyongyang', 'Pacific/Palau'],
+    'Asia/Shanghai': ['Asia/Hong_Kong', 'Asia/Macau', 'Asia/Taipei', 'Asia/Singapore', 'Asia/Kuala_Lumpur', 
+                      'Asia/Manila', 'Asia/Brunei'],
+    'Asia/Kolkata': ['Asia/Colombo', 'Asia/Kathmandu', 'Asia/Dhaka', 'Asia/Thimphu'],
+    
+    // Australia
+    'Australia/Sydney': ['Australia/Melbourne', 'Australia/Brisbane', 'Australia/Hobart', 'Pacific/Auckland'],
+    
+    // Additional
+    'America/Sao_Paulo': ['America/Rio_de_Janeiro', 'America/Fortaleza', 'America/Argentina/Buenos_Aires'],
+    'Africa/Cairo': ['Asia/Beirut', 'Asia/Jerusalem', 'Asia/Damascus', 'Europe/Athens', 'Europe/Istanbul']
+  };
+  
+  // Check each key in our map to see if the provided timezoneId is related
+  for (const [mainZone, relatedZones] of Object.entries(timezoneMap)) {
+    // If the timezone matches the main zone or is in the related zones
+    if (timezoneId === mainZone || relatedZones.includes(timezoneId)) {
+      // Return the main zone and all related zones
+      return [mainZone, ...relatedZones];
+    }
+  }
+  
+  // If no relationships found, just return the timezone itself
+  return [timezoneId];
 } 
