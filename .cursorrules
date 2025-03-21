@@ -69,7 +69,6 @@ The application serves as a comprehensive solution for global time management, h
 - TypeScript
 - TailwindCSS for styling
 - Edge Runtime for API routes that need global low latency
-- Tanstack Query (React Query) for data fetching, caching, and synchronization
 - Zustand for lightweight state management
 - Million.js for optimizing React rendering performance
 - Framer Motion for smooth animations and transitions

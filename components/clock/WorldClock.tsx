@@ -50,7 +50,7 @@ const OptimizedDigitalView = DigitalView;
 
 // Dynamically import less critical components to reduce initial load
 const ViewSwitcher = dynamic(() => import('./ViewSwitcher'), { ssr: true });
-// Import DashboardToggle directly to avoid webpack optimization issues
+// DashboardToggle is imported directly at the top of the file for better reliability
 const ContextualInfo = dynamic(() => import('./ContextualInfo'), { ssr: false });
 const PersonalNotes = dynamic(() => import('./PersonalNotes'), { ssr: false });
 const NotificationButton = dynamic(() => import('./NotificationButton'), { ssr: false });

@@ -171,8 +171,7 @@ export default function TimezoneSelector({
         tz.id.toLowerCase().includes(searchLower) ||
         (tz.city && tz.city.toLowerCase().includes(searchLower)) ||
         (tz.country && tz.country.toLowerCase().includes(searchLower)) ||
-        (tz.abbreviation && tz.abbreviation.toLowerCase().includes(searchLower)) ||
-        (tz.region && tz.region.toLowerCase().includes(searchLower))
+        (tz.abbreviation && tz.abbreviation.toLowerCase().includes(searchLower))
       );
 
       return sortTimezonesByRelevance(filtered, debouncedSearch, recentTimezones);
@@ -196,9 +195,11 @@ export default function TimezoneSelector({
       updatedRecent.add(timezone.id);
       if (updatedRecent.size > 10) {
         const firstItem = updatedRecent.values().next().value;
-        updatedRecent.delete(firstItem);
+        if (firstItem) {
+          updatedRecent.delete(firstItem);
+        }
       }
-      localStorage.setItem('recentTimezones', JSON.stringify([...updatedRecent]));
+      localStorage.setItem('recentTimezones', JSON.stringify(Array.from(updatedRecent)));
       
       onSelect(timezone);
     } catch (err) {
@@ -396,17 +397,18 @@ export default function TimezoneSelector({
                     {/* Show search results */}
                     {!isLoading && !error && filteredTimezones.length > 0 && debouncedSearch.trim() && (
                       // When searching, display a flat list of results with fixed height
-                      <div className="h-[320px] overflow-hidden">
+                      <div 
+                        className="h-[320px] overflow-hidden"
+                        role="listbox"
+                        aria-label="Available timezones and regions"
+                        id="timezone-list"
+                      >
                         <List
                           height={320}
                           width="100%"
                           itemCount={filteredTimezones.length}
                           itemSize={80}
                           className="timezone-list focus:outline-none"
-                          tabIndex={0}
-                          role="listbox"
-                          aria-label="Available timezones and regions"
-                          id="timezone-list"
                           overscanCount={5}
                         >
                           {renderListItem}
@@ -422,15 +424,22 @@ export default function TimezoneSelector({
                         role="listbox" 
                         aria-label="Available timezone regions"
                       >
-                        {/* Group timezones by region */}
-                        {Array.from(new Set(filteredTimezones.map(tz => tz.region || 'Other'))).map(region => (
-                          <div key={region} className="mb-4">
+                        {/* Group timezones by continent extracted from the ID */}
+                        {Array.from(new Set(filteredTimezones.map(tz => {
+                          // Extract continent from timezone ID (first part before the /)
+                          const parts = tz.id.split('/');
+                          return parts[0] || 'Other';
+                        }))).map(continent => (
+                          <div key={continent} className="mb-4">
                             <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 px-4 py-1 sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-10">
-                              {region}
+                              {continent}
                             </h3>
                             <div>
                               {filteredTimezones
-                                .filter(tz => (tz.region || 'Other') === region)
+                                .filter(tz => {
+                                  const parts = tz.id.split('/');
+                                  return (parts[0] || 'Other') === continent;
+                                })
                                 .map(timezone => {
                                   try {
                                     const context = getTimezoneContext(timezone, userTimezone);

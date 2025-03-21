@@ -50,8 +50,8 @@ const reportWebVitalsToAnalytics = (metric: {
   if (process.env.NODE_ENV !== 'production') return;
   
   // Check for analytics availability
-  if (window && typeof window.gtag === 'function') {
-    window.gtag('event', metric.name, {
+  if (window && typeof (window as any).gtag === 'function') {
+    (window as any).gtag('event', metric.name, {
       event_category: 'web-vitals',
       event_label: metric.id,
       value: Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
@@ -61,8 +61,8 @@ const reportWebVitalsToAnalytics = (metric: {
 
   // If Sentry is available, report there too
   try {
-    if (window && window.Sentry) {
-      window.Sentry.captureMessage(`WebVitals: ${metric.name} - ${Math.round(metric.value)}`);
+    if (window && (window as any).Sentry) {
+      (window as any).Sentry.captureMessage(`WebVitals: ${metric.name} - ${Math.round(metric.value)}`);
     }
   } catch (error) {
     console.error('Failed to report to Sentry:', error);
