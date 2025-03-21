@@ -54,11 +54,11 @@ function AnalogClock({
   const clockRadius = center - strokeWidth;
   
   // Determine clock face colors based on theme
-  const clockFaceColor = theme === 'dark' ? '#2D3748' : '#F7FAFC';
-  const clockBorderColor = theme === 'dark' ? '#4A5568' : '#E2E8F0';
-  const clockNumeralColor = theme === 'dark' ? '#CBD5E0' : '#4A5568';
-  const hourHandColor = theme === 'dark' ? '#E2E8F0' : '#2D3748';
-  const minuteHandColor = theme === 'dark' ? '#E2E8F0' : '#4A5568';
+  const clockFaceColor = theme === 'dark' ? '#1F2937' : '#F9FAFB';
+  const clockBorderColor = theme === 'dark' ? '#4B5563' : '#E5E7EB';
+  const clockNumeralColor = theme === 'dark' ? '#D1D5DB' : '#374151';
+  const hourHandColor = theme === 'dark' ? '#F3F4F6' : '#1F2937';
+  const minuteHandColor = theme === 'dark' ? '#E5E7EB' : '#4B5563';
   
   // Memoize the hour markers to prevent recalculation on every render
   const hourMarkers = useMemo(() => {
@@ -185,7 +185,7 @@ function AnalogClock({
         viewBox={`0 0 ${size} ${size}`}
         className="absolute inset-0 drop-shadow-md"
       >
-        {/* Clock face with inner shadow */}
+        {/* Enhanced filters and gradients for better visuals */}
         <defs>
           <filter id="inner-shadow" x="-50%" y="-50%" width="200%" height="200%">
             <feOffset dx="0" dy="0" />
@@ -196,21 +196,91 @@ function AnalogClock({
             <feComposite operator="over" in="shadow" in2="SourceGraphic" />
           </filter>
           
-          {/* Shadow for clock hands */}
+          {/* Improved shadow for clock hands */}
           <filter id="hand-shadow" x="-50%" y="-50%" width="200%" height="200%">
-            <feDropShadow dx="0.5" dy="0.5" stdDeviation="0.5" floodOpacity="0.3" />
+            <feDropShadow dx="0.8" dy="0.8" stdDeviation="0.8" floodOpacity="0.3" />
           </filter>
+          
+          {/* Glass reflection effect */}
+          <linearGradient id="glass-reflection" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.1" />
+            <stop offset="20%" stopColor="#FFFFFF" stopOpacity="0.07" />
+            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
+          </linearGradient>
+          
+          {/* Enhanced gradient for clock face */}
+          <linearGradient id="clock-face-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={theme === 'dark' ? '#2D3748' : '#FFFFFF'} />
+            <stop offset="100%" stopColor={clockFaceColor} />
+          </linearGradient>
+          
+          {/* Improved radial gradient for inner circle */}
+          <radialGradient id="inner-circle-gradient" cx="50%" cy="50%" r="50%" fx="35%" fy="35%">
+            <stop offset="0%" stopColor={theme === 'dark' ? '#4A5568' : '#F7FAFC'} />
+            <stop offset="100%" stopColor={theme === 'dark' ? '#2D3748' : '#E2E8F0'} />
+          </radialGradient>
+          
+          {/* Subtle texture overlay */}
+          <pattern id="subtle-texture" patternUnits="userSpaceOnUse" width="100" height="100" patternTransform="scale(0.5)">
+            <rect width="100%" height="100%" fill="none" />
+            <path d="M0,0 L10,10 M10,0 L0,10" stroke="currentColor" strokeWidth="0.5" strokeOpacity="0.03" />
+          </pattern>
         </defs>
         
-        {/* Clock background */}
+        {/* Clock outer glow effect */}
+        <circle
+          cx={center}
+          cy={center}
+          r={clockRadius + 3}
+          fill="none"
+          stroke={theme === 'dark' ? '#3B82F6' : '#60A5FA'}
+          strokeWidth="0.5"
+          strokeOpacity="0.2"
+          filter="blur(4px)"
+        />
+        
+        {/* Clock background with enhanced gradients */}
         <circle
           cx={center}
           cy={center}
           r={clockRadius}
-          fill={clockFaceColor}
+          fill="url(#clock-face-gradient)"
           stroke={clockBorderColor}
           strokeWidth={strokeWidth}
           filter="url(#inner-shadow)"
+        />
+        
+        {/* Subtle texture overlay */}
+        <circle
+          cx={center}
+          cy={center}
+          r={clockRadius - 1}
+          fill="url(#subtle-texture)"
+          fillOpacity="0.4"
+        />
+        
+        {/* Glass reflection effect */}
+        <path
+          d={`
+            M ${center} ${center - clockRadius * 0.7}
+            A ${clockRadius * 0.8} ${clockRadius * 0.3} 0 0 1 ${center + clockRadius * 0.7} ${center}
+            A ${clockRadius * 0.8} ${clockRadius * 0.8} 0 0 1 ${center} ${center + clockRadius * 0.5}
+            A ${clockRadius * 0.8} ${clockRadius * 0.8} 0 0 1 ${center - clockRadius * 0.7} ${center}
+            A ${clockRadius * 0.8} ${clockRadius * 0.3} 0 0 1 ${center} ${center - clockRadius * 0.7}
+          `}
+          fill="url(#glass-reflection)"
+          opacity={theme === 'dark' ? 0.07 : 0.15}
+        />
+        
+        {/* Clock outer ring */}
+        <circle
+          cx={center}
+          cy={center}
+          r={clockRadius - strokeWidth / 2}
+          fill="none"
+          stroke={clockBorderColor}
+          strokeWidth={strokeWidth / 4}
+          strokeOpacity="0.5"
         />
         
         {/* Minute ticks */}
@@ -224,7 +294,10 @@ function AnalogClock({
         
         {/* Highlighted time indicator */}
         {highlightRotation !== null && (
-          <line
+          <motion.line
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
             x1={center}
             y1={center}
             x2={center + (center - strokeWidth * 4) * Math.cos((highlightRotation + 90) * (Math.PI / 180))}
@@ -236,27 +309,41 @@ function AnalogClock({
           />
         )}
         
-        {/* Hour hand */}
-        <line
-          x1={hourHand.x1}
-          y1={hourHand.y1}
-          x2={hourHand.x2}
-          y2={hourHand.y2}
-          stroke={hourHandColor}
-          strokeWidth={strokeWidth * 1.2}
-          strokeLinecap="round"
+        {/* Hour hand with gradient and enhanced shape */}
+        <motion.path
+          initial={false}
+          animate={{ 
+            d: `
+              M ${hourHand.x1} ${hourHand.y1} 
+              L ${hourHand.x2} ${hourHand.y2} 
+              L ${center + (strokeWidth * 0.5) * Math.cos((hourRotation + 90 + 90) * (Math.PI / 180))} 
+                ${center + (strokeWidth * 0.5) * Math.sin((hourRotation + 90 + 90) * (Math.PI / 180))} 
+              L ${center + (strokeWidth * 0.5) * Math.cos((hourRotation + 90 - 90) * (Math.PI / 180))} 
+                ${center + (strokeWidth * 0.5) * Math.sin((hourRotation + 90 - 90) * (Math.PI / 180))}
+              Z
+            `
+          }}
+          transition={{ type: "spring", stiffness: 500, damping: 50, duration: 0.3 }}
+          fill={hourHandColor}
           filter="url(#hand-shadow)"
         />
         
-        {/* Minute hand */}
-        <line
-          x1={minuteHand.x1}
-          y1={minuteHand.y1}
-          x2={minuteHand.x2}
-          y2={minuteHand.y2}
-          stroke={minuteHandColor}
-          strokeWidth={strokeWidth * 0.8}
-          strokeLinecap="round"
+        {/* Minute hand with gradient and enhanced shape */}
+        <motion.path
+          initial={false}
+          animate={{ 
+            d: `
+              M ${minuteHand.x1} ${minuteHand.y1} 
+              L ${minuteHand.x2} ${minuteHand.y2} 
+              L ${center + (strokeWidth * 0.3) * Math.cos((minuteRotation + 90 + 90) * (Math.PI / 180))} 
+                ${center + (strokeWidth * 0.3) * Math.sin((minuteRotation + 90 + 90) * (Math.PI / 180))} 
+              L ${center + (strokeWidth * 0.3) * Math.cos((minuteRotation + 90 - 90) * (Math.PI / 180))} 
+                ${center + (strokeWidth * 0.3) * Math.sin((minuteRotation + 90 - 90) * (Math.PI / 180))}
+              Z
+            `
+          }}
+          transition={{ type: "spring", stiffness: 500, damping: 50, duration: 0.2 }}
+          fill={minuteHandColor}
           filter="url(#hand-shadow)"
         />
         
@@ -270,31 +357,47 @@ function AnalogClock({
           strokeWidth={strokeWidth * 0.4}
           strokeLinecap="round"
           initial={false}
+          animate={{ 
+            x1: secondHand.x1,
+            y1: secondHand.y1,
+            x2: secondHand.x2,
+            y2: secondHand.y2
+          }}
           transition={{ 
             type: "spring",
-            stiffness: 100,
-            damping: 10,
+            stiffness: 600,
+            damping: 30,
             duration: 0.1 
           }}
+          filter="url(#hand-shadow)"
         />
         
-        {/* Center dot with shadow */}
+        {/* Enhanced center dot with realistic appearance */}
         <circle
           cx={center}
           cy={center}
-          r={strokeWidth * 1.3}
-          fill="#CBD5E0"
-          stroke="currentColor"
+          r={strokeWidth * 1.5}
+          fill="url(#inner-circle-gradient)"
+          stroke={theme === 'dark' ? '#4B5563' : '#9CA3AF'}
           strokeWidth={strokeWidth * 0.2}
           filter="url(#hand-shadow)"
         />
         
-        {/* Center dot cap */}
+        {/* Center dot cap with subtle shine */}
         <circle
           cx={center}
           cy={center}
           r={strokeWidth * 0.7}
           fill="#EF4444"
+        />
+        
+        {/* Subtle shine on center cap */}
+        <circle
+          cx={center - strokeWidth * 0.2}
+          cy={center - strokeWidth * 0.2}
+          r={strokeWidth * 0.3}
+          fill="#FFFFFF"
+          fillOpacity="0.3"
         />
       </svg>
     </div>

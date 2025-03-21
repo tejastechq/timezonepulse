@@ -20,7 +20,7 @@ interface TimezoneCardProps {
 }
 
 /**
- * Component for displaying a single timezone
+ * Component for displaying a single timezone with a glassmorphism effect
  */
 export default function TimezoneCard({
   timezone,
@@ -50,16 +50,20 @@ export default function TimezoneCard({
   // Format the date for display
   const dateDisplay = zonedTime.toFormat('EEE, MMM d');
   
+  // Glass card classes
+  const glassClasses = `glass-card ${isNightTime ? 'glass-card-dark' : 'glass-card-light'}`;
+  
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
+      whileHover={{ scale: 1.02 }}
       className={`
-        relative p-4 rounded-lg shadow-md
-        ${isNightTime ? 'bg-gray-800 text-white' : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}
+        relative p-4 rounded-lg ${glassClasses}
         ${isBusinessHours ? 'border-l-4 border-green-500' : ''}
+        ${isNightTime ? 'text-white' : 'text-gray-900 dark:text-white'}
       `}
     >
       <div className="flex justify-between items-start mb-2">
@@ -87,7 +91,7 @@ export default function TimezoneCard({
       
       {/* Options dropdown */}
       {showOptions && (
-        <div className="absolute right-4 top-12 z-10 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1">
+        <div className="absolute right-4 top-12 z-10 glass-card glass-card-light dark:glass-card-dark rounded-md shadow-lg py-1">
           <button
             onClick={() => {
               onRemove(timezone.id);

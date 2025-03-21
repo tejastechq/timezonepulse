@@ -8,140 +8,11 @@ import { isInDST } from '@/lib/utils/timezone';
 import TimezoneSelector from './TimezoneSelector';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Edit2, Plus, Settings, X } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import ClockCard from './ClockCard';
+import useTimeUpdate from '@/lib/hooks/useTimeUpdate';
 
-// New ClockCard component for memoization
-interface ClockCardProps {
-  timezone: Timezone;
-  currentTime: Date;
-  userLocalTimezone: string;
-  renderClock: (time: Date, timezone: string, size?: number) => React.ReactNode;
-  onEdit: (id: string) => void;
-  onRemove: (id: string) => void;
-}
-
-// Memoized ClockCard component to prevent unnecessary re-renders
-const ClockCard = memo(function ClockCard({
-  timezone,
-  currentTime,
-  userLocalTimezone,
-  renderClock,
-  onEdit,
-  onRemove
-}: ClockCardProps) {
-  // Memoize expensive calculations
-  const zonedTime = useMemo(() => 
-    DateTime.fromJSDate(currentTime).setZone(timezone.id),
-    [currentTime, timezone.id]
-  );
-  
-  const isDST = useMemo(() => isInDST(timezone.id), [timezone.id]);
-  const dateDisplay = useMemo(() => zonedTime.toFormat('EEE, MMM d'), [zonedTime]);
-  const hour = zonedTime.hour;
-  const isBusinessHours = useMemo(() => hour >= 9 && hour < 17, [hour]);
-  const isNightTime = useMemo(() => hour >= 20 || hour < 6, [hour]);
-  
-  return (
-    <motion.div
-      key={timezone.id}
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className={`
-        relative p-4 rounded-lg shadow-md border border-gray-200 dark:border-gray-700
-        ${isNightTime ? 'bg-gray-900 text-white' : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white'}
-        ${isBusinessHours ? 'border-l-4 border-green-500' : 'border-l-4 border-transparent'}
-        transition-shadow duration-200 hover:shadow-lg
-      `}
-    >
-      <div className="flex justify-between items-start mb-2">
-        <div>
-          <h3 className="text-lg font-semibold">{timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}</h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{timezone.id}</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          {isDST && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100">
-              DST
-            </span>
-          )}
-          
-          {/* Timezone options dropdown */}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger asChild>
-              <button 
-                className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700
-                          focus:outline-none focus:ring-2 focus:ring-primary-500"
-                aria-label="Timezone options"
-              >
-                <Settings className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-              </button>
-            </DropdownMenu.Trigger>
-            
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content
-                className="min-w-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1.5 border border-gray-200 dark:border-gray-700"
-                sideOffset={5}
-                align="end"
-              >
-                {timezone.id !== userLocalTimezone && (
-                  <DropdownMenu.Item 
-                    onSelect={() => onEdit(timezone.id)}
-                    className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                  >
-                    <Edit2 className="h-4 w-4 mr-2" />
-                    Change Timezone
-                  </DropdownMenu.Item>
-                )}
-                
-                {timezone.id !== userLocalTimezone && (
-                  <DropdownMenu.Item 
-                    onSelect={() => onRemove(timezone.id)}
-                    className="flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Remove
-                  </DropdownMenu.Item>
-                )}
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
-        </div>
-      </div>
-      
-      <p className="text-sm mb-4">{dateDisplay}</p>
-      
-      <div className="flex justify-center mb-4">
-        {renderClock(zonedTime.toJSDate(), timezone.id, 180)}
-      </div>
-      
-      <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-        <span>
-          {isBusinessHours ? 'Business Hours' : isNightTime ? 'Night Time' : 'Off Hours'}
-        </span>
-        <span>
-          {zonedTime.toFormat('ZZZZ')}
-        </span>
-      </div>
-    </motion.div>
-  );
-});
-
-// Custom hook for time updates that minimizes re-renders
-function useTimeUpdate(interval = 1000) {
-  const [time, setTime] = useState(new Date());
-  
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(new Date());
-    }, interval);
-    
-    return () => clearInterval(timer);
-  }, [interval]);
-  
-  return time;
-}
-
+// Define props interface
 interface BaseClockViewProps {
   selectedTimezones: Timezone[];
   userLocalTimezone: string;
@@ -157,6 +28,10 @@ function BaseClockView({
   renderClock,
   minHeight = '310px'
 }: BaseClockViewProps) {
+  // IMPORTANT: Keep hooks at the top of the component
+  // Get theme from next-themes
+  const { resolvedTheme } = useTheme();
+  
   // Use optimized time update instead of setState + setInterval combo
   const currentTime = useTimeUpdate(1000);
   const [mounted, setMounted] = useState(false);
@@ -250,18 +125,20 @@ function BaseClockView({
       exit={{ opacity: 0 }}
       className="w-full"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {uniqueTimezones.map((timezone) => (
-          <ClockCard
-            key={timezone.id}
-            timezone={timezone}
-            currentTime={currentTime}
-            userLocalTimezone={userLocalTimezone}
-            renderClock={renderClock}
-            onEdit={handleEditTimezone}
-            onRemove={handleRemoveTimezone}
-          />
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 auto-rows-auto">
+        <AnimatePresence>
+          {uniqueTimezones.map((timezone) => (
+            <ClockCard
+              key={timezone.id}
+              timezone={timezone}
+              currentTime={currentTime}
+              userLocalTimezone={userLocalTimezone}
+              renderClock={renderClock}
+              onEdit={handleEditTimezone}
+              onRemove={handleRemoveTimezone}
+            />
+          ))}
+        </AnimatePresence>
         
         {/* Add Timezone Button */}
         {canAddMore && (
@@ -269,14 +146,17 @@ function BaseClockView({
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.2 }}
+            whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
             onClick={handleOpenSelector}
-            className={`bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 
+            className={`glass-card ${
+              resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'
+            } rounded-lg border-2 border-dashed border-gray-300 
                       dark:border-gray-700 p-4 h-full min-h-[${minHeight}] flex flex-col items-center justify-center
-                      hover:border-primary-500 dark:hover:border-primary-500 hover:bg-gray-50 
-                      dark:hover:bg-gray-800/80 transition-colors duration-200 cursor-pointer`}
+                      hover:border-primary-500 dark:hover:border-primary-500
+                      transition-all duration-200 cursor-pointer`}
             aria-label="Add Timezone or Region - Track time for another region"
           >
-            <div className="rounded-full bg-primary-100 dark:bg-primary-900/30 p-3 mb-3">
+            <div className="rounded-full bg-primary-100/80 dark:bg-primary-900/30 backdrop-blur-sm p-3 mb-3 shadow-md">
               <Plus className="h-6 w-6 text-primary-600 dark:text-primary-400" />
             </div>
             <p className="text-gray-600 dark:text-gray-300 font-medium">Add Timezone or Region</p>
