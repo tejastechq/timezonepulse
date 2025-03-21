@@ -15,6 +15,9 @@ import type { Timezone } from '@/store/timezoneStore';
 // Import the static server component heading
 import WorldClockHeading from './WorldClockHeading';
 
+// Dynamically import the WorldMapSelector with no SSR
+const WorldMapSelector = dynamic(() => import('../map/WorldMapSelector'), { ssr: false });
+
 // Define interfaces for the view components based on their implementations
 interface ListViewProps {
   selectedTimezones: Timezone[];
@@ -116,6 +119,14 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
   const timeColumnsContainerRef = useRef<HTMLDivElement>(null);
   const lcpContentRef = useRef<HTMLDivElement>(null);
 
+  // Add state for map visibility
+  const [showMap, setShowMap] = useState(false);
+  
+  // Toggle map visibility
+  const toggleMap = useCallback(() => {
+    setShowMap(prev => !prev);
+  }, []);
+  
   // Hydration safe initialization
   useEffect(() => {
     setIsClient(true);
@@ -254,8 +265,32 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
       
       <div className="flex justify-between items-center mb-4 h-12">
         <ViewSwitcher />
-        <NotificationButton />
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={toggleMap}
+            className="flex items-center justify-center px-4 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-white text-sm"
+            aria-label={showMap ? "Hide world map" : "Show world map"}
+          >
+            {showMap ? 'Hide Map' : 'World Map'}
+          </button>
+          <NotificationButton />
+        </div>
       </div>
+
+      {/* World Map Section */}
+      <AnimatePresence>
+        {showMap && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3 }}
+            className="mb-6 overflow-hidden"
+          >
+            <WorldMapSelector />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Dynamic View Rendering - Using Suspense for better loading experience */}
       <div className="flex justify-center w-full">
