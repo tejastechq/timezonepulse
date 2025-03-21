@@ -11,6 +11,7 @@ import { getAllTimezones, isInDST } from '@/lib/utils/timezone';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import TimezoneSelector from '../clock/TimezoneSelector'; // Import the shared TimezoneSelector
+import { useTheme } from 'next-themes';
 
 interface ListViewProps {
   selectedTimezones: Timezone[];
@@ -56,6 +57,9 @@ export default function ListView({
   
   // Add a ref for scrollSyncTimeout to fix the undefined error
   const scrollSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Get theme from next-themes
+  const { resolvedTheme } = useTheme();
   
   // State for timezone selector
   const [selectorOpen, setSelectorOpen] = useState(false);
@@ -1062,14 +1066,22 @@ export default function ListView({
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="mb-4 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm"
+            className={`mb-4 p-3 rounded-lg shadow-sm glass-card backdrop-blur-fix ${
+              resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'
+            }`}
+            style={{
+              isolation: 'isolate',
+              backgroundColor: resolvedTheme === 'dark'
+                ? 'rgba(15, 15, 25, 0.2)'
+                : 'rgba(255, 255, 255, 0.15)'
+            }}
           >
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 relative z-[2]">
               <div className="flex items-center">
                 <span className="inline-block w-3 h-3 bg-primary-500 rounded-full mr-2"></span>
-                <span className="text-sm font-medium">
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
                   {DateTime.fromJSDate(highlightedTime).toFormat('h:mm a')} {' '}
-                  <span className="text-gray-500 dark:text-gray-400">
+                  <span className="text-gray-600 dark:text-gray-300">
                     ({timeDifference})
                   </span>
                 </span>
@@ -1084,8 +1096,8 @@ export default function ListView({
             </div>
             
             {/* Countdown indicator */}
-            <div className="mt-2">
-              <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+            <div className="mt-2 relative z-[2]">
+              <div className="flex justify-between text-xs text-gray-600 dark:text-gray-300 mb-1">
                 <span>Auto-clear in {timeRemaining}s</span>
                 <button 
                   onClick={resetInactivityTimer}
@@ -1117,16 +1129,24 @@ export default function ListView({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 border border-gray-200 dark:border-gray-700
-                          transition-shadow duration-200 hover:shadow-lg"
+                className={`glass-card backdrop-blur-fix ${
+                  resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'
+                } rounded-lg p-4 border border-gray-200 dark:border-gray-700
+                          transition-all duration-200 hover:shadow-lg`}
+                style={{
+                  isolation: 'isolate',
+                  backgroundColor: resolvedTheme === 'dark'
+                    ? 'rgba(15, 15, 25, 0.2)'
+                    : 'rgba(255, 255, 255, 0.15)'
+                }}
                 data-timezone-id={timezone.id}
               >
-                <div className="flex justify-between items-center mb-3">
+                <div className="flex justify-between items-center mb-3 relative z-[2]">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}
                     </h3>
-                    <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center space-x-2">
+                    <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center space-x-2">
                       <span>{DateTime.now().setZone(timezone.id).toFormat('ZZZZ')}</span>
                       <span>({getTimezoneOffset(timezone.id)})</span>
                       {isDST && (
@@ -1141,7 +1161,7 @@ export default function ListView({
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 relative z-[2]">
                     {/* Timezone options dropdown */}
                     <DropdownMenu.Root>
                       <DropdownMenu.Trigger asChild>
@@ -1233,7 +1253,13 @@ export default function ListView({
                 </div>
                 
                 <div 
-                  className="h-64 rounded-md border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50" 
+                  className="h-64 rounded-md border border-gray-200/50 dark:border-gray-700/50 
+                    backdrop-blur-[2px] overflow-hidden"
+                  style={{
+                    backgroundColor: resolvedTheme === 'dark'
+                      ? 'rgba(15, 15, 25, 0.1)'
+                      : 'rgba(255, 255, 255, 0.1)'
+                  }}
                   role="listbox"
                   aria-label={`Time selection list for ${timezone.name}`}
                 >
@@ -1247,6 +1273,12 @@ export default function ListView({
                         overscanCount={10}
                         ref={(ref) => { listRefs.current[timezone.id] = ref; }}
                         className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md"
+                        style={{
+                          backdropFilter: 'blur(2px)',
+                          backgroundColor: resolvedTheme === 'dark' 
+                            ? 'rgba(15, 15, 25, 0.05)'
+                            : 'rgba(255, 255, 255, 0.05)'
+                        }}
                         itemKey={(index) => `${timezone.id}-${timeSlots[index].getTime()}`}
                         onScroll={handleUserScroll}
                       >
@@ -1286,17 +1318,25 @@ export default function ListView({
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.2 }}
               onClick={() => setSelectorOpen(true)}
-              className="bg-gray-100 dark:bg-gray-800 rounded-lg border-2 border-dashed border-gray-300 
+              className={`glass-card backdrop-blur-fix ${
+                resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'
+              } rounded-lg border-2 border-dashed border-gray-300 
                         dark:border-gray-700 p-4 h-full min-h-[264px] flex flex-col items-center justify-center
-                        hover:border-primary-500 dark:hover:border-primary-500 hover:bg-gray-50 
-                        dark:hover:bg-gray-800/80 transition-colors duration-200 cursor-pointer"
+                        hover:border-primary-500 dark:hover:border-primary-500
+                        transition-all duration-200 cursor-pointer`}
+              style={{
+                isolation: 'isolate',
+                backgroundColor: resolvedTheme === 'dark'
+                  ? 'rgba(15, 15, 25, 0.2)'
+                  : 'rgba(255, 255, 255, 0.15)'
+              }}
               aria-label="Add Timezone or Region - Track time for another region"
             >
-              <div className="rounded-full bg-primary-100 dark:bg-primary-900/30 p-3 mb-3">
+              <div className="rounded-full bg-primary-100/80 dark:bg-primary-900/30 backdrop-blur-sm p-3 mb-3 shadow-md relative z-[2]">
                 <Plus className="h-6 w-6 text-primary-600 dark:text-primary-400" />
               </div>
-              <p className="text-gray-600 dark:text-gray-300 font-medium">Add Timezone or Region</p>
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1">
+              <p className="text-gray-600 dark:text-gray-300 font-medium relative z-[2]">Add Timezone or Region</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1 relative z-[2]">
                 Track time for another region
               </p>
             </motion.button>
@@ -1327,7 +1367,8 @@ export default function ListView({
     handleRemoveTimezone,
     timeRemaining,
     resetInactivityTimer,
-    handleUserScroll
+    handleUserScroll,
+    resolvedTheme
   ]);
 
   // Update the useEffect hook to call our updated synchronizeScrolls function
@@ -1372,6 +1413,7 @@ export default function ListView({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="w-full"
+      style={{ isolation: 'isolate' }}
       onScroll={handleUserScroll} // Add onScroll handler
     >
       {renderTimeColumns()}
