@@ -1,23 +1,253 @@
 import { DateTime } from 'luxon';
 import { Timezone } from '@/store/timezoneStore';
 
-// Simple timezone mapping for common regions - this is a basic implementation
-// In a production app, you would use a more comprehensive dataset
-const TIMEZONE_REGIONS = [
+// Comprehensive timezone mapping with major cities
+// This provides a good balance of coverage without requiring server-side data
+export const TIMEZONE_REGIONS = [
+  // North America
   { id: 'America/Los_Angeles', name: 'Los Angeles', lat: 34.05, lng: -118.24 },
+  { id: 'America/Vancouver', name: 'Vancouver', lat: 49.28, lng: -123.12 },
   { id: 'America/Denver', name: 'Denver', lat: 39.74, lng: -104.99 },
+  { id: 'America/Phoenix', name: 'Phoenix', lat: 33.45, lng: -112.07 },
   { id: 'America/Chicago', name: 'Chicago', lat: 41.88, lng: -87.63 },
+  { id: 'America/Mexico_City', name: 'Mexico City', lat: 19.43, lng: -99.13 },
   { id: 'America/New_York', name: 'New York', lat: 40.71, lng: -74.01 },
+  { id: 'America/Toronto', name: 'Toronto', lat: 43.65, lng: -79.38 },
+  { id: 'America/Halifax', name: 'Halifax', lat: 44.65, lng: -63.58 },
+  
+  // South America
+  { id: 'America/Santiago', name: 'Santiago', lat: -33.45, lng: -70.67 },
+  { id: 'America/Sao_Paulo', name: 'São Paulo', lat: -23.55, lng: -46.63 },
+  { id: 'America/Buenos_Aires', name: 'Buenos Aires', lat: -34.61, lng: -58.38 },
+  { id: 'America/Lima', name: 'Lima', lat: -12.05, lng: -77.04 },
+  
+  // Europe
   { id: 'Europe/London', name: 'London', lat: 51.51, lng: -0.13 },
+  { id: 'Europe/Lisbon', name: 'Lisbon', lat: 38.72, lng: -9.13 },
+  { id: 'Europe/Dublin', name: 'Dublin', lat: 53.35, lng: -6.26 },
   { id: 'Europe/Paris', name: 'Paris', lat: 48.85, lng: 2.35 },
+  { id: 'Europe/Madrid', name: 'Madrid', lat: 40.42, lng: -3.70 },
+  { id: 'Europe/Rome', name: 'Rome', lat: 41.90, lng: 12.50 },
   { id: 'Europe/Berlin', name: 'Berlin', lat: 52.52, lng: 13.40 },
+  { id: 'Europe/Amsterdam', name: 'Amsterdam', lat: 52.37, lng: 4.89 },
+  { id: 'Europe/Zurich', name: 'Zurich', lat: 47.38, lng: 8.54 },
+  { id: 'Europe/Stockholm', name: 'Stockholm', lat: 59.33, lng: 18.06 },
+  { id: 'Europe/Helsinki', name: 'Helsinki', lat: 60.17, lng: 24.94 },
+  { id: 'Europe/Warsaw', name: 'Warsaw', lat: 52.23, lng: 21.01 },
+  { id: 'Europe/Athens', name: 'Athens', lat: 37.98, lng: 23.73 },
+  { id: 'Europe/Istanbul', name: 'Istanbul', lat: 41.01, lng: 28.97 },
+  { id: 'Europe/Moscow', name: 'Moscow', lat: 55.75, lng: 37.62 },
+  
+  // Africa
+  { id: 'Africa/Lagos', name: 'Lagos', lat: 6.45, lng: 3.40 },
+  { id: 'Africa/Cairo', name: 'Cairo', lat: 30.04, lng: 31.24 },
+  { id: 'Africa/Johannesburg', name: 'Johannesburg', lat: -26.20, lng: 28.05 },
+  { id: 'Africa/Nairobi', name: 'Nairobi', lat: -1.29, lng: 36.82 },
+  { id: 'Africa/Casablanca', name: 'Casablanca', lat: 33.57, lng: -7.59 },
+  
+  // Asia
   { id: 'Asia/Dubai', name: 'Dubai', lat: 25.20, lng: 55.27 },
-  { id: 'Asia/Tokyo', name: 'Tokyo', lat: 35.68, lng: 139.76 },
-  { id: 'Asia/Hong_Kong', name: 'Hong Kong', lat: 22.32, lng: 114.17 },
+  { id: 'Asia/Riyadh', name: 'Riyadh', lat: 24.71, lng: 46.67 },
+  { id: 'Asia/Karachi', name: 'Karachi', lat: 24.86, lng: 67.01 },
+  { id: 'Asia/Mumbai', name: 'Mumbai', lat: 19.08, lng: 72.88 },
+  { id: 'Asia/Kolkata', name: 'New Delhi', lat: 28.61, lng: 77.21 },
+  { id: 'Asia/Dhaka', name: 'Dhaka', lat: 23.76, lng: 90.39 },
+  { id: 'Asia/Bangkok', name: 'Bangkok', lat: 13.75, lng: 100.50 },
+  { id: 'Asia/Jakarta', name: 'Jakarta', lat: -6.21, lng: 106.85 },
   { id: 'Asia/Singapore', name: 'Singapore', lat: 1.35, lng: 103.82 },
+  { id: 'Asia/Hong_Kong', name: 'Hong Kong', lat: 22.32, lng: 114.17 },
+  { id: 'Asia/Shanghai', name: 'Shanghai', lat: 31.23, lng: 121.47 },
+  { id: 'Asia/Seoul', name: 'Seoul', lat: 37.57, lng: 126.98 },
+  { id: 'Asia/Tokyo', name: 'Tokyo', lat: 35.68, lng: 139.76 },
+  
+  // Oceania
+  { id: 'Australia/Perth', name: 'Perth', lat: -31.95, lng: 115.86 },
+  { id: 'Australia/Adelaide', name: 'Adelaide', lat: -34.93, lng: 138.60 },
+  { id: 'Australia/Melbourne', name: 'Melbourne', lat: -37.81, lng: 144.96 },
   { id: 'Australia/Sydney', name: 'Sydney', lat: -33.87, lng: 151.21 },
-  { id: 'Pacific/Auckland', name: 'Auckland', lat: -36.85, lng: 174.76 }
+  { id: 'Australia/Brisbane', name: 'Brisbane', lat: -27.47, lng: 153.03 },
+  { id: 'Pacific/Auckland', name: 'Auckland', lat: -36.85, lng: 174.76 },
+  { id: 'Pacific/Fiji', name: 'Fiji', lat: -17.71, lng: 178.06 },
+  { id: 'Pacific/Honolulu', name: 'Honolulu', lat: 21.31, lng: -157.86 }
 ];
+
+/**
+ * Finds the closest timezone region to the given coordinates
+ */
+export const findClosestTimezone = (lat: number, lng: number): string => {
+  let closestRegion = TIMEZONE_REGIONS[0];
+  let minDistance = Number.MAX_VALUE;
+  
+  for (const region of TIMEZONE_REGIONS) {
+    const distance = Math.sqrt(
+      Math.pow(region.lat - lat, 2) + 
+      Math.pow(region.lng - lng, 2)
+    );
+    
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestRegion = region;
+    }
+  }
+  
+  return closestRegion.id;
+};
+
+/**
+ * Calculate the day/night terminator points for the current time
+ * Returns an array of [lat, lng] points for drawing the terminator line
+ */
+export const calculateDayNightTerminator = (date = new Date()): [number, number][] => {
+  // Calculation based on solar position algorithms
+  // Adapted from https://github.com/mourner/suncalc
+  
+  const RAD = Math.PI / 180;
+  const DEG = 180 / Math.PI;
+  
+  // Relative to current date
+  const julianDay = date.valueOf() / 86400000 - 0.5 + 2440588;
+  const julianCentury = (julianDay - 2451545) / 36525;
+  
+  // Solar declination angle
+  const meanLongitude = (280.46646 + julianCentury * (36000.76983 + julianCentury * 0.0003032)) % 360;
+  const meanAnomaly = 357.52911 + julianCentury * (35999.05029 - 0.0001537 * julianCentury);
+  const excentricityEarth = 0.016708634 - julianCentury * (0.000042037 + 0.0000001267 * julianCentury);
+  const equationOfCenter = Math.sin(meanAnomaly * RAD) * (1.914602 - julianCentury * (0.004817 + 0.000014 * julianCentury))
+                      + Math.sin(2 * meanAnomaly * RAD) * (0.019993 - 0.000101 * julianCentury)
+                      + Math.sin(3 * meanAnomaly * RAD) * 0.000289;
+  
+  const sunLongitude = (meanLongitude + equationOfCenter) % 360;
+  
+  const obliquityEcliptic = 23 + (26 + (21.448 - julianCentury * (46.815 + julianCentury * (0.00059 - julianCentury * 0.001813))) / 60) / 60;
+  const correctedObliquity = obliquityEcliptic + 0.00256 * Math.cos((125.04 - 1934.136 * julianCentury) * RAD);
+  
+  const declination = Math.asin(Math.sin(correctedObliquity * RAD) * Math.sin(sunLongitude * RAD)) * DEG;
+  
+  // Hour angle at the terminator (solar elevation = -0.83°)
+  const sinSolarElevation = Math.sin(-0.83 * RAD);
+  
+  // Generate points for the terminator line
+  const points: [number, number][] = [];
+  
+  for (let lat = -90; lat <= 90; lat += 2) {
+    const sinLat = Math.sin(lat * RAD);
+    const cosLat = Math.cos(lat * RAD);
+    const sinDec = Math.sin(declination * RAD);
+    const cosDec = Math.cos(declination * RAD);
+    
+    const cosHa = (sinSolarElevation - sinLat * sinDec) / (cosLat * cosDec);
+    
+    // If abs(cosHa) > 1, the sun never rises/sets at this latitude at this time of year
+    if (Math.abs(cosHa) > 1) continue;
+    
+    // Convert hour angle to longitude
+    const hourAngle = Math.acos(cosHa) * DEG;
+    
+    // Get the longitude of the terminator at this latitude 
+    // Calculate UTC time (in hours) of the calculation
+    const utcTime = (date.getUTCHours() + date.getUTCMinutes() / 60) % 24;
+    
+    // Longitude of the terminator
+    let lng = 180 - hourAngle - 15 * utcTime;
+    if (lng > 180) lng -= 360;
+    if (lng < -180) lng += 360;
+    
+    points.push([lat, lng]);
+  }
+  
+  return points;
+};
+
+/**
+ * Determines if a point is in daylight based on the current time
+ */
+export const isPointInDaylight = (lat: number, lng: number, date = new Date()): boolean => {
+  // Calculation based on solar position
+  const RAD = Math.PI / 180;
+  
+  // Convert time to Julian date
+  const julianDay = date.valueOf() / 86400000 - 0.5 + 2440588;
+  const julianCentury = (julianDay - 2451545) / 36525;
+  
+  // Solar declination angle calculation
+  const meanLongitude = (280.46646 + julianCentury * (36000.76983 + julianCentury * 0.0003032)) % 360;
+  const meanAnomaly = 357.52911 + julianCentury * (35999.05029 - 0.0001537 * julianCentury);
+  const equationOfCenter = Math.sin(meanAnomaly * RAD) * (1.914602 - julianCentury * (0.004817 + 0.000014 * julianCentury))
+                      + Math.sin(2 * meanAnomaly * RAD) * (0.019993 - 0.000101 * julianCentury)
+                      + Math.sin(3 * meanAnomaly * RAD) * 0.000289;
+  
+  const sunLongitude = (meanLongitude + equationOfCenter) % 360;
+  
+  const obliquityEcliptic = 23 + (26 + (21.448 - julianCentury * (46.815 + julianCentury * (0.00059 - julianCentury * 0.001813))) / 60) / 60;
+  const correctedObliquity = obliquityEcliptic + 0.00256 * Math.cos((125.04 - 1934.136 * julianCentury) * RAD);
+  
+  const declination = Math.asin(Math.sin(correctedObliquity * RAD) * Math.sin(sunLongitude * RAD)) * (180 / Math.PI);
+  
+  // Calculate the hour angle (longitude difference between observer and sun)
+  const utcTime = (date.getUTCHours() + date.getUTCMinutes() / 60) % 24;  
+  const hourAngle = (utcTime * 15 - 180 + lng) * RAD;
+  
+  // Solar elevation calculation
+  const sinLat = Math.sin(lat * RAD);
+  const cosLat = Math.cos(lat * RAD);
+  const sinDec = Math.sin(declination * RAD);
+  const cosDec = Math.cos(declination * RAD);
+  const cosHourAngle = Math.cos(hourAngle);
+  
+  const solarElevation = Math.asin(sinLat * sinDec + cosLat * cosDec * cosHourAngle) * (180 / Math.PI);
+  
+  // Solar elevation > -0.83 means it's daytime
+  // The 0.83 degrees accounts for atmospheric refraction and the sun's diameter
+  return solarElevation > -0.83;
+};
+
+/**
+ * Get timezone info for a given timezone
+ */
+export const getTimezoneInfo = (timezoneId: string): Timezone | null => {
+  const region = TIMEZONE_REGIONS.find(r => r.id === timezoneId);
+  if (!region) return null;
+  
+  const now = DateTime.now().setZone(timezoneId);
+  const isDST = now.isInDST;
+  const offset = now.offset / 60; // Convert to hours
+  
+  return {
+    id: timezoneId,
+    name: region.name,
+    offset,
+    isDST
+  };
+};
+
+/**
+ * Determines if the given time is within business hours (9AM-5PM) in the specified timezone
+ */
+export const isBusinessHours = (timezoneId: string, date = new Date()): boolean => {
+  const localTime = DateTime.fromJSDate(date).setZone(timezoneId);
+  const hour = localTime.hour;
+  const dayOfWeek = localTime.weekday;
+  
+  // Check if weekend (6 = Saturday, 7 = Sunday in Luxon)
+  if (dayOfWeek === 6 || dayOfWeek === 7) {
+    return false;
+  }
+  
+  // Check if within 9 AM - 5 PM local time
+  return hour >= 9 && hour < 17;
+};
+
+/**
+ * Format a timezone offset as a string (+/-HH:MM)
+ */
+export const formatTimezoneOffset = (offsetHours: number): string => {
+  const sign = offsetHours >= 0 ? '+' : '-';
+  const absOffset = Math.abs(offsetHours);
+  const hours = Math.floor(absOffset);
+  const minutes = Math.round((absOffset - hours) * 60);
+  
+  return `${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
 
 /**
  * Gets timezone ID for given coordinates using a simple distance-based approach
