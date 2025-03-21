@@ -111,6 +111,7 @@ body::after {
   }
 }
 
+/* Fix the infinite hover animation issue with a completely different approach */
 .glass-card::before {
   content: '';
   position: absolute;
@@ -124,13 +125,38 @@ body::after {
     rgba(255, 255, 255, 0.05), 
     transparent
   );
-  transition: left 0.7s ease-in-out;
   pointer-events: none;
   z-index: 0;
+  /* Ensure animation can only be triggered by adding a class, not by CSS properties change */
+  will-change: transform;
+  transition: none;
 }
 
-.glass-card:hover::before {
-  left: 100%;
+/* Define the animation that will be used */
+@keyframes shine {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Class to be added via JS, with animation-iteration-count: 1 to ensure it only runs once */
+.glass-card.animate-shine::before {
+  animation: shine 0.7s forwards;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+  /* Prevent any other transitions from interfering */
+  transition: none !important;
+}
+
+/* Explicitly prevent any animation when not in the animate-shine state */
+.glass-card:not(.animate-shine)::before {
+  animation: none !important;
+  left: -100% !important;
+  /* Prevent any transitions from accidentally triggering the animation */
+  transition: none !important;
 }
 
 .glass-card-light {
@@ -174,7 +200,8 @@ body::after {
 }
 
 .glass-card:hover {
-  @apply shadow-xl translate-y-[-3px];
+  @apply shadow-xl;
+  transform: translateY(-3px);
   box-shadow: 
     0 10px 25px -5px rgba(0, 0, 0, 0.1),
     0 8px 10px -6px rgba(0, 0, 0, 0.1);
@@ -275,22 +302,46 @@ body::after {
 /* Enhanced hover effects */
 @keyframes shimmer {
   0% {
-    background-position: -100% 0;
+    left: -100%;
   }
   100% {
+    left: 100%;
+  }
+}
+
+/* Disable the conflicting hover-shimmer animation */
+.glass-card:hover::before {
+  /* Remove the infinite animation that might be conflicting */
+  animation: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+/* Ensure the shimmer effect for loading states doesn't interfere with our hover animation */
+.shimmer {
+  /* Use a different class name for the loading animation to avoid conflicts */
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.2),
+    rgba(255, 255, 255, 0)
+  );
+  background-size: 200% 100%;
+  background-position: -100% 0;
+  animation: shimmer-loading 1.5s infinite;
+}
+
+@keyframes shimmer-loading {
+  to {
     background-position: 200% 0;
   }
 }
 
-.hover-shimmer:hover {
-  background-image: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.1),
-    transparent
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+/* Use a more explicit name for the loading animation */
+@keyframes shimmer {
+  to {
+    background-position: 200% 0;
+  }
 }
 
 /* Make card contents visible above the background */
@@ -314,6 +365,11 @@ body::after {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  
+  /* Specifically disable our shine animation */
+  .glass-card.animate-shine::before {
+    animation: none !important;
+  }
 }
 
 /* Use the data attribute for components that need to access this preference */
@@ -325,7 +381,7 @@ html[data-prefers-reduced-motion="true"] .dashboard-exit-active {
 }
 
 html[data-prefers-reduced-motion="true"] .glass-card::before,
-html[data-prefers-reduced-motion="true"] .hover-shimmer:hover {
+html[data-prefers-reduced-motion="true"] .glass-card.animate-shine::before {
   animation: none !important;
 }
 

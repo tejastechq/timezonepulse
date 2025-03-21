@@ -4,6 +4,7 @@ import { inter, robotoMono } from './font';
 import { Providers } from './providers';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import GlassmorphismAnimation from '@/components/GlassmorphismAnimation';
 
 // Export metadata and viewport configurations
 export const metadata = baseMetadata;
@@ -29,6 +30,7 @@ export default function RootLayout({
           {children}
           <Analytics />
           <SpeedInsights />
+          <GlassmorphismAnimation />
         </Providers>
       </body>
     </html>
