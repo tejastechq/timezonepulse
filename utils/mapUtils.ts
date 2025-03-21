@@ -71,6 +71,256 @@ export const TIMEZONE_REGIONS = [
   { id: 'Pacific/Honolulu', name: 'Honolulu', lat: 21.31, lng: -157.86 }
 ];
 
+// Timezone boundaries for major regions (approximate)
+// These are simplified polygons representing approximate timezone boundaries
+export const TIMEZONE_BOUNDARIES = {
+  // North America
+  'America/Los_Angeles': {
+    name: 'Pacific Time',
+    color: '#3b82f6', // blue
+    boundaries: [
+      [-125, 49], [-125, 32], [-117, 32], [-114.5, 32.5], [-114, 35], [-114, 49], [-125, 49]
+    ]
+  },
+  'America/Denver': {
+    name: 'Mountain Time',
+    color: '#10b981', // green
+    boundaries: [
+      [-114, 49], [-114, 35], [-114.5, 32.5], [-109, 31.5], [-105, 31.5], [-103, 32], [-103, 49], [-114, 49]
+    ]
+  },
+  'America/Chicago': {
+    name: 'Central Time',
+    color: '#f59e0b', // amber
+    boundaries: [
+      [-103, 49], [-103, 32], [-101, 30], [-97, 26], [-95, 26], [-90, 29], [-89, 31], [-89, 49], [-103, 49]
+    ]
+  },
+  'America/New_York': {
+    name: 'Eastern Time',
+    color: '#8b5cf6', // purple
+    boundaries: [
+      [-89, 49], [-89, 31], [-90, 29], [-85, 30], [-81, 25], [-78, 25], [-75, 36], [-75, 45], [-80, 49], [-89, 49]
+    ]
+  },
+  
+  // Europe
+  'Europe/London': {
+    name: 'GMT/UTC',
+    color: '#ef4444', // red
+    boundaries: [
+      [-10, 60], [-10, 50], [-5, 45], [0, 43], [2, 43], [2, 50], [2, 60], [-10, 60]
+    ]
+  },
+  'Europe/Paris': {
+    name: 'Central European Time',
+    color: '#f97316', // orange
+    boundaries: [
+      [2, 60], [2, 43], [3, 43], [8, 43], [13, 42], [15, 42], [15, 50], [15, 60], [2, 60]
+    ]
+  },
+  'Europe/Moscow': {
+    name: 'Moscow Time',
+    color: '#0ea5e9', // sky blue
+    boundaries: [
+      [30, 60], [30, 45], [35, 45], [40, 45], [40, 60], [30, 60]
+    ]
+  },
+  
+  // Asia
+  'Asia/Tokyo': {
+    name: 'Japan Standard Time',
+    color: '#ec4899', // pink
+    boundaries: [
+      [129, 46], [129, 30], [132, 30], [140, 33], [146, 38], [146, 46], [129, 46]
+    ]
+  },
+  'Asia/Shanghai': {
+    name: 'China Standard Time',
+    color: '#a855f7', // purple
+    boundaries: [
+      [73, 53], [73, 18], [80, 18], [104, 18], [120, 18], [128, 30], [135, 40], [135, 53], [73, 53]
+    ]
+  },
+  'Asia/Kolkata': {
+    name: 'Indian Standard Time',
+    color: '#14b8a6', // teal
+    boundaries: [
+      [68, 36], [68, 8], [74, 8], [88, 8], [97, 15], [97, 36], [68, 36]
+    ]
+  },
+  
+  // Australia
+  'Australia/Sydney': {
+    name: 'Australian Eastern Time',
+    color: '#22c55e', // green
+    boundaries: [
+      [141, -28], [141, -39], [148, -39], [154, -35], [154, -28], [150, -22], [141, -28]
+    ]
+  },
+  
+  // Additional regions
+  'America/Sao_Paulo': {
+    name: 'Brasilia Time',
+    color: '#fbbf24', // yellow-500
+    boundaries: [
+      [-58, 5], [-58, -33], [-48, -33], [-35, -18], [-35, 0], [-50, 5], [-58, 5]
+    ]
+  },
+  'Africa/Cairo': {
+    name: 'Eastern European Time',
+    color: '#d946ef', // fuchsia
+    boundaries: [
+      [22, 37], [22, 24], [35, 24], [35, 37], [22, 37]
+    ]
+  }
+};
+
+/**
+ * Gets the boundary polygon for a timezone
+ * @param timezoneId - The IANA timezone identifier
+ * @returns Boundary points as [lng, lat] pairs for mapping, or null if not defined
+ */
+export function getTimezoneBoundary(timezoneId: string): [number, number][] | null {
+  // Check if we have an exact match
+  if (TIMEZONE_BOUNDARIES[timezoneId]) {
+    return TIMEZONE_BOUNDARIES[timezoneId].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+  }
+  
+  // Handle timezone aliases and related zones
+  // For regions that don't have explicit boundaries, map to parent regions
+  if (timezoneId.startsWith('America/')) {
+    // US timezones
+    if (timezoneId === 'America/Los_Angeles' || timezoneId === 'America/Vancouver') {
+      return TIMEZONE_BOUNDARIES['America/Los_Angeles'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+    }
+    
+    if (timezoneId === 'America/Denver' || timezoneId === 'America/Phoenix') {
+      return TIMEZONE_BOUNDARIES['America/Denver'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+    }
+    
+    if (timezoneId === 'America/Chicago' || timezoneId === 'America/Mexico_City') {
+      return TIMEZONE_BOUNDARIES['America/Chicago'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+    }
+    
+    if (timezoneId === 'America/New_York' || timezoneId === 'America/Toronto' || timezoneId === 'America/Halifax') {
+      return TIMEZONE_BOUNDARIES['America/New_York'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+    }
+  }
+  
+  // European timezones
+  if (timezoneId.startsWith('Europe/')) {
+    if (timezoneId === 'Europe/London' || timezoneId === 'Europe/Dublin' || timezoneId === 'Europe/Lisbon') {
+      return TIMEZONE_BOUNDARIES['Europe/London'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+    }
+    
+    if (['Europe/Paris', 'Europe/Madrid', 'Europe/Rome', 'Europe/Berlin', 'Europe/Amsterdam', 
+         'Europe/Zurich', 'Europe/Stockholm', 'Europe/Warsaw'].includes(timezoneId)) {
+      return TIMEZONE_BOUNDARIES['Europe/Paris'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+    }
+    
+    if (timezoneId === 'Europe/Moscow') {
+      return TIMEZONE_BOUNDARIES['Europe/Moscow'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+    }
+  }
+  
+  // Asian timezones
+  if (timezoneId.startsWith('Asia/')) {
+    if (timezoneId === 'Asia/Tokyo' || timezoneId === 'Asia/Seoul') {
+      return TIMEZONE_BOUNDARIES['Asia/Tokyo'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+    }
+    
+    if (timezoneId === 'Asia/Shanghai' || timezoneId === 'Asia/Hong_Kong' || timezoneId === 'Asia/Singapore') {
+      return TIMEZONE_BOUNDARIES['Asia/Shanghai'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+    }
+    
+    if (timezoneId === 'Asia/Kolkata' || timezoneId === 'Asia/Dhaka') {
+      return TIMEZONE_BOUNDARIES['Asia/Kolkata'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+    }
+  }
+  
+  // Australian timezones
+  if (timezoneId.startsWith('Australia/')) {
+    if (timezoneId === 'Australia/Sydney' || timezoneId === 'Australia/Melbourne' || timezoneId === 'Australia/Brisbane') {
+      return TIMEZONE_BOUNDARIES['Australia/Sydney'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Gets the color associated with a timezone for consistent visualization
+ * @param timezoneId - The IANA timezone identifier
+ * @returns CSS color string
+ */
+export function getTimezoneColor(timezoneId: string): string {
+  // Check if we have a direct match
+  if (TIMEZONE_BOUNDARIES[timezoneId]) {
+    return TIMEZONE_BOUNDARIES[timezoneId].color;
+  }
+  
+  // Handle aliases using the same logic as getTimezoneBoundary
+  if (timezoneId.startsWith('America/')) {
+    if (timezoneId === 'America/Los_Angeles' || timezoneId === 'America/Vancouver') {
+      return TIMEZONE_BOUNDARIES['America/Los_Angeles'].color;
+    }
+    
+    if (timezoneId === 'America/Denver' || timezoneId === 'America/Phoenix') {
+      return TIMEZONE_BOUNDARIES['America/Denver'].color;
+    }
+    
+    if (timezoneId === 'America/Chicago' || timezoneId === 'America/Mexico_City') {
+      return TIMEZONE_BOUNDARIES['America/Chicago'].color;
+    }
+    
+    if (timezoneId === 'America/New_York' || timezoneId === 'America/Toronto' || timezoneId === 'America/Halifax') {
+      return TIMEZONE_BOUNDARIES['America/New_York'].color;
+    }
+  }
+  
+  // European timezones
+  if (timezoneId.startsWith('Europe/')) {
+    if (timezoneId === 'Europe/London' || timezoneId === 'Europe/Dublin' || timezoneId === 'Europe/Lisbon') {
+      return TIMEZONE_BOUNDARIES['Europe/London'].color;
+    }
+    
+    if (['Europe/Paris', 'Europe/Madrid', 'Europe/Rome', 'Europe/Berlin', 'Europe/Amsterdam', 
+         'Europe/Zurich', 'Europe/Stockholm', 'Europe/Warsaw'].includes(timezoneId)) {
+      return TIMEZONE_BOUNDARIES['Europe/Paris'].color;
+    }
+    
+    if (timezoneId === 'Europe/Moscow') {
+      return TIMEZONE_BOUNDARIES['Europe/Moscow'].color;
+    }
+  }
+  
+  // Asian timezones
+  if (timezoneId.startsWith('Asia/')) {
+    if (timezoneId === 'Asia/Tokyo' || timezoneId === 'Asia/Seoul') {
+      return TIMEZONE_BOUNDARIES['Asia/Tokyo'].color;
+    }
+    
+    if (timezoneId === 'Asia/Shanghai' || timezoneId === 'Asia/Hong_Kong' || timezoneId === 'Asia/Singapore') {
+      return TIMEZONE_BOUNDARIES['Asia/Shanghai'].color;
+    }
+    
+    if (timezoneId === 'Asia/Kolkata' || timezoneId === 'Asia/Dhaka') {
+      return TIMEZONE_BOUNDARIES['Asia/Kolkata'].color;
+    }
+  }
+  
+  // Australian timezones
+  if (timezoneId.startsWith('Australia/')) {
+    if (timezoneId === 'Australia/Sydney' || timezoneId === 'Australia/Melbourne' || timezoneId === 'Australia/Brisbane') {
+      return TIMEZONE_BOUNDARIES['Australia/Sydney'].color;
+    }
+  }
+  
+  // Default color if no match found
+  return '#6b7280'; // gray-500
+}
+
 /**
  * Finds the closest timezone region to the given coordinates
  */
