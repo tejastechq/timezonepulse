@@ -7,7 +7,7 @@ import { Timezone, useTimezoneStore } from '@/store/timezoneStore';
 import { isBusinessHours, isNightHours, isWeekend } from '@/lib/utils/dateTimeFormatter';
 import { FixedSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { ChevronUp, ChevronDown, Sun, Moon, Clock, Plus, X, Edit2, Settings } from 'lucide-react';
+import { Plus, X, Edit2, Settings } from 'lucide-react';
 import { getAllTimezones, isInDST } from '@/lib/utils/timezone';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
@@ -770,54 +770,6 @@ export default function ListView({
     return "";
   }, []);
 
-  // Jump to a specific time period
-  const jumpToTime = useCallback((timePeriod: 'morning' | 'afternoon' | 'evening' | 'night' | 'now', timezone: string) => {
-    if (!listRefs.current[timezone]) return;
-    
-    let targetIndex = 0;
-    
-    switch (timePeriod) {
-      case 'morning':
-        // Jump to 8am
-        targetIndex = timeSlots.findIndex(t => {
-          const dt = DateTime.fromJSDate(t).setZone(timezone);
-          return dt.hour === 8 && dt.minute === 0;
-        });
-        break;
-      case 'afternoon':
-        // Jump to 12pm
-        targetIndex = timeSlots.findIndex(t => {
-          const dt = DateTime.fromJSDate(t).setZone(timezone);
-          return dt.hour === 12 && dt.minute === 0;
-        });
-        break;
-      case 'evening':
-        // Jump to 6pm
-        targetIndex = timeSlots.findIndex(t => {
-          const dt = DateTime.fromJSDate(t).setZone(timezone);
-          return dt.hour === 18 && dt.minute === 0;
-        });
-        break;
-      case 'night':
-        // Jump to 9pm
-        targetIndex = timeSlots.findIndex(t => {
-          const dt = DateTime.fromJSDate(t).setZone(timezone);
-          return dt.hour === 21 && dt.minute === 0;
-        });
-        break;
-      case 'now':
-        // Jump to current time
-        targetIndex = getCurrentTimeIndex();
-        break;
-    }
-    
-    // Default to 0 if not found
-    if (targetIndex === -1) targetIndex = 0;
-    
-    // Scroll to the target index
-    listRefs.current[timezone]?.scrollToItem(targetIndex, 'center');
-  }, [timeSlots, getCurrentTimeIndex]);
-  
   // Handle adding a new timezone
   const handleAddTimezone = useCallback((timezone: Timezone) => {
     addTimezone(timezone);
@@ -1093,7 +1045,7 @@ export default function ListView({
           </motion.div>
         )}
       
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4 md:gap-6">
           {uniqueTimezones.map((timezone) => {
             // Check if the timezone is in DST
             const isDST = isInDST(timezone.id);
@@ -1114,13 +1066,14 @@ export default function ListView({
                   backgroundColor: resolvedTheme === 'dark'
                     ? 'rgba(15, 15, 25, 0.2)'
                     : 'rgba(255, 255, 255, 0.15)',
-                  minWidth: '280px'
+                  minWidth: '280px',
+                  maxWidth: '100%'
                 }}
                 data-timezone-id={timezone.id}
               >
                 <div className="flex justify-between items-center mb-3 md:mb-4 relative z-[2]">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate max-w-[180px]">
                       {timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}
                     </h3>
                     <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center space-x-2">
@@ -1138,7 +1091,7 @@ export default function ListView({
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2 relative z-[2]">
+                  <div className="flex items-center space-x-2 relative z-[2] flex-shrink-0">
                     {/* Timezone options dropdown */}
                     <DropdownMenu.Root>
                       <DropdownMenu.Trigger asChild>
@@ -1182,56 +1135,12 @@ export default function ListView({
                         </DropdownMenu.Content>
                       </DropdownMenu.Portal>
                     </DropdownMenu.Root>
-                    
-                    {/* Quick navigation buttons */}
-                    <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-full p-1">
-                      <button 
-                        onClick={() => jumpToTime('morning', timezone.id)} 
-                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        title="Jump to morning (8 AM)"
-                        aria-label="Jump to morning"
-                      >
-                        <Sun className="h-3.5 w-3.5 text-amber-500" />
-                      </button>
-                      <button 
-                        onClick={() => jumpToTime('afternoon', timezone.id)} 
-                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        title="Jump to afternoon (12 PM)"
-                        aria-label="Jump to afternoon"
-                      >
-                        <ChevronUp className="h-3.5 w-3.5 text-blue-500" />
-                      </button>
-                      <button 
-                        onClick={() => jumpToTime('evening', timezone.id)} 
-                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        title="Jump to evening (6 PM)"
-                        aria-label="Jump to evening"
-                      >
-                        <ChevronDown className="h-3.5 w-3.5 text-orange-500" />
-                      </button>
-                      <button 
-                        onClick={() => jumpToTime('night', timezone.id)} 
-                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        title="Jump to night (9 PM)"
-                        aria-label="Jump to night"
-                      >
-                        <Moon className="h-3.5 w-3.5 text-indigo-500" />
-                      </button>
-                      <button 
-                        onClick={() => jumpToTime('now', timezone.id)} 
-                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        title="Jump to current time"
-                        aria-label="Jump to current time"
-                      >
-                        <Clock className="h-3.5 w-3.5 text-green-500" />
-                      </button>
-                    </div>
                   </div>
                 </div>
                 
                 <div 
                   className="h-72 md:h-80 lg:h-96 rounded-md border border-gray-200/50 dark:border-gray-700/50 
-                    backdrop-blur-[2px] overflow-hidden mt-4 md:mt-5 min-w-[300px] w-full"
+                    backdrop-blur-[2px] overflow-hidden mt-4 md:mt-5 w-full"
                   style={{
                     backgroundColor: resolvedTheme === 'dark'
                       ? 'rgba(15, 15, 25, 0.1)'
@@ -1337,7 +1246,6 @@ export default function ListView({
     formatTime,
     handleTimeSelection,
     getCurrentTimeIndex,
-    jumpToTime,
     handleRemoveTimezone,
     timeRemaining,
     resetInactivityTimer,
