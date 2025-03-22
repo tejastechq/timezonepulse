@@ -30,7 +30,7 @@ function DigitalView(props: DigitalViewProps) {
     <BaseClockView
       {...props}
       renderClock={renderDigitalClock}
-      minHeight="250px"
+      minHeight="280px"
     />
   );
 }

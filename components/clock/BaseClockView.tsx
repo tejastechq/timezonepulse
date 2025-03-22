@@ -123,9 +123,9 @@ function BaseClockView({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+      className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6 auto-rows-auto">
+      <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 md:gap-8 auto-rows-auto">
         <AnimatePresence>
           {uniqueTimezones.map((timezone) => (
             <ClockCard
@@ -151,7 +151,7 @@ function BaseClockView({
             className={`glass-card backdrop-blur-fix ${
               resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'
             } rounded-lg border-2 border-dashed border-gray-300 
-                      dark:border-gray-700 p-4 h-full min-h-[${minHeight}] flex flex-col items-center justify-center
+                      dark:border-gray-700 p-4 md:p-5 lg:p-6 h-full min-h-[${minHeight}] flex flex-col items-center justify-center
                       hover:border-primary-500 dark:hover:border-primary-500
                       transition-all duration-200 cursor-pointer`}
             style={{

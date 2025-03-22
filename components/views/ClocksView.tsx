@@ -30,7 +30,7 @@ function ClocksView(props: ClocksViewProps) {
   const renderAnalogClock = useCallback((time: Date, timezone: string) => (
     <AnalogClock
       time={time}
-      size={180}
+      size={220}
       highlightedTime={null}
       theme={clockTheme as 'light' | 'dark'}
     />

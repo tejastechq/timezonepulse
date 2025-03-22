@@ -66,10 +66,10 @@ export default function ListViewPage() {
   };
 
   return (
-    <div className="container mx-auto h-screen flex flex-col p-4">
+    <div className="w-full min-h-screen flex flex-col p-4 md:p-6">
       <h1 className="text-2xl font-bold mb-4">World Clock - List View</h1>
       
-      <div className="flex-1 border rounded-md overflow-hidden">
+      <div className="flex-1 border rounded-md overflow-hidden w-full">
         <ListView
           selectedTimezones={selectedTimezones}
           userLocalTimezone={userLocalTimezone}

@@ -67,7 +67,7 @@ function ClockCard({
       exit={{ opacity: 0, y: -20 }}
       whileHover={{ scale: 1.02 }}
       className={`
-        relative p-4 rounded-lg ${glassClasses}
+        relative p-4 md:p-5 lg:p-6 rounded-lg ${glassClasses}
         ${isBusinessHours ? 'border-l-4 border-green-500' : 'border-l-4 border-transparent'}
         ${isNightTime ? 'text-white' : 'text-gray-900 dark:text-white'}
         transition-all duration-200

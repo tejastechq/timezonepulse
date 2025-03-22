@@ -34,13 +34,13 @@ function DigitalClock({ time, timezone, highlightedTime }: DigitalClockProps) {
     <div className="text-center">
       <div 
         className={`
-          text-4xl font-mono font-bold mb-2
+          text-4xl md:text-5xl lg:text-6xl font-mono font-bold mb-2 md:mb-3
           ${isHighlighted ? 'text-primary-500' : ''}
         `}
       >
         {timeDisplay}
       </div>
-      <div className="text-sm text-gray-500 dark:text-gray-400">
+      <div className="text-sm md:text-base text-gray-500 dark:text-gray-400">
         {dateDisplay}
       </div>
     </div>

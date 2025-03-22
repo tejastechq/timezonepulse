@@ -1093,7 +1093,7 @@ export default function ListView({
           </motion.div>
         )}
       
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6 md:gap-8">
           {uniqueTimezones.map((timezone) => {
             // Check if the timezone is in DST
             const isDST = isInDST(timezone.id);
@@ -1107,17 +1107,18 @@ export default function ListView({
                 exit={{ opacity: 0, y: -20 }}
                 className={`glass-card backdrop-blur-fix ${
                   resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'
-                } rounded-lg p-4 border border-gray-200 dark:border-gray-700
-                          transition-all duration-200 hover:shadow-lg`}
+                } rounded-lg p-5 md:p-6 lg:p-7 border border-gray-200 dark:border-gray-700
+                          transition-all duration-200 hover:shadow-lg w-full`}
                 style={{
                   isolation: 'isolate',
                   backgroundColor: resolvedTheme === 'dark'
                     ? 'rgba(15, 15, 25, 0.2)'
-                    : 'rgba(255, 255, 255, 0.15)'
+                    : 'rgba(255, 255, 255, 0.15)',
+                  minWidth: '280px'
                 }}
                 data-timezone-id={timezone.id}
               >
-                <div className="flex justify-between items-center mb-3 relative z-[2]">
+                <div className="flex justify-between items-center mb-3 md:mb-4 relative z-[2]">
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}
@@ -1229,8 +1230,8 @@ export default function ListView({
                 </div>
                 
                 <div 
-                  className="h-64 rounded-md border border-gray-200/50 dark:border-gray-700/50 
-                    backdrop-blur-[2px] overflow-hidden"
+                  className="h-72 md:h-80 lg:h-96 rounded-md border border-gray-200/50 dark:border-gray-700/50 
+                    backdrop-blur-[2px] overflow-hidden mt-4 md:mt-5 min-w-[300px] w-full"
                   style={{
                     backgroundColor: resolvedTheme === 'dark'
                       ? 'rgba(15, 15, 25, 0.1)'
@@ -1295,14 +1296,15 @@ export default function ListView({
               className={`glass-card backdrop-blur-fix ${
                 resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'
               } rounded-lg border-2 border-dashed border-gray-300 
-                        dark:border-gray-700 p-4 h-full min-h-[264px] flex flex-col items-center justify-center
+                        dark:border-gray-700 p-5 md:p-6 lg:p-7 h-full min-h-[300px] md:min-h-[320px] flex flex-col items-center justify-center
                         hover:border-primary-500 dark:hover:border-primary-500
-                        transition-all duration-200 cursor-pointer`}
+                        transition-all duration-200 cursor-pointer w-full`}
               style={{
                 isolation: 'isolate',
                 backgroundColor: resolvedTheme === 'dark'
                   ? 'rgba(15, 15, 25, 0.2)'
-                  : 'rgba(255, 255, 255, 0.15)'
+                  : 'rgba(255, 255, 255, 0.15)',
+                minWidth: '280px'
               }}
               aria-label="Add Timezone or Region - Track time for another region"
             >
@@ -1385,7 +1387,7 @@ export default function ListView({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full"
+      className="w-full max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8"
       style={{ isolation: 'isolate' }}
       onScroll={handleUserScroll} // Add onScroll handler
     >
