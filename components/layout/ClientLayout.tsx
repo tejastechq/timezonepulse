@@ -40,7 +40,6 @@ export default function ClientLayout({
             <nav className="hidden md:flex space-x-6">
               <Link href="/" className="hover:text-primary-500 transition-colors">Home</Link>
               <Link href="/about" className="hover:text-primary-500 transition-colors">About</Link>
-              <Link href="/settings" className="hover:text-primary-500 transition-colors">Settings</Link>
             </nav>
           </div>
           <div className="flex items-center space-x-4">
@@ -62,7 +61,6 @@ export default function ClientLayout({
           <div className="mt-2 flex justify-center space-x-4">
             <Link href="/" className="hover:text-primary-500 transition-colors">Home</Link>
             <Link href="/about" className="hover:text-primary-500 transition-colors">About</Link>
-            <Link href="/settings" className="hover:text-primary-500 transition-colors">Settings</Link>
           </div>
         </div>
       </footer>

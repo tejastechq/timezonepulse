@@ -3,17 +3,26 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
 import { useTimezoneStore, ViewMode } from '@/store/timezoneStore';
 import { DateTime } from 'luxon';
-import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
+// Import only what we need from framer-motion initially
+import { useReducedMotion } from 'framer-motion';
 import { useView } from '@/app/contexts/ViewContext';
 import { useIntegrations } from '@/app/contexts/IntegrationsContext';
 import dynamic from 'next/dynamic';
-import { ListView, ClocksView, DigitalView } from '../views';
+import HydrationSafeguard from '@/app/components/HydrationSafeguard';
+// Import views dynamically instead of directly
+const ListView = dynamic(() => import('../views/ListView'), { ssr: true });
+const ClocksView = dynamic(() => import('../views/ClocksView'), { ssr: true });
+const DigitalView = dynamic(() => import('../views/DigitalView'), { ssr: true });
 import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
 import type { Timezone } from '@/store/timezoneStore';
 // Import the static server component heading
 import WorldClockHeading from './WorldClockHeading';
+
+// Dynamically import additional framer-motion components as needed
+const AnimatePresence = dynamic(() => import('framer-motion').then(mod => ({ default: mod.AnimatePresence })), { ssr: true });
+const Motion = dynamic(() => import('framer-motion').then(mod => ({ default: mod.motion })), { ssr: true });
 
 // Dynamically import the WorldMapSelector with no SSR
 const WorldMapSelector = dynamic(() => import('../map/WorldMapSelector'), { ssr: false });
@@ -50,8 +59,8 @@ const OptimizedListView = ListView;
 const OptimizedClocksView = ClocksView;
 const OptimizedDigitalView = DigitalView;
 
-// Dynamically import less critical components to reduce initial load
-const ViewSwitcher = dynamic(() => import('./ViewSwitcher'), { ssr: true });
+// Dynamically import all non-critical components
+const ViewSwitcher = dynamic(() => import('./ViewSwitcher'), { ssr: false });
 const ContextualInfo = dynamic(() => import('./ContextualInfo'), { ssr: false });
 const PersonalNotes = dynamic(() => import('./PersonalNotes'), { ssr: false });
 const NotificationButton = dynamic(() => import('./NotificationButton'), { ssr: false });
@@ -77,8 +86,7 @@ interface WorldClockProps {
 }
 
 export default function WorldClock({ skipHeading = false }: WorldClockProps) {
-  // Hydration safe rendering
-  const [isClient, setIsClient] = useState(false);
+  // No need for isClient state with HydrationSafeguard
   
   // Use web vitals reporting hook
   useWebVitals();
@@ -163,9 +171,8 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
     setShowMap(prev => !prev);
   }, []);
   
-  // Hydration safe initialization
+  // Hydration safe initialization moved into HydrationSafeguard
   useEffect(() => {
-    setIsClient(true);
     setCurrentTime(new Date());
   }, []);
 
@@ -274,8 +281,28 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
     }
   }, [currentView, prefersReducedMotion]);
 
-  // Handle hydration mismatch by rendering placeholder until client-side render
-  if (!isClient || !currentTime) {
+  // Render placeholder during loading
+  const renderLoading = () => (
+    <div 
+      ref={clockContainerRef}
+      className="w-full transition-all duration-300 ease-in-out mx-auto px-6"
+    >
+      {/* Clock heading */}
+      {!skipHeading && <WorldClockHeading />}
+      
+      <div className="min-h-96 flex items-center justify-center">
+        <div className="w-24 h-24 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+      </div>
+    </div>
+  );
+
+  // Main component content
+  const renderContent = () => {
+    // If no current time yet, show loading
+    if (!currentTime) {
+      return renderLoading();
+    }
+
     return (
       <div 
         ref={clockContainerRef}
@@ -284,151 +311,144 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
         {/* Clock heading */}
         {!skipHeading && <WorldClockHeading />}
         
-        <div className="min-h-96 flex items-center justify-center">
-          <div className="w-24 h-24 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
+        <div className="flex justify-between items-center mb-4 h-12">
+          <ViewSwitcher />
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={toggleMap}
+              className="flex items-center justify-center px-4 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-white text-sm"
+              aria-label={showMap ? "Hide world map" : "Show world map"}
+            >
+              {showMap ? 'Hide Map' : 'World Map'}
+            </button>
+            <NotificationButton />
+          </div>
+        </div>
+
+        {/* World Map Section */}
+        <AnimatePresence>
+          {showMap && (
+            <Motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="mb-6 overflow-hidden"
+            >
+              <WorldMapSelector />
+            </Motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Dynamic View Rendering - Using Suspense for better loading experience */}
+        <div className="flex justify-center w-full">
+          <Suspense fallback={<ViewPlaceholder />}>
+            {currentView === 'list' && (
+              <div
+                ref={timeColumnsContainerRef}
+                className={`isolate overflow-hidden ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}
+                style={{
+                  contain: 'paint layout',
+                  isolation: 'isolate',
+                  position: 'relative'
+                }}
+              >
+                <OptimizedListView
+                  selectedTimezones={timezones}
+                  userLocalTimezone={localTimezone}
+                  timeSlots={timeSlots}
+                  localTime={currentTime}
+                  highlightedTime={highlightedTime}
+                  handleTimeSelection={handleTimeSelection}
+                  roundToNearestIncrement={roundToNearestIncrement}
+                  removeTimezone={removeTimezone}
+                />
+              </div>
+            )}
+
+            {currentView === 'clocks' && (
+              <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
+                <OptimizedClocksView
+                  selectedTimezones={timezones}
+                  userLocalTimezone={localTimezone}
+                  setSelectedTimezones={(newTimezones) => {
+                    // Check if we're removing a timezone (new list is shorter than current list)
+                    if (newTimezones.length < timezones.length) {
+                      // Find the timezone(s) that were removed
+                      const currentIds = new Set(timezones.map(tz => tz.id));
+                      const newIds = new Set(newTimezones.map(tz => tz.id));
+                      
+                      // Get IDs that are in current but not in new (these were removed)
+                      currentIds.forEach(id => {
+                        if (!newIds.has(id) && id !== localTimezone) {
+                          removeTimezone(id);
+                        }
+                      });
+                    } else {
+                      // Adding new timezones (original implementation)
+                      // Filter out the local timezone
+                      const nonLocalTimezones = newTimezones.filter(tz => tz.id !== localTimezone);
+                      
+                      // Get only new timezones that aren't already in the store
+                      const existingIds = new Set(timezones.map(tz => tz.id));
+                      const newTimezoneItems = nonLocalTimezones.filter(tz => !existingIds.has(tz.id));
+                      
+                      // Add each new timezone
+                      newTimezoneItems.forEach(tz => {
+                        addTimezone(tz);
+                      });
+                    }
+                  }}
+                />
+              </div>
+            )}
+
+            {currentView === 'digital' && (
+              <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
+                <OptimizedDigitalView
+                  selectedTimezones={timezones}
+                  userLocalTimezone={localTimezone}
+                  setSelectedTimezones={(newTimezones) => {
+                    // Check if we're removing a timezone (new list is shorter than current list)
+                    if (newTimezones.length < timezones.length) {
+                      // Find the timezone(s) that were removed
+                      const currentIds = new Set(timezones.map(tz => tz.id));
+                      const newIds = new Set(newTimezones.map(tz => tz.id));
+                      
+                      // Get IDs that are in current but not in new (these were removed)
+                      currentIds.forEach(id => {
+                        if (!newIds.has(id) && id !== localTimezone) {
+                          removeTimezone(id);
+                        }
+                      });
+                    } else {
+                      // Adding new timezones (original implementation)
+                      // Filter out the local timezone
+                      const nonLocalTimezones = newTimezones.filter(tz => tz.id !== localTimezone);
+                      
+                      // Get only new timezones that aren't already in the store
+                      const existingIds = new Set(timezones.map(tz => tz.id));
+                      const newTimezoneItems = nonLocalTimezones.filter(tz => !existingIds.has(tz.id));
+                      
+                      // Add each new timezone
+                      newTimezoneItems.forEach(tz => {
+                        addTimezone(tz);
+                      });
+                    }
+                  }}
+                />
+              </div>
+            )}
+          </Suspense>
         </div>
       </div>
     );
-  }
+  };
 
+  // Wrap component in HydrationSafeguard to prevent hydration mismatches
   return (
-    <div 
-      ref={clockContainerRef}
-      className="w-full transition-all duration-300 ease-in-out mx-auto px-6"
-    >
-      {/* Clock heading */}
-      {!skipHeading && <WorldClockHeading />}
-      
-      <div className="flex justify-between items-center mb-4 h-12">
-        <ViewSwitcher />
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={toggleMap}
-            className="flex items-center justify-center px-4 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-white text-sm"
-            aria-label={showMap ? "Hide world map" : "Show world map"}
-          >
-            {showMap ? 'Hide Map' : 'World Map'}
-          </button>
-          <NotificationButton />
-        </div>
-      </div>
-
-      {/* World Map Section */}
-      <AnimatePresence>
-        {showMap && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3 }}
-            className="mb-6 overflow-hidden"
-          >
-            <WorldMapSelector />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Dynamic View Rendering - Using Suspense for better loading experience */}
-      <div className="flex justify-center w-full">
-        <Suspense fallback={<ViewPlaceholder />}>
-          {currentView === 'list' && (
-            <div
-              ref={timeColumnsContainerRef}
-              className={`isolate overflow-hidden ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}
-              style={{
-                contain: 'paint layout',
-                isolation: 'isolate',
-                position: 'relative'
-              }}
-            >
-              <OptimizedListView
-                selectedTimezones={timezones}
-                userLocalTimezone={localTimezone}
-                timeSlots={timeSlots}
-                localTime={currentTime}
-                highlightedTime={highlightedTime}
-                handleTimeSelection={handleTimeSelection}
-                roundToNearestIncrement={roundToNearestIncrement}
-                removeTimezone={removeTimezone}
-              />
-            </div>
-          )}
-
-          {currentView === 'clocks' && (
-            <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
-              <OptimizedClocksView
-                selectedTimezones={timezones}
-                userLocalTimezone={localTimezone}
-                setSelectedTimezones={(newTimezones) => {
-                  // Check if we're removing a timezone (new list is shorter than current list)
-                  if (newTimezones.length < timezones.length) {
-                    // Find the timezone(s) that were removed
-                    const currentIds = new Set(timezones.map(tz => tz.id));
-                    const newIds = new Set(newTimezones.map(tz => tz.id));
-                    
-                    // Get IDs that are in current but not in new (these were removed)
-                    currentIds.forEach(id => {
-                      if (!newIds.has(id) && id !== localTimezone) {
-                        removeTimezone(id);
-                      }
-                    });
-                  } else {
-                    // Adding new timezones (original implementation)
-                    // Filter out the local timezone
-                    const nonLocalTimezones = newTimezones.filter(tz => tz.id !== localTimezone);
-                    
-                    // Get only new timezones that aren't already in the store
-                    const existingIds = new Set(timezones.map(tz => tz.id));
-                    const newTimezoneItems = nonLocalTimezones.filter(tz => !existingIds.has(tz.id));
-                    
-                    // Add each new timezone
-                    newTimezoneItems.forEach(tz => {
-                      addTimezone(tz);
-                    });
-                  }
-                }}
-              />
-            </div>
-          )}
-
-          {currentView === 'digital' && (
-            <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
-              <OptimizedDigitalView
-                selectedTimezones={timezones}
-                userLocalTimezone={localTimezone}
-                setSelectedTimezones={(newTimezones) => {
-                  // Check if we're removing a timezone (new list is shorter than current list)
-                  if (newTimezones.length < timezones.length) {
-                    // Find the timezone(s) that were removed
-                    const currentIds = new Set(timezones.map(tz => tz.id));
-                    const newIds = new Set(newTimezones.map(tz => tz.id));
-                    
-                    // Get IDs that are in current but not in new (these were removed)
-                    currentIds.forEach(id => {
-                      if (!newIds.has(id) && id !== localTimezone) {
-                        removeTimezone(id);
-                      }
-                    });
-                  } else {
-                    // Adding new timezones (original implementation)
-                    // Filter out the local timezone
-                    const nonLocalTimezones = newTimezones.filter(tz => tz.id !== localTimezone);
-                    
-                    // Get only new timezones that aren't already in the store
-                    const existingIds = new Set(timezones.map(tz => tz.id));
-                    const newTimezoneItems = nonLocalTimezones.filter(tz => !existingIds.has(tz.id));
-                    
-                    // Add each new timezone
-                    newTimezoneItems.forEach(tz => {
-                      addTimezone(tz);
-                    });
-                  }
-                }}
-              />
-            </div>
-          )}
-        </Suspense>
-      </div>
-    </div>
+    <HydrationSafeguard fallback={renderLoading()}>
+      {renderContent()}
+    </HydrationSafeguard>
   );
 } 

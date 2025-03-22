@@ -45,19 +45,6 @@
           "type": "image/png"
         }
       ]
-    },
-    {
-      "name": "Settings",
-      "short_name": "Settings",
-      "description": "Configure your World Clock",
-      "url": "/settings",
-      "icons": [
-        {
-          "src": "/shortcuts/settings.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
     }
   ],
   "screenshots": [

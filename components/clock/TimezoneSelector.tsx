@@ -4,11 +4,26 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getAllTimezones } from '@/lib/utils/timezone';
 import { sortTimezonesByRelevance, getTimezoneContext } from '@/lib/utils/timezoneSearch';
 import { Timezone } from '@/store/timezoneStore';
-import * as Dialog from '@radix-ui/react-dialog';
+import * as RadixDialog from '@radix-ui/react-dialog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search, X, Clock, Briefcase } from 'lucide-react';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
 import { useDebounce } from '@/lib/hooks';
+
+// Add a client-side only wrapper component
+const ClientOnly = ({ children }: { children: React.ReactNode }) => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
+
+  return <>{children}</>;
+};
 
 // Fallback implementation of useDebounce in case the import fails
 const useLocalDebounce = <T,>(value: T, delay: number): T => {
@@ -270,243 +285,245 @@ export default function TimezoneSelector({
   }, [filteredTimezones, handleSelect, userTimezone]);
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={open => !open && onClose()}>
-      <AnimatePresence mode="sync" onExitComplete={() => null}>
-        {isOpen && (
-          <Dialog.Portal forceMount>
-            {/* Fixed backdrop blur layer with fade-out on exit */}
-            <motion.div 
-              className="fixed inset-0 backdrop-blur-sm z-40"
-              aria-hidden="true"
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.1 } }}
-            />
-            
-            {/* Animated backdrop overlay (opacity only) */}
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              variants={overlayVariants}
-              transition={overlayTransition}
-            >
-              <Dialog.Overlay 
-                className="fixed inset-0 bg-black/50 z-40"
+    <ClientOnly>
+      <RadixDialog.Root open={isOpen} onOpenChange={open => !open && onClose()}>
+        <AnimatePresence mode="sync" onExitComplete={() => null}>
+          {isOpen && (
+            <RadixDialog.Portal forceMount>
+              {/* Fixed backdrop blur layer with fade-out on exit */}
+              <motion.div 
+                className="fixed inset-0 backdrop-blur-sm z-40"
                 aria-hidden="true"
+                initial={{ opacity: 1 }}
+                exit={{ opacity: 0, transition: { duration: 0.1 } }}
               />
-            </motion.div>
-            
-            {/* Flex container for perfect centering */}
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-              {/* Content container with animation */}
+              
+              {/* Animated backdrop overlay (opacity only) */}
               <motion.div
                 initial="hidden"
                 animate="visible"
                 exit="exit"
-                variants={contentVariants}
-                transition={transition}
-                layout
-                className="w-full max-w-md will-change-transform"
+                variants={overlayVariants}
+                transition={overlayTransition}
               >
-                <Dialog.Content 
-                  className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl 
-                            border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
-                  style={{ 
-                    width: '100%',
-                    maxHeight: 'min(600px, calc(100vh - 2rem))'
-                  }}
-                  {...props}
-                >
-                  {/* Header section */}
-                  <div className="flex-none mb-4">
-                    <div className="flex justify-between items-center">
-                      <Dialog.Title 
-                        className="text-xl font-semibold text-gray-900 dark:text-white"
-                      >
-                        Select Timezone or Region
-                      </Dialog.Title>
-
-                      <Dialog.Close 
-                        className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 
-                                  text-gray-400 hover:text-gray-500"
-                        aria-label="Close dialog"
-                      >
-                        <X className="w-5 h-5" />
-                      </Dialog.Close>
-                    </div>
-                    
-                    <Dialog.Description className="sr-only">
-                      Search and select from available timezones. Use up and down arrow keys to navigate results.
-                    </Dialog.Description>
-                    
-                    <div className="mt-4 relative">
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <Search className="h-5 w-5 text-gray-400" />
-                      </div>
-                      <input
-                        type="text"
-                        placeholder="Search by city, country or timezone..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        className="w-full pl-10 p-3 border border-gray-300 dark:border-gray-600 rounded-md 
-                                  bg-white dark:bg-gray-700 text-gray-900 dark:text-white
-                                  focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                        aria-label="Search timezones"
-                        aria-controls="timezone-list"
-                        aria-expanded={isOpen}
-                        role="combobox"
-                        aria-autocomplete="list"
-                      />
-                    </div>
-                  </div>
-
-                  <div
-                    aria-live="polite"
-                    className="sr-only"
-                    role="status"
-                  >
-                    {searchResultsCount} {searchResultsCount === 1 ? 'timezone' : 'timezones'} found
-                  </div>
-
-                  {/* Content section with proper height and overflow handling */}
-                  <div className="flex-1 min-h-0 overflow-hidden">
-                    {/* Show loading state */}
-                    {isLoading && (
-                      <div className="p-4 text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center">
-                        Loading timezones...
-                      </div>
-                    )}
-                    
-                    {/* Show error state */}
-                    {error && (
-                      <div className="p-4 text-center text-red-500 h-full flex items-center justify-center">
-                        {error}
-                      </div>
-                    )}
-                    
-                    {/* Show empty state */}
-                    {!isLoading && !error && filteredTimezones.length === 0 && (
-                      <div 
-                        className="p-4 text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center"
-                        role="alert"
-                      >
-                        No timezones or regions found
-                      </div>
-                    )}
-                    
-                    {/* Show search results */}
-                    {!isLoading && !error && filteredTimezones.length > 0 && debouncedSearch.trim() && (
-                      // When searching, display a flat list of results with fixed height
-                      <div 
-                        className="h-[320px] overflow-hidden"
-                        role="listbox"
-                        aria-label="Available timezones and regions"
-                        id="timezone-list"
-                      >
-                        <List
-                          height={320}
-                          width="100%"
-                          itemCount={filteredTimezones.length}
-                          itemSize={80}
-                          className="timezone-list focus:outline-none"
-                          overscanCount={5}
-                        >
-                          {renderListItem}
-                        </List>
-                      </div>
-                    )}
-                    
-                    {/* Show grouped regions when not searching */}
-                    {!isLoading && !error && filteredTimezones.length > 0 && !debouncedSearch.trim() && (
-                      // When not searching, display grouped by region with proper scrolling
-                      <div 
-                        className="h-[320px] overflow-y-auto pr-1 overscroll-contain" 
-                        role="listbox" 
-                        aria-label="Available timezone regions"
-                      >
-                        {/* Group timezones by continent extracted from the ID */}
-                        {Array.from(new Set(filteredTimezones.map(tz => {
-                          // Extract continent from timezone ID (first part before the /)
-                          const parts = tz.id.split('/');
-                          return parts[0] || 'Other';
-                        }))).map(continent => (
-                          <div key={continent} className="mb-4">
-                            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 px-4 py-1 sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-10">
-                              {continent}
-                            </h3>
-                            <div>
-                              {filteredTimezones
-                                .filter(tz => {
-                                  const parts = tz.id.split('/');
-                                  return (parts[0] || 'Other') === continent;
-                                })
-                                .map(timezone => {
-                                  try {
-                                    const context = getTimezoneContext(timezone, userTimezone);
-                                    return (
-                                      <button
-                                        key={timezone.id}
-                                        onClick={() => handleSelect(timezone)}
-                                        className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 
-                                                  transition-colors duration-150 focus:outline-none focus:ring-2 
-                                                  focus:ring-primary-500 border-b border-gray-200 dark:border-gray-700"
-                                        role="option"
-                                        aria-selected="false"
-                                        id={`timezone-option-${timezone.id}`}
-                                        tabIndex={0}
-                                        data-timezone-id={timezone.id}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter' || e.key === ' ') {
-                                            handleSelect(timezone);
-                                            e.preventDefault();
-                                          }
-                                        }}
-                                      >
-                                        <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between gap-2">
-                                          <div className="flex items-center space-x-2 min-w-0 flex-1">
-                                            <span className="truncate">{timezone.city || timezone.name}</span>
-                                            {timezone.abbreviation && (
-                                              <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded flex-shrink-0">
-                                                {timezone.abbreviation}
-                                              </span>
-                                            )}
-                                          </div>
-                                          <span className="text-sm text-gray-500 flex-shrink-0 ml-2">{context.offset}</span>
-                                        </div>
-                                        <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center justify-between mt-1 gap-2">
-                                          <span className="truncate max-w-[160px]">{timezone.id}</span>
-                                          <div className="flex items-center gap-3 flex-shrink-0">
-                                            <div className="flex items-center space-x-1">
-                                              <Clock className="w-4 h-4 flex-shrink-0" />
-                                              <span className="whitespace-nowrap">{context.currentTime}</span>
-                                            </div>
-                                            {context.isBusinessHours && (
-                                              <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
-                                                <Briefcase className="w-4 h-4 flex-shrink-0" />
-                                                <span className="text-xs whitespace-nowrap">Business hours</span>
-                                              </div>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </button>
-                                    );
-                                  } catch (err) {
-                                    console.error('Error rendering grouped timezone:', err, timezone);
-                                    return null;
-                                  }
-                                }).filter(Boolean)}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </Dialog.Content>
+                <RadixDialog.Overlay 
+                  className="fixed inset-0 bg-black/50 z-40"
+                  aria-hidden="true"
+                />
               </motion.div>
-            </div>
-          </Dialog.Portal>
-        )}
-      </AnimatePresence>
-    </Dialog.Root>
+              
+              {/* Flex container for perfect centering */}
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                {/* Content container with animation */}
+                <motion.div
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
+                  variants={contentVariants}
+                  transition={transition}
+                  layout
+                  className="w-full max-w-md will-change-transform"
+                >
+                  <RadixDialog.Content 
+                    className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl 
+                              border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
+                    style={{ 
+                      width: '100%',
+                      maxHeight: 'min(600px, calc(100vh - 2rem))'
+                    }}
+                    {...props}
+                  >
+                    {/* Header section */}
+                    <div className="flex-none mb-4">
+                      <div className="flex justify-between items-center">
+                        <RadixDialog.Title 
+                          className="text-xl font-semibold text-gray-900 dark:text-white"
+                        >
+                          Select Timezone or Region
+                        </RadixDialog.Title>
+
+                        <RadixDialog.Close 
+                          className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 
+                                    text-gray-400 hover:text-gray-500"
+                          aria-label="Close dialog"
+                        >
+                          <X className="w-5 h-5" />
+                        </RadixDialog.Close>
+                      </div>
+                      
+                      <RadixDialog.Description className="sr-only">
+                        Search and select from available timezones. Use up and down arrow keys to navigate results.
+                      </RadixDialog.Description>
+                      
+                      <div className="mt-4 relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Search className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <input
+                          type="text"
+                          placeholder="Search by city, country or timezone..."
+                          value={search}
+                          onChange={e => setSearch(e.target.value)}
+                          className="w-full pl-10 p-3 border border-gray-300 dark:border-gray-600 rounded-md 
+                                    bg-white dark:bg-gray-700 text-gray-900 dark:text-white
+                                    focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                          aria-label="Search timezones"
+                          aria-controls="timezone-list"
+                          aria-expanded={isOpen}
+                          role="combobox"
+                          aria-autocomplete="list"
+                        />
+                      </div>
+                    </div>
+
+                    <div
+                      aria-live="polite"
+                      className="sr-only"
+                      role="status"
+                    >
+                      {searchResultsCount} {searchResultsCount === 1 ? 'timezone' : 'timezones'} found
+                    </div>
+
+                    {/* Content section with proper height and overflow handling */}
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                      {/* Show loading state */}
+                      {isLoading && (
+                        <div className="p-4 text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center">
+                          Loading timezones...
+                        </div>
+                      )}
+                      
+                      {/* Show error state */}
+                      {error && (
+                        <div className="p-4 text-center text-red-500 h-full flex items-center justify-center">
+                          {error}
+                        </div>
+                      )}
+                      
+                      {/* Show empty state */}
+                      {!isLoading && !error && filteredTimezones.length === 0 && (
+                        <div 
+                          className="p-4 text-center text-gray-500 dark:text-gray-400 h-full flex items-center justify-center"
+                          role="alert"
+                        >
+                          No timezones or regions found
+                        </div>
+                      )}
+                      
+                      {/* Show search results */}
+                      {!isLoading && !error && filteredTimezones.length > 0 && debouncedSearch.trim() && (
+                        // When searching, display a flat list of results with fixed height
+                        <div 
+                          className="h-[320px] overflow-hidden"
+                          role="listbox"
+                          aria-label="Available timezones and regions"
+                          id="timezone-list"
+                        >
+                          <List
+                            height={320}
+                            width="100%"
+                            itemCount={filteredTimezones.length}
+                            itemSize={80}
+                            className="timezone-list focus:outline-none"
+                            overscanCount={5}
+                          >
+                            {renderListItem}
+                          </List>
+                        </div>
+                      )}
+                      
+                      {/* Show grouped regions when not searching */}
+                      {!isLoading && !error && filteredTimezones.length > 0 && !debouncedSearch.trim() && (
+                        // When not searching, display grouped by region with proper scrolling
+                        <div 
+                          className="h-[320px] overflow-y-auto pr-1 overscroll-contain" 
+                          role="listbox" 
+                          aria-label="Available timezone regions"
+                        >
+                          {/* Group timezones by continent extracted from the ID */}
+                          {Array.from(new Set(filteredTimezones.map(tz => {
+                            // Extract continent from timezone ID (first part before the /)
+                            const parts = tz.id.split('/');
+                            return parts[0] || 'Other';
+                          }))).map(continent => (
+                            <div key={continent} className="mb-4">
+                              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 px-4 py-1 sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-10">
+                                {continent}
+                              </h3>
+                              <div>
+                                {filteredTimezones
+                                  .filter(tz => {
+                                    const parts = tz.id.split('/');
+                                    return (parts[0] || 'Other') === continent;
+                                  })
+                                  .map(timezone => {
+                                    try {
+                                      const context = getTimezoneContext(timezone, userTimezone);
+                                      return (
+                                        <button
+                                          key={timezone.id}
+                                          onClick={() => handleSelect(timezone)}
+                                          className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 
+                                                    transition-colors duration-150 focus:outline-none focus:ring-2 
+                                                    focus:ring-primary-500 border-b border-gray-200 dark:border-gray-700"
+                                          role="option"
+                                          aria-selected="false"
+                                          id={`timezone-option-${timezone.id}`}
+                                          tabIndex={0}
+                                          data-timezone-id={timezone.id}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                              handleSelect(timezone);
+                                              e.preventDefault();
+                                            }
+                                          }}
+                                        >
+                                          <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between gap-2">
+                                            <div className="flex items-center space-x-2 min-w-0 flex-1">
+                                              <span className="truncate">{timezone.city || timezone.name}</span>
+                                              {timezone.abbreviation && (
+                                                <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded flex-shrink-0">
+                                                  {timezone.abbreviation}
+                                                </span>
+                                              )}
+                                            </div>
+                                            <span className="text-sm text-gray-500 flex-shrink-0 ml-2">{context.offset}</span>
+                                          </div>
+                                          <div className="text-sm text-gray-500 dark:text-gray-400 flex flex-wrap items-center justify-between mt-1 gap-2">
+                                            <span className="truncate max-w-[160px]">{timezone.id}</span>
+                                            <div className="flex items-center gap-3 flex-shrink-0">
+                                              <div className="flex items-center space-x-1">
+                                                <Clock className="w-4 h-4 flex-shrink-0" />
+                                                <span className="whitespace-nowrap">{context.currentTime}</span>
+                                              </div>
+                                              {context.isBusinessHours && (
+                                                <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
+                                                  <Briefcase className="w-4 h-4 flex-shrink-0" />
+                                                  <span className="text-xs whitespace-nowrap">Business hours</span>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+                                        </button>
+                                      );
+                                    } catch (err) {
+                                      console.error('Error rendering grouped timezone:', err, timezone);
+                                      return null;
+                                    }
+                                  }).filter(Boolean)}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </RadixDialog.Content>
+                </motion.div>
+              </div>
+            </RadixDialog.Portal>
+          )}
+        </AnimatePresence>
+      </RadixDialog.Root>
+    </ClientOnly>
   );
 } 

@@ -5,7 +5,13 @@ export default function HeadingMCP() {
     <h2 
       className="text-2xl font-bold mb-6 text-center" 
       id="main-heading"
-      style={{ minHeight: '32px' }}
+      style={{ 
+        minHeight: '32px',
+        // Explicitly set dimensions to prevent layout shift
+        contentVisibility: 'auto',
+        containIntrinsicSize: '0 32px'
+      }}
+      data-priority="high"
     >
       World Clock
     </h2>

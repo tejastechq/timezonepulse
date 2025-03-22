@@ -1,25 +1,38 @@
 'use client';
 
-import React from 'react';
-import { useEffect } from 'react';
+import React, { useEffect, memo } from 'react';
 import { useTimezoneStore } from '@/store/timezoneStore';
-import WorldClock from './WorldClock';
+import dynamic from 'next/dynamic';
 import { ViewProvider } from '@/app/contexts/ViewContext';
 import { IntegrationsProvider } from '@/app/contexts/IntegrationsContext';
 
+// Lazily load the WorldClock component to reduce initial JS payload
+const WorldClock = dynamic(() => import('./WorldClock'), {
+  ssr: true,
+  loading: () => (
+    <div className="flex justify-center items-center min-h-[300px]">
+      <div className="w-12 h-12 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  )
+});
+
 /**
  * WorldClockWrapper component that wraps the WorldClock component with context providers
- * and handles hydration. The heading is now rendered by a Server Component in the parent.
+ * and handles hydration. The heading is rendered by a Server Component in the parent.
  */
-export default function WorldClockWrapper() {
+function WorldClockWrapper() {
   const { hydrate } = useTimezoneStore();
 
   // Hydrate the store on client-side
   useEffect(() => {
-    hydrate();
+    // Use a short timeout to unblock the main thread during initial render
+    const timeoutId = setTimeout(() => {
+      hydrate();
+    }, 0);
+    
+    return () => clearTimeout(timeoutId);
   }, [hydrate]);
 
-  // Skip rendering the heading here since it's rendered by the Server Component
   return (
     <ViewProvider>
       <IntegrationsProvider>
@@ -27,4 +40,7 @@ export default function WorldClockWrapper() {
       </IntegrationsProvider>
     </ViewProvider>
   );
-} 
+}
+
+// Memoize the component to prevent unnecessary re-renders
+export default memo(WorldClockWrapper); 

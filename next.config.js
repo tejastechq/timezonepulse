@@ -4,6 +4,8 @@ const nextConfig = {
   poweredByHeader: false,
   compress: true,
   
+  output: 'export',
+  
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
@@ -19,6 +21,11 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     optimizeServerReact: true,
+    serverMinification: true,
+    gzipSize: true,
+    turbotrace: {
+      memoryLimit: 4000,
+    },
     optimizePackageImports: [
       '@radix-ui/react-dialog',
       '@radix-ui/react-dropdown-menu',
@@ -32,12 +39,29 @@ const nextConfig = {
       'framer-motion',
       'luxon',
       'zustand',
+      'react-hook-form',
+      'class-variance-authority',
+      'tailwind-merge',
+      'tailwindcss-animate',
+      '@vercel/analytics',
+      '@vercel/speed-insights',
+      'next-themes',
     ],
     webVitalsAttribution: ['CLS', 'LCP', 'FCP', 'FID', 'INP', 'TTFB'],
   },
 
   async headers() {
     return [
+      {
+        // Special rule to enable bfcache for HTML pages
+        source: '/',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+        ],
+      },
       {
         source: '/:path*',
         headers: [

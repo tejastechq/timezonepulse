@@ -1,3 +1,21 @@
+CRITICAL ISSUE NEED HELP:
+
+for some reason when changes are made, i ned to completely delete browsing data and cache to see the changes, changes even on different localhost 3000,3001 - 3010 all show different versions of the application.
+
+
+WORKAROUND - delete cached images and files in the advanced tab in delete browsing data page
+
+
+
+
+
+
+
+
+
+
+
+
 # World Clock
 
 A sophisticated time management application designed to help users track and visualize time across multiple global timezones. This application provides a robust solution for professionals who work with international teams, schedule global meetings, or need to coordinate activities across different time zones.

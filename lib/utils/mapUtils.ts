@@ -210,6 +210,7 @@ export interface TimezoneData {
   abbreviation?: string;
   isNightTime?: boolean;
   isWorkHours?: boolean;
+  center?: { lat: number; lng: number };
 }
 
 /**
@@ -248,23 +249,80 @@ function calculateEuclideanDistance(lat1: number, lng1: number, lat2: number, ln
  * @returns The timezone ID or null if not found
  */
 export function getTimezoneForCoordinates(lat: number, lng: number): string | null {
-  try {
-    // Find the closest timezone to the given coordinates
-    let closestRegion = null;
-    let minDistance = Number.MAX_VALUE;
+  // IMPORTANT: This function expects coordinates in [lat, lng] format
+  
+  // Normalize coordinates to handle edge cases
+  const normalizedLng = ((lng + 180) % 360) - 180; // Ensure longitude is in range -180 to 180
+  const normalizedLat = Math.max(-85, Math.min(85, lat)); // Clamp latitude to valid range
+
+  // Find the closest timezone region based on coordinates
+  let closestRegion: TimezoneRegion | null = null;
+  let minDistance = Infinity;
+  
+  for (const region of TIMEZONE_REGIONS) {
+    // Calculate distance between input coordinates and region coordinates
+    // IMPORTANT: Compare lat with lat and lng with lng
+    const distance = calculateDistance(normalizedLat, normalizedLng, region.lat, region.lng);
     
-    for (const region of TIMEZONE_REGIONS) {
-      const distance = calculateEuclideanDistance(lat, lng, region.lat, region.lng);
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestRegion = region;
-      }
+    if (distance < minDistance) {
+      minDistance = distance;
+      closestRegion = region;
+    }
+  }
+  
+  return closestRegion ? closestRegion.id : null;
+}
+
+/**
+ * Converts a polygon array of points to an SVG path string
+ * 
+ * @param polygon - Array of [lng, lat] coordinates
+ * @returns SVG path string (e.g., "M10,20 L30,40 L50,60 Z")
+ */
+export function polygonToPath(polygon: number[][]): string {
+  if (!polygon || !Array.isArray(polygon) || polygon.length === 0) {
+    console.warn('Invalid polygon data passed to polygonToPath');
+    return '';
+  }
+  
+  try {
+    // Validate all points first
+    const validPolygon = polygon.filter(point => 
+      Array.isArray(point) && 
+      point.length === 2 && 
+      Number.isFinite(point[0]) && 
+      Number.isFinite(point[1]) &&
+      Math.abs(point[1]) <= 90 && 
+      Math.abs(point[0]) <= 180
+    );
+    
+    if (validPolygon.length < 3) {
+      console.warn('Not enough valid points in polygon data (need at least 3)');
+      return '';
     }
     
-    return closestRegion ? closestRegion.id : null;
+    // Start with a Move command to the first point
+    // For SVG paths, order is [x,y] which for maps means [lng,lat]
+    let path = `M${validPolygon[0][0]},${validPolygon[0][1]}`;
+    
+    // Add Line commands for the rest of the points
+    for (let i = 1; i < validPolygon.length; i++) {
+      path += ` L${validPolygon[i][0]},${validPolygon[i][1]}`;
+    }
+    
+    // Close the path by returning to the start point
+    path += ` Z`;
+    
+    // Verify the path is valid
+    if (path.includes('NaN') || path.includes('undefined')) {
+      console.error('Generated path contains invalid values:', path);
+      return '';
+    }
+    
+    return path;
   } catch (error) {
-    console.error('Error getting timezone:', error);
-    return null;
+    console.error('Error converting polygon to path:', error);
+    return '';
   }
 }
 
@@ -274,70 +332,94 @@ export function getTimezoneForCoordinates(lat: number, lng: number): string | nu
  * @returns Boundary points as [lng, lat] pairs for mapping, or null if not defined
  */
 export function getTimezoneBoundary(timezoneId: string): [number, number][] | null {
+  if (!timezoneId) {
+    console.warn('Invalid timezoneId provided to getTimezoneBoundary');
+    return null;
+  }
+  
+  // Helper function to normalize boundary coordinates
+  const normalizeBoundary = (boundary: number[][]): [number, number][] => {
+    // Filter out invalid points and ensure [lng, lat] format
+    return boundary
+      .filter(point => 
+        Array.isArray(point) && 
+        point.length === 2 && 
+        Number.isFinite(point[0]) && 
+        Number.isFinite(point[1]) &&
+        Math.abs(point[1]) <= 90 && 
+        Math.abs(point[0]) <= 180
+      )
+      .map(([lng, lat]) => [lng, lat] as [number, number]);
+  };
+  
   // Check if we have an exact match
   if (TIMEZONE_BOUNDARIES[timezoneId]) {
-    return TIMEZONE_BOUNDARIES[timezoneId].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+    console.log(`Found exact boundary match for ${timezoneId}`);
+    return normalizeBoundary(TIMEZONE_BOUNDARIES[timezoneId].boundaries);
   }
+  
+  console.log(`No exact boundary match for ${timezoneId}, looking for related regions`);
   
   // Handle timezone aliases and related zones
   // For regions that don't have explicit boundaries, map to parent regions
   if (timezoneId.startsWith('America/')) {
     // US timezones
     if (timezoneId === 'America/Los_Angeles' || timezoneId === 'America/Vancouver') {
-      return TIMEZONE_BOUNDARIES['America/Los_Angeles'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+      return normalizeBoundary(TIMEZONE_BOUNDARIES['America/Los_Angeles'].boundaries);
     }
     
     if (timezoneId === 'America/Denver' || timezoneId === 'America/Phoenix') {
-      return TIMEZONE_BOUNDARIES['America/Denver'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+      return normalizeBoundary(TIMEZONE_BOUNDARIES['America/Denver'].boundaries);
     }
     
     if (timezoneId === 'America/Chicago' || timezoneId === 'America/Mexico_City') {
-      return TIMEZONE_BOUNDARIES['America/Chicago'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+      return normalizeBoundary(TIMEZONE_BOUNDARIES['America/Chicago'].boundaries);
     }
     
     if (timezoneId === 'America/New_York' || timezoneId === 'America/Toronto' || timezoneId === 'America/Halifax') {
-      return TIMEZONE_BOUNDARIES['America/New_York'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+      return normalizeBoundary(TIMEZONE_BOUNDARIES['America/New_York'].boundaries);
     }
   }
   
   // European timezones
   if (timezoneId.startsWith('Europe/')) {
     if (timezoneId === 'Europe/London' || timezoneId === 'Europe/Dublin' || timezoneId === 'Europe/Lisbon') {
-      return TIMEZONE_BOUNDARIES['Europe/London'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+      return normalizeBoundary(TIMEZONE_BOUNDARIES['Europe/London'].boundaries);
     }
     
     if (['Europe/Paris', 'Europe/Madrid', 'Europe/Rome', 'Europe/Berlin', 'Europe/Amsterdam', 
          'Europe/Zurich', 'Europe/Stockholm', 'Europe/Warsaw'].includes(timezoneId)) {
-      return TIMEZONE_BOUNDARIES['Europe/Paris'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+      return normalizeBoundary(TIMEZONE_BOUNDARIES['Europe/Paris'].boundaries);
     }
     
     if (timezoneId === 'Europe/Moscow') {
-      return TIMEZONE_BOUNDARIES['Europe/Moscow'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+      return normalizeBoundary(TIMEZONE_BOUNDARIES['Europe/Moscow'].boundaries);
     }
   }
   
   // Asian timezones
   if (timezoneId.startsWith('Asia/')) {
     if (timezoneId === 'Asia/Tokyo' || timezoneId === 'Asia/Seoul') {
-      return TIMEZONE_BOUNDARIES['Asia/Tokyo'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+      return normalizeBoundary(TIMEZONE_BOUNDARIES['Asia/Tokyo'].boundaries);
     }
     
     if (timezoneId === 'Asia/Shanghai' || timezoneId === 'Asia/Hong_Kong' || timezoneId === 'Asia/Singapore') {
-      return TIMEZONE_BOUNDARIES['Asia/Shanghai'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+      return normalizeBoundary(TIMEZONE_BOUNDARIES['Asia/Shanghai'].boundaries);
     }
     
     if (timezoneId === 'Asia/Kolkata' || timezoneId === 'Asia/Dhaka') {
-      return TIMEZONE_BOUNDARIES['Asia/Kolkata'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+      return normalizeBoundary(TIMEZONE_BOUNDARIES['Asia/Kolkata'].boundaries);
     }
   }
   
   // Australian timezones
   if (timezoneId.startsWith('Australia/')) {
     if (timezoneId === 'Australia/Sydney' || timezoneId === 'Australia/Melbourne' || timezoneId === 'Australia/Brisbane') {
-      return TIMEZONE_BOUNDARIES['Australia/Sydney'].boundaries.map(([lng, lat]) => [lng, lat] as [number, number]);
+      return normalizeBoundary(TIMEZONE_BOUNDARIES['Australia/Sydney'].boundaries);
     }
   }
   
+  console.log(`No boundary found for ${timezoneId} after trying all mappings`);
   return null;
 }
 
@@ -346,7 +428,13 @@ export function getTimezoneBoundary(timezoneId: string): [number, number][] | nu
  * @param timezoneId - The IANA timezone identifier
  * @returns CSS color string
  */
-export function getTimezoneColor(timezoneId: string): string {
+export function getTimezoneColor(timezoneId: string | null | undefined): string {
+  // Safety check - if timezoneId is not a valid string, return a default color
+  if (!timezoneId || typeof timezoneId !== 'string') {
+    console.warn('Invalid timezone ID passed to getTimezoneColor:', timezoneId);
+    return '#6B7280'; // Default gray color
+  }
+  
   // Check if we have a direct match
   if (TIMEZONE_BOUNDARIES[timezoneId]) {
     return TIMEZONE_BOUNDARIES[timezoneId].color;
@@ -369,6 +457,9 @@ export function getTimezoneColor(timezoneId: string): string {
     if (timezoneId === 'America/New_York' || timezoneId === 'America/Toronto' || timezoneId === 'America/Halifax') {
       return TIMEZONE_BOUNDARIES['America/New_York'].color;
     }
+    
+    // Default color for other American timezones
+    return '#3b82f6'; // blue
   }
   
   // European timezones
@@ -385,6 +476,9 @@ export function getTimezoneColor(timezoneId: string): string {
     if (timezoneId === 'Europe/Moscow') {
       return TIMEZONE_BOUNDARIES['Europe/Moscow'].color;
     }
+    
+    // Default color for other European timezones
+    return '#f97316'; // orange
   }
   
   // Asian timezones
@@ -400,6 +494,9 @@ export function getTimezoneColor(timezoneId: string): string {
     if (timezoneId === 'Asia/Kolkata' || timezoneId === 'Asia/Dhaka') {
       return TIMEZONE_BOUNDARIES['Asia/Kolkata'].color;
     }
+    
+    // Default color for other Asian timezones
+    return '#a855f7'; // purple
   }
   
   // Australian timezones
@@ -407,21 +504,38 @@ export function getTimezoneColor(timezoneId: string): string {
     if (timezoneId === 'Australia/Sydney' || timezoneId === 'Australia/Melbourne' || timezoneId === 'Australia/Brisbane') {
       return TIMEZONE_BOUNDARIES['Australia/Sydney'].color;
     }
+    
+    // Default color for other Australian timezones
+    return '#06b6d4'; // cyan
   }
   
-  // Default color if no match found
-  return '#6b7280'; // gray-500
+  // Pacific timezones
+  if (timezoneId.startsWith('Pacific/')) {
+    return '#0ea5e9'; // sky blue
+  }
+  
+  // African timezones
+  if (timezoneId.startsWith('Africa/')) {
+    return '#d946ef'; // fuchsia
+  }
+  
+  console.log(`No specific color for timezone: ${timezoneId}, using default`);
+  // Return a default color if we couldn't match any region
+  return '#6B7280'; // gray
 }
 
 /**
  * Finds the closest timezone region to the given coordinates
  */
 export function findClosestTimezone(lat: number, lng: number): string {
+  // IMPORTANT: This function expects coordinates in [lat, lng] format
+  // Make sure any calling code provides coordinates in this order
+  
+  let closestTimezone = 'UTC';
+  let minDistance = Infinity;
+  
   const point = [lat, lng];
   const timezones = Object.keys(TIMEZONE_REGIONS);
-  
-  let closestTimezone = '';
-  let shortestDistance = Number.MAX_VALUE;
   
   timezones.forEach((timezone) => {
     // Get the timezone region
@@ -442,8 +556,8 @@ export function findClosestTimezone(lat: number, lng: number): string {
     );
     
     // Check if this is the closest so far
-    if (distance < shortestDistance) {
-      shortestDistance = distance;
+    if (distance < minDistance) {
+      minDistance = distance;
       closestTimezone = timezone;
     }
   });
@@ -643,6 +757,15 @@ export const formatTimezoneOffset = (offsetHours: number): string => {
  */
 export function getTimezoneData(timezoneId: string): TimezoneData | null {
   try {
+    // Safety check for null or undefined timezoneId
+    if (!timezoneId) {
+      console.warn('Null or undefined timezoneId passed to getTimezoneData');
+      return null;
+    }
+
+    // Find the region data for this timezone ID
+    const region = TIMEZONE_REGIONS.find(r => r.id === timezoneId);
+    
     // Create a date in the specified timezone
     const date = new Date();
     const options = { timeZone: timezoneId, hour12: false };
@@ -685,7 +808,33 @@ export function getTimezoneData(timezoneId: string): TimezoneData | null {
       country = parts2[0] === 'Etc' ? 'UTC' : parts2[0];
     }
     
-    // Return formatted timezone data
+    // Add coordinates from the TIMEZONE_REGIONS data
+    let center = undefined;
+    if (region) {
+      center = { 
+        lat: region.lat, 
+        lng: region.lng 
+      };
+    } else {
+      // Try to find a related timezone that might have coordinates
+      for (const tz of TIMEZONE_REGIONS) {
+        if (tz.id.includes(parts2[parts2.length - 1]) || 
+            (parts2.length > 1 && tz.id.includes(parts2[parts2.length - 2]))) {
+          console.log(`Using coordinates from similar timezone ${tz.id} for ${timezoneId}`);
+          center = { 
+            lat: tz.lat, 
+            lng: tz.lng 
+          };
+          break;
+        }
+      }
+      
+      if (!center) {
+        console.warn(`No coordinates found for timezone: ${timezoneId}`);
+      }
+    }
+    
+    // Return formatted timezone data with center coordinates if available
     return {
       id: timezoneId,
       name: `${city}, ${country}`,
@@ -695,7 +844,8 @@ export function getTimezoneData(timezoneId: string): TimezoneData | null {
       abbreviation,
       isNightTime,
       isWorkHours,
-      isDST
+      isDST,
+      center // This will be undefined if no coordinates were found
     };
   } catch (error) {
     console.error('Error getting timezone data:', error);
@@ -711,6 +861,9 @@ export function getTimezoneData(timezoneId: string): TimezoneData | null {
  * @returns A Timezone object or null if not found or error
  */
 export function getTimezoneFromMapCoordinates(lat: number, lng: number): TimezoneData | null {
+  // IMPORTANT: This function expects coordinates in [lat, lng] format
+  // Make sure any calling code provides coordinates in this order
+  
   // Get the timezone ID for these coordinates
   const tzId = getTimezoneForCoordinates(lat, lng);
   
@@ -832,15 +985,6 @@ export const isBusinessHours = (timezoneId: string, date = new Date()): boolean 
 };
 
 /**
- * Converts a polygon array of coordinates to an SVG path string
- * @param polygon An array of [longitude, latitude] coordinate pairs
- * @returns SVG path string
- */
-export function polygonToPath(polygon: number[][]): string {
-  return polygon.map(([lng, lat]) => `${lng},${lat}`).join(' ');
-}
-
-/**
  * Gets timezone data from timezone ID
  * 
  * @param id - Timezone ID (e.g., "America/New_York")
@@ -853,4 +997,32 @@ export function getTimezoneFromId(id: string): TimezoneData | null {
     console.error(`Error getting timezone data for ID ${id}:`, error);
     return null;
   }
+}
+
+/**
+ * Utility function to swap coordinate formats between [lng, lat] and [lat, lng]
+ * This helps prevent confusion between coordinate formats
+ * 
+ * @param coordinates - The coordinates to swap in format [x, y]
+ * @returns The swapped coordinates in format [y, x]
+ */
+export function swapCoordinates(coordinates: [number, number]): [number, number] {
+  return [coordinates[1], coordinates[0]];
+}
+
+/**
+ * Normalize coordinates to valid ranges
+ * 
+ * @param lng - Longitude value to normalize
+ * @param lat - Latitude value to normalize
+ * @returns Normalized [lng, lat] coordinates
+ */
+export function normalizeCoordinates(lng: number, lat: number): [number, number] {
+  // Ensure longitude is in range -180 to 180
+  const normalizedLng = ((lng + 180) % 360) - 180;
+  
+  // Clamp latitude to valid range (-85 to 85)
+  const normalizedLat = Math.max(-85, Math.min(85, lat));
+  
+  return [normalizedLng, normalizedLat];
 } 

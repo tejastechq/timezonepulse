@@ -8,10 +8,12 @@ import { FixedSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { ChevronUp, ChevronDown, Sun, Moon, Clock, Plus, X, Edit2, Settings } from 'lucide-react';
 import { getAllTimezones, isInDST } from '@/lib/utils/timezone';
-import * as Dialog from '@radix-ui/react-dialog';
-import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import TimezoneSelector from '../clock/TimezoneSelector'; // Import the shared TimezoneSelector
 import { useTheme } from 'next-themes';
+
+// Import default components to avoid "undefined" errors when using ssr: false
+import * as RadixDialog from '@radix-ui/react-dialog';
+import * as RadixDropdownMenu from '@radix-ui/react-dropdown-menu';
 
 interface ListViewProps {
   selectedTimezones: Timezone[];
@@ -23,6 +25,21 @@ interface ListViewProps {
   roundToNearestIncrement: (date: Date, increment: number) => Date;
   removeTimezone?: (id: string) => void;
 }
+
+// Add a client-side only wrapper component
+const ClientOnly = ({ children }: { children: React.ReactNode }) => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  if (!isMounted) {
+    return null;
+  }
+
+  return <>{children}</>;
+};
 
 /**
  * ListView Component
@@ -1168,8 +1185,8 @@ export default function ListView({
                   
                   <div className="flex items-center space-x-2 relative z-[2]">
                     {/* Timezone options dropdown */}
-                    <DropdownMenu.Root>
-                      <DropdownMenu.Trigger asChild>
+                    <RadixDropdownMenu.Root>
+                      <RadixDropdownMenu.Trigger asChild>
                         <button 
                           className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700
                                     focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -1177,16 +1194,16 @@ export default function ListView({
                         >
                           <Settings className="h-4 w-4 text-gray-500 dark:text-gray-400" />
                         </button>
-                      </DropdownMenu.Trigger>
+                      </RadixDropdownMenu.Trigger>
                       
-                      <DropdownMenu.Portal>
-                        <DropdownMenu.Content
+                      <RadixDropdownMenu.Portal>
+                        <RadixDropdownMenu.Content
                           className="min-w-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1.5 border border-gray-200 dark:border-gray-700"
                           sideOffset={5}
                           align="end"
                         >
                           {timezone.id !== userLocalTimezone && (
-                            <DropdownMenu.Item 
+                            <RadixDropdownMenu.Item 
                               onSelect={() => {
                                 setEditingTimezoneId(timezone.id);
                                 setTimeout(() => setSelectorOpen(true), 100);
@@ -1195,21 +1212,21 @@ export default function ListView({
                             >
                               <Edit2 className="h-4 w-4 mr-2" />
                               Change Timezone
-                            </DropdownMenu.Item>
+                            </RadixDropdownMenu.Item>
                           )}
                           
                           {timezone.id !== userLocalTimezone && (
-                            <DropdownMenu.Item 
+                            <RadixDropdownMenu.Item 
                               onSelect={() => handleRemoveTimezone(timezone.id)}
                               className="flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"
                             >
                               <X className="h-4 w-4 mr-2" />
                               Remove
-                            </DropdownMenu.Item>
+                            </RadixDropdownMenu.Item>
                           )}
-                        </DropdownMenu.Content>
-                      </DropdownMenu.Portal>
-                    </DropdownMenu.Root>
+                        </RadixDropdownMenu.Content>
+                      </RadixDropdownMenu.Portal>
+                    </RadixDropdownMenu.Root>
                     
                     {/* Quick navigation buttons */}
                     <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-full p-1">
@@ -1412,32 +1429,34 @@ export default function ListView({
   }, []);
 
   return (
-    <motion.div
-      ref={timeColumnsContainerRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="w-full"
-      style={{ isolation: 'isolate' }}
-      onScroll={handleUserScroll} // Add onScroll handler
-    >
-      {renderTimeColumns()}
-      
-      {/* Timezone Selection Modal */}
-      <AnimatePresence>
-        {selectorOpen && (
-          <TimezoneSelector
-            isOpen={selectorOpen}
-            onClose={() => {
-              setSelectorOpen(false);
-              setEditingTimezoneId(null);
-            }}
-            onSelect={editingTimezoneId ? handleReplaceTimezone : handleAddTimezone}
-            excludeTimezones={[userLocalTimezone, ...selectedTimezones.map(tz => tz.id)]}
-            data-timezone-selector
-          />
-        )}
-      </AnimatePresence>
-    </motion.div>
+    <ClientOnly>
+      <motion.div
+        ref={timeColumnsContainerRef}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="w-full"
+        style={{ isolation: 'isolate' }}
+        onScroll={handleUserScroll} // Add onScroll handler
+      >
+        {renderTimeColumns()}
+        
+        {/* Timezone Selection Modal */}
+        <AnimatePresence>
+          {selectorOpen && (
+            <TimezoneSelector 
+              isOpen={selectorOpen}
+              onClose={() => {
+                setSelectorOpen(false);
+                setEditingTimezoneId(null);
+              }}
+              onSelect={editingTimezoneId ? handleReplaceTimezone : handleAddTimezone}
+              excludeTimezones={[userLocalTimezone, ...selectedTimezones.map(tz => tz.id)]}
+              data-timezone-selector
+            />
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </ClientOnly>
   );
 } 

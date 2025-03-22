@@ -1,5 +1,10 @@
+'use client';
+
 import Link from 'next/link';
 
+/**
+ * Simplified 404 page that avoids importing unnecessary dependencies
+ */
 export default function NotFound() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-8 text-center">
@@ -10,7 +15,7 @@ export default function NotFound() {
       </p>
       <Link 
         href="/" 
-        className="px-6 py-3 bg-primary-500 text-white rounded-md hover:bg-primary-600 transition-colors"
+        className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
       >
         Return Home
       </Link>

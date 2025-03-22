@@ -2,10 +2,9 @@ import './globals.css';
 import { baseMetadata, viewport } from './metadata';
 import { inter, robotoMono } from './font';
 import { Providers } from './providers';
-import { Analytics } from '@vercel/analytics/react';
-import { SpeedInsights } from '@vercel/speed-insights/next';
-import GlassmorphismAnimation from '@/components/GlassmorphismAnimation';
-import DevInfo from '@/components/DevInfo';
+import Script from 'next/script';
+import ClientComponents from '@/components/ClientComponents';
+import ClientAnalytics from '@/components/analytics/ClientAnalytics';
 
 // Export metadata and viewport configurations
 export const metadata = baseMetadata;
@@ -28,15 +27,47 @@ export default function RootLayout({
       className={`${inter.variable} ${robotoMono.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        {/* Inline critical CSS optimization script - minimized */}
+        <Script 
+          id="preload-critical" 
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `document.documentElement.style.setProperty('--main-heading-visibility','visible');`
+          }}
+        />
+      </head>
+      
       <body className={`min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${inter.className}`}>
         <Providers>
           {children}
           {fonts}
-          <Analytics />
-          <SpeedInsights />
-          <GlassmorphismAnimation />
-          <DevInfo />
+          
+          {/* Script loading moved to bottom of body and handled separately */}
+          <ClientComponents />
+          
+          {/* Load analytics with client-only component */}
+          <ClientAnalytics />
         </Providers>
+        
+        {/* Scripts moved outside of React rendering tree to prevent hydration issues */}
+        <Script 
+          src="/scripts/bfcache-helper.js"
+          strategy="afterInteractive"
+          id="bfcache-helper"
+        />
+        
+        <Script 
+          src="/scripts/module-preload.js"
+          strategy="afterInteractive"
+          id="module-preload"
+        />
+        
+        <Script
+          src="/scripts/main-thread-optimization.js"
+          strategy="afterInteractive"
+          id="main-thread-optimization"
+        />
       </body>
     </html>
   );
