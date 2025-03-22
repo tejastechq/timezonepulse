@@ -1094,7 +1094,7 @@ export default function ListView({
           </motion.div>
         )}
       
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6 md:gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4 md:gap-6">
           {uniqueTimezones.map((timezone) => {
             // Check if the timezone is in DST
             const isDST = isInDST(timezone.id);
@@ -1115,13 +1115,14 @@ export default function ListView({
                   backgroundColor: resolvedTheme === 'dark'
                     ? 'rgba(15, 15, 25, 0.2)'
                     : 'rgba(255, 255, 255, 0.15)',
-                  minWidth: '280px'
+                  minWidth: '280px',
+                  maxWidth: '100%'
                 }}
                 data-timezone-id={timezone.id}
               >
                 <div className="flex justify-between items-center mb-3 md:mb-4 relative z-[2]">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate max-w-[180px]">
                       {timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}
                     </h3>
                     <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center space-x-2">
@@ -1139,7 +1140,7 @@ export default function ListView({
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2 relative z-[2]">
+                  <div className="flex items-center space-x-2 relative z-[2] flex-shrink-0">
                     {/* Timezone options dropdown */}
                     <DropdownMenu.Root>
                       <DropdownMenu.Trigger asChild>
@@ -1185,29 +1186,32 @@ export default function ListView({
                     </DropdownMenu.Root>
                     
                     {/* Replace quick navigation buttons with ExpandableTabs */}
-                    <ExpandableTabs
-                      tabs={[
-                        { title: "Morning", icon: Sun, color: "text-amber-500" },
-                        { title: "Afternoon", icon: ChevronUp, color: "text-blue-500" },
-                        { title: "Evening", icon: ChevronDown, color: "text-orange-500" },
-                        { title: "Night", icon: Moon, color: "text-indigo-500" },
-                        { title: "Now", icon: Clock, color: "text-green-500" }
-                      ]}
-                      className="bg-gray-100 dark:bg-gray-700 rounded-full"
-                      activeColor="text-primary-500"
-                      size="sm"
-                      onChange={(index) => {
-                        if (index === null) return;
-                        const timeValues = ['morning', 'afternoon', 'evening', 'night', 'now'] as const;
-                        jumpToTime(timeValues[index], timezone.id);
-                      }}
-                    />
+                    <div className="flex-shrink-0 w-[180px]">
+                      <ExpandableTabs
+                        tabs={[
+                          { title: "Morning", icon: Sun, color: "text-amber-500" },
+                          { title: "Afternoon", icon: ChevronUp, color: "text-blue-500" },
+                          { title: "Evening", icon: ChevronDown, color: "text-orange-500" },
+                          { title: "Night", icon: Moon, color: "text-indigo-500" },
+                          { title: "Now", icon: Clock, color: "text-green-500" }
+                        ]}
+                        className="bg-gray-100 dark:bg-gray-700 rounded-full w-full h-7"
+                        activeColor="text-primary-500"
+                        size="sm"
+                        maxWidth="w-full"
+                        onChange={(index) => {
+                          if (index === null) return;
+                          const timeValues = ['morning', 'afternoon', 'evening', 'night', 'now'] as const;
+                          jumpToTime(timeValues[index], timezone.id);
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
                 
                 <div 
                   className="h-72 md:h-80 lg:h-96 rounded-md border border-gray-200/50 dark:border-gray-700/50 
-                    backdrop-blur-[2px] overflow-hidden mt-4 md:mt-5 min-w-[300px] w-full"
+                    backdrop-blur-[2px] overflow-hidden mt-4 md:mt-5 w-full"
                   style={{
                     backgroundColor: resolvedTheme === 'dark'
                       ? 'rgba(15, 15, 25, 0.1)'

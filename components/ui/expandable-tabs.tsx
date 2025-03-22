@@ -28,24 +28,25 @@ interface ExpandableTabsProps {
   activeColor?: string;
   onChange?: (index: number | null) => void;
   size?: "sm" | "md" | "lg";
+  maxWidth?: string;
 }
 
 const buttonVariants = {
   initial: {
-    gap: 0,
-    paddingLeft: ".5rem",
-    paddingRight: ".5rem",
+    width: "auto",
+    paddingLeft: ".35rem",
+    paddingRight: ".35rem",
   },
   animate: (isSelected: boolean) => ({
-    gap: isSelected ? ".5rem" : 0,
-    paddingLeft: isSelected ? "1rem" : ".5rem",
-    paddingRight: isSelected ? "1rem" : ".5rem",
+    width: isSelected ? "auto" : "auto",
+    paddingLeft: isSelected ? ".75rem" : ".35rem",
+    paddingRight: isSelected ? ".75rem" : ".35rem",
   }),
 };
 
 const spanVariants = {
   initial: { width: 0, opacity: 0 },
-  animate: { width: "auto", opacity: 1 },
+  animate: { width: "auto", maxWidth: "6rem", opacity: 1 },
   exit: { width: 0, opacity: 0 },
 };
 
@@ -56,10 +57,12 @@ export function ExpandableTabs({
   className,
   activeColor = "text-primary-500",
   onChange,
-  size = "md"
+  size = "md",
+  maxWidth = "max-w-md"
 }: ExpandableTabsProps) {
   const [selected, setSelected] = React.useState<number | null>(null);
   const outsideClickRef = React.useRef(null);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   useOnClickOutside(outsideClickRef, () => {
     setSelected(null);
@@ -72,73 +75,92 @@ export function ExpandableTabs({
   };
 
   const Separator = () => (
-    <div className="mx-1 h-[24px] w-[1.2px] bg-border" aria-hidden="true" />
+    <div className="mx-0.5 h-[20px] w-[1px] bg-border" aria-hidden="true" />
   );
 
   // Icon size based on the component size prop
   const getIconSize = () => {
     switch (size) {
-      case "sm": return 14;
-      case "lg": return 20;
+      case "sm": return 12;
+      case "lg": return 18;
       case "md":
-      default: return 18;
+      default: return 16;
+    }
+  };
+
+  // Height based on the size prop
+  const getHeight = () => {
+    switch (size) {
+      case "sm": return "h-7";
+      case "lg": return "h-10";
+      case "md":
+      default: return "h-8";
     }
   };
 
   const iconSize = getIconSize();
+  const heightClass = getHeight();
 
   return (
     <div
-      ref={outsideClickRef}
+      ref={(el) => {
+        outsideClickRef.current = el;
+        containerRef.current = el;
+      }}
       className={cn(
-        "flex flex-wrap items-center gap-2 rounded-2xl border bg-background p-1 shadow-sm",
+        "flex flex-wrap items-center gap-0.5 rounded-2xl border bg-background p-0.5 shadow-sm overflow-hidden",
+        maxWidth,
+        heightClass,
         className
       )}
     >
-      {tabs.map((tab, index) => {
-        if (tab.type === "separator") {
-          return <Separator key={`separator-${index}`} />;
-        }
+      <div className="flex flex-nowrap overflow-hidden">
+        {tabs.map((tab, index) => {
+          if (tab.type === "separator") {
+            return <Separator key={`separator-${index}`} />;
+          }
 
-        const Icon = tab.icon;
-        const iconColor = tab.color || "";
+          const Icon = tab.icon;
+          const iconColor = tab.color || "";
 
-        return (
-          <motion.button
-            key={tab.title}
-            variants={buttonVariants}
-            initial={false}
-            animate="animate"
-            custom={selected === index}
-            onClick={() => handleSelect(index)}
-            transition={transition}
-            title={tab.title}
-            aria-label={tab.title}
-            className={cn(
-              "relative flex items-center rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-300",
-              selected === index
-                ? cn("bg-muted", activeColor)
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <Icon size={iconSize} className={iconColor} />
-            <AnimatePresence initial={false}>
-              {selected === index && (
-                <motion.span
-                  variants={spanVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  transition={transition}
-                  className="overflow-hidden"
-                >
-                  {tab.title}
-                </motion.span>
+          return (
+            <motion.button
+              key={tab.title}
+              variants={buttonVariants}
+              initial={false}
+              animate="animate"
+              custom={selected === index}
+              onClick={() => handleSelect(index)}
+              transition={transition}
+              title={tab.title}
+              aria-label={tab.title}
+              className={cn(
+                "relative flex items-center rounded-xl px-2 py-1 text-xs font-medium transition-colors duration-300",
+                selected === index
+                  ? cn("bg-muted", activeColor)
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
-            </AnimatePresence>
-          </motion.button>
-        );
-      })}
+              style={{ height: "100%" }}
+            >
+              <Icon size={iconSize} className={iconColor} />
+              <AnimatePresence initial={false}>
+                {selected === index && (
+                  <motion.span
+                    variants={spanVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={transition}
+                    className="overflow-hidden text-xs whitespace-nowrap ml-1"
+                  >
+                    {tab.title}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          );
+        })}
+      </div>
     </div>
   );
 } 
