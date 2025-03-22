@@ -33,12 +33,6 @@ interface ListViewProps {
  * Displays multiple timezones in a list view with time columns.
  * Shows current time, business hours, and other time-related information.
  * 
- * TODO: Implement a proper event/meeting system to replace the mock implementation.
- * The system should:
- * - Connect to a calendar API or a custom events database
- * - Display real events with proper titles, durations, and participants
- * - Allow adding/editing events directly from the interface
- * - Support recurring events and notifications
  */
 export default function ListView({
   selectedTimezones,
