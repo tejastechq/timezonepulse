@@ -1,11 +1,13 @@
 "use client";
 
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
+import { useSettingsStore } from '@/store/settingsStore';
 
 /**
  * Types of views available in the application
+ * Note: This must match the defaultView type in settingsStore.ts
  */
-export type ViewType = 'list' | 'clocks' | 'digital';
+export type ViewType = 'analog' | 'digital' | 'list';
 
 /**
  * Props for the ViewContext
@@ -25,10 +27,16 @@ const ViewContext = createContext<ViewContextProps>({
 
 /**
  * Provider component for view management
+ * Integrates with settingsStore for persistent view preferences
  */
 export function ViewProvider({ children }: { children: React.ReactNode }) {
   // For server-side rendering and hydration consistency
   const [isClient, setIsClient] = useState(false);
+  
+  // Access settingsStore for defaultView and setDefaultView
+  const { defaultView, setDefaultView } = useSettingsStore();
+  
+  // Local state to manage current view (will sync with settings store)
   const [currentView, setCurrentView] = useState<ViewType>('list');
   const [initialized, setInitialized] = useState(false);
 
@@ -37,37 +45,27 @@ export function ViewProvider({ children }: { children: React.ReactNode }) {
     setIsClient(true);
   }, []);
 
-  // Initialize from localStorage, but only on client
+  // Initialize from settingsStore, but only on client
   useEffect(() => {
     if (!isClient) return;
 
-    try {
-      const savedView = localStorage.getItem('preferredView') as ViewType;
-      if (savedView && ['list', 'clocks', 'digital'].includes(savedView)) {
-        setCurrentView(savedView);
-      }
-    } catch (error) {
-      console.error('Error reading from localStorage:', error);
-      // Reset to default if there's an error
-      setCurrentView('list');
-    } finally {
-      setInitialized(true);
-    }
-  }, [isClient]);
+    // Set current view from the settings store defaultView
+    // This ensures consistent view preferences across the app
+    // Map 'analog' to 'analog' (which was previously 'clocks')
+    const mappedView = defaultView === 'analog' ? 'analog' : defaultView;
+    setCurrentView(mappedView);
+    setInitialized(true);
+  }, [isClient, defaultView]);
 
-  // Save preference when view changes, but only if initialized to avoid
-  // overwriting preferences during initial hydration
+  // Update both local state and settings store when view changes
   const handleViewChange = useCallback((view: ViewType) => {
     setCurrentView(view);
 
     if (initialized && isClient) {
-      try {
-        localStorage.setItem('preferredView', view);
-      } catch (error) {
-        console.error('Error writing to localStorage:', error);
-      }
+      // Update the settings store for persistence across sessions
+      setDefaultView(view);
     }
-  }, [initialized, isClient]);
+  }, [initialized, isClient, setDefaultView]);
 
   // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
@@ -95,4 +93,4 @@ export function ViewProvider({ children }: { children: React.ReactNode }) {
 /**
  * Hook for accessing the view context
  */
-export const useView = () => useContext(ViewContext); 
+export const useView = () => useContext(ViewContext);

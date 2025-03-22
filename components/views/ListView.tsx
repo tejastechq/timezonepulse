@@ -4,6 +4,7 @@ import React, { useRef, useEffect, useState, useCallback, useMemo, memo } from '
 import { DateTime } from 'luxon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Timezone, useTimezoneStore } from '@/store/timezoneStore';
+import { isBusinessHours, isNightHours, isWeekend } from '@/lib/utils/dateTimeFormatter';
 import { FixedSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { ChevronUp, ChevronDown, Sun, Moon, Clock, Plus, X, Edit2, Settings } from 'lucide-react';
@@ -684,20 +685,14 @@ export default function ListView({
     }
   }, [mounted]);
 
-  // Check if a time is within business hours (9 AM to 5 PM)
-  const isBusinessHours = useCallback((time: Date, timezone: string) => {
-    const timeInTimezone = DateTime.fromJSDate(time).setZone(timezone);
-    const hour = timeInTimezone.hour;
-    // Also check if it's a weekday (1-5, Monday to Friday)
-    const isWeekday = timeInTimezone.weekday >= 1 && timeInTimezone.weekday <= 5;
-    return isWeekday && hour >= 9 && hour < 17;
+  // Use the business hours function from utils that uses settings store
+  const checkBusinessHours = useCallback((time: Date, timezone: string) => {
+    return isBusinessHours(time, timezone);
   }, []);
 
-  // Check if a time is during night time (8 PM to 6 AM)
-  const isNightTime = useCallback((time: Date, timezone: string) => {
-    const timeInTimezone = DateTime.fromJSDate(time).setZone(timezone);
-    const hour = timeInTimezone.hour;
-    return hour >= 20 || hour < 6;
+  // Use the night hours function from utils that uses settings store
+  const checkNightHours = useCallback((time: Date, timezone: string) => {
+    return isNightHours(time, timezone);
   }, []);
 
   // Check if a time slot is at midnight (0:00)
@@ -1270,8 +1265,8 @@ export default function ListView({
                             timezone={timezone.id}
                             isLocalTimeFn={isLocalTime}
                             isHighlightedFn={isHighlighted}
-                            isBusinessHoursFn={isBusinessHours}
-                            isNightTimeFn={isNightTime}
+                            isBusinessHoursFn={checkBusinessHours}
+                            isNightTimeFn={checkNightHours}
                             isDateBoundaryFn={isDateBoundary}
                             isDSTTransitionFn={isDSTTransition}
                             isCurrentTimeFn={isCurrentTime}
@@ -1330,8 +1325,8 @@ export default function ListView({
     timeSlots,
     isLocalTime,
     isHighlighted,
-    isBusinessHours,
-    isNightTime,
+    checkBusinessHours,
+    checkNightHours,
     isDateBoundary,
     isDSTTransition,
     isCurrentTime,
@@ -1413,4 +1408,4 @@ export default function ListView({
       </AnimatePresence>
     </motion.div>
   );
-} 
+}

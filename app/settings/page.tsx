@@ -270,6 +270,52 @@ export default function SettingsPage() {
               </p>
             </div>
             
+            {/* Date Format */}
+            <div>
+              <label htmlFor="dateFormat" className="block text-sm font-medium mb-2">
+                Date Format
+              </label>
+              <select
+                id="dateFormat"
+                value={settings.dateFormat}
+                onChange={(e) => {
+                  settings.setDateFormat(e.target.value as 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD');
+                  showFeedback('Date format updated');
+                }}
+                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="MM/DD/YYYY">MM/DD/YYYY (03/22/2025)</option>
+                <option value="DD/MM/YYYY">DD/MM/YYYY (22/03/2025)</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD (2025-03-22)</option>
+              </select>
+              
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Choose how dates are displayed throughout the application.
+              </p>
+              
+              <div className="mt-3 p-3 border rounded-md bg-gray-50 dark:bg-gray-800/50">
+                <p className="text-xs text-gray-500">Preview: {
+                  (() => {
+                    const now = new Date();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const year = now.getFullYear();
+                    
+                    switch(settings.dateFormat) {
+                      case 'MM/DD/YYYY':
+                        return `${month}/${day}/${year}`;
+                      case 'DD/MM/YYYY':
+                        return `${day}/${month}/${year}`;
+                      case 'YYYY-MM-DD':
+                        return `${year}-${month}-${day}`;
+                      default:
+                        return `${month}/${day}/${year}`;
+                    }
+                  })()
+                }</p>
+              </div>
+            </div>
+            
             {/* Show Seconds */}
             <div className="flex items-center justify-between">
               <div>
@@ -289,6 +335,152 @@ export default function SettingsPage() {
                   onChange={handleShowSecondsChange}
                   className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
+              </div>
+            </div>
+            
+            {/* Business Hours */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium">
+                  Business Hours
+                </label>
+                <span className="text-sm text-primary-600 dark:text-primary-400 font-medium">
+                  {settings.businessHoursStart}:00 - {settings.businessHoursEnd}:00
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="businessHoursStart" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    Start Time
+                  </label>
+                  <select
+                    id="businessHoursStart"
+                    value={settings.businessHoursStart}
+                    onChange={(e) => {
+                      const startHour = parseInt(e.target.value, 10);
+                      settings.setBusinessHours(startHour, settings.businessHoursEnd);
+                      showFeedback('Business hours updated');
+                    }}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>
+                        {settings.timeFormat === '12h' 
+                          ? `${i === 0 ? 12 : i > 12 ? i - 12 : i}${i >= 12 ? ' PM' : ' AM'}`
+                          : `${i.toString().padStart(2, '0')}:00`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="businessHoursEnd" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    End Time
+                  </label>
+                  <select
+                    id="businessHoursEnd"
+                    value={settings.businessHoursEnd}
+                    onChange={(e) => {
+                      const endHour = parseInt(e.target.value, 10);
+                      settings.setBusinessHours(settings.businessHoursStart, endHour);
+                      showFeedback('Business hours updated');
+                    }}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>
+                        {settings.timeFormat === '12h' 
+                          ? `${i === 0 ? 12 : i > 12 ? i - 12 : i}${i >= 12 ? ' PM' : ' AM'}`
+                          : `${i.toString().padStart(2, '0')}:00`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Define your business hours to highlight work time in clock views.
+              </p>
+              
+              <div className="mt-3 p-3 border border-green-200 dark:border-green-900/30 rounded-md bg-green-50 dark:bg-green-900/10">
+                <div className="flex items-center text-xs text-green-800 dark:text-green-300">
+                  <span className="w-3 h-3 bg-green-400 dark:bg-green-700 rounded-full mr-2"></span>
+                  Business hours will be highlighted in clock and list views
+                </div>
+              </div>
+            </div>
+            
+            {/* Night Hours */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-sm font-medium">
+                  Night Hours
+                </label>
+                <span className="text-sm text-primary-600 dark:text-primary-400 font-medium">
+                  {settings.nightHoursStart}:00 - {settings.nightHoursEnd}:00
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="nightHoursStart" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    Start Time
+                  </label>
+                  <select
+                    id="nightHoursStart"
+                    value={settings.nightHoursStart}
+                    onChange={(e) => {
+                      const startHour = parseInt(e.target.value, 10);
+                      settings.setNightHours(startHour, settings.nightHoursEnd);
+                      showFeedback('Night hours updated');
+                    }}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>
+                        {settings.timeFormat === '12h' 
+                          ? `${i === 0 ? 12 : i > 12 ? i - 12 : i}${i >= 12 ? ' PM' : ' AM'}`
+                          : `${i.toString().padStart(2, '0')}:00`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <label htmlFor="nightHoursEnd" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    End Time
+                  </label>
+                  <select
+                    id="nightHoursEnd"
+                    value={settings.nightHoursEnd}
+                    onChange={(e) => {
+                      const endHour = parseInt(e.target.value, 10);
+                      settings.setNightHours(settings.nightHoursStart, endHour);
+                      showFeedback('Night hours updated');
+                    }}
+                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  >
+                    {Array.from({ length: 24 }, (_, i) => (
+                      <option key={i} value={i}>
+                        {settings.timeFormat === '12h' 
+                          ? `${i === 0 ? 12 : i > 12 ? i - 12 : i}${i >= 12 ? ' PM' : ' AM'}`
+                          : `${i.toString().padStart(2, '0')}:00`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Define night hours when you're typically not active.
+              </p>
+              
+              <div className="mt-3 p-3 border border-indigo-200 dark:border-indigo-900/30 rounded-md bg-indigo-50 dark:bg-indigo-900/10">
+                <div className="flex items-center text-xs text-indigo-800 dark:text-indigo-300">
+                  <span className="w-3 h-3 bg-indigo-400 dark:bg-indigo-700 rounded-full mr-2"></span>
+                  Night hours will be dimmed in clock and list views
+                </div>
               </div>
             </div>
           </div>

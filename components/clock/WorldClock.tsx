@@ -268,7 +268,7 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
             </div>
           )}
 
-          {currentView === 'clocks' && (
+          {currentView === 'analog' && (
             <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
               <OptimizedClocksView
                 selectedTimezones={timezones}
@@ -345,4 +345,4 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
       </div>
     </div>
   );
-} 
+}

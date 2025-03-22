@@ -46,13 +46,13 @@ export default function ViewSwitcher() {
         </button>
 
         <button
-          onClick={() => handleViewChange('clocks')}
+          onClick={() => handleViewChange('analog')}
           className={`px-4 py-2 rounded-md transition-colors ${
-            currentView === 'clocks'
+            currentView === 'analog'
               ? 'bg-primary-700 text-white'
               : 'hover:bg-gray-100 dark:hover:bg-gray-700'
           }`}
-          aria-pressed={currentView === 'clocks'}
+          aria-pressed={currentView === 'analog'}
         >
           <span className="flex items-center">
             <svg
@@ -67,7 +67,7 @@ export default function ViewSwitcher() {
                 clipRule="evenodd"
               />
             </svg>
-            Clocks
+            Analog
           </span>
         </button>
 
@@ -109,4 +109,4 @@ export default function ViewSwitcher() {
       </Link>
     </div>
   );
-} 
+}
