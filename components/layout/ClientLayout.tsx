@@ -6,6 +6,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import MobileMenu from '@/components/MobileMenu';
 import Link from 'next/link';
 import { Suspense } from 'react';
+import { Settings } from 'lucide-react';
 
 /**
  * Loading fallback component that reserves space to prevent CLS
@@ -36,6 +37,14 @@ export default function ClientLayout({
       <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-8">
+            <Link 
+              href="/settings" 
+              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              aria-label="Settings"
+              title="Settings"
+            >
+              <Settings size={20} />
+            </Link>
             <Link href="/" className="text-xl font-bold">World Clock</Link>
             <nav className="hidden md:flex space-x-6">
               <Link href="/" className="hover:text-primary-500 transition-colors">Home</Link>
@@ -61,6 +70,7 @@ export default function ClientLayout({
           <div className="mt-2 flex justify-center space-x-4">
             <Link href="/" className="hover:text-primary-500 transition-colors">Home</Link>
             <Link href="/about" className="hover:text-primary-500 transition-colors">About</Link>
+            <Link href="/settings" className="hover:text-primary-500 transition-colors">Settings</Link>
           </div>
         </div>
       </footer>

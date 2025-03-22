@@ -13,6 +13,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import TimezoneSelector from '../clock/TimezoneSelector'; // Import the shared TimezoneSelector
 import { useTheme } from 'next-themes';
 import clsx from 'clsx';
+import { useSettingsStore, getWeekendHighlightClass } from '@/store/settingsStore';
 
 interface ListViewProps {
   selectedTimezones: Timezone[];
@@ -63,6 +64,9 @@ export default function ListView({
   
   // Get theme from next-themes
   const { resolvedTheme } = useTheme();
+  
+  // Get weekend highlight color from settings store
+  const { weekendHighlightColor } = useSettingsStore();
   
   // State for timezone selector
   const [selectorOpen, setSelectorOpen] = useState(false);
@@ -862,6 +866,12 @@ export default function ListView({
     handleTimeSelectionFn: (time: Date | null) => void;
   }
 
+  // Memoize weekend highlight class getter to prevent unnecessary re-renders
+  const getHighlightClass = useCallback((isWeekend: boolean) => {
+    if (!isWeekend) return '';
+    return getWeekendHighlightClass(weekendHighlightColor);
+  }, [weekendHighlightColor]);
+
   const TimeItem = memo(function TimeItem({
     style,
     time,
@@ -904,7 +914,7 @@ export default function ListView({
       isLocalTime ? 'font-medium' : '',
       isBusinessHours && !isHighlight ? 'bg-green-50/50 dark:bg-green-900/10' : '',
       isNightTime && !isHighlight ? 'bg-gray-100/50 dark:bg-gray-800/50' : '',
-      isWeekend && !isHighlight ? 'bg-red-50/30 dark:bg-red-900/10' : '',
+      isWeekend && !isHighlight ? getWeekendHighlightClass(weekendHighlightColor) : '',
       !isBusinessHours && !isNightTime && !isHighlight && !isWeekend ? 'bg-white dark:bg-gray-900' : '',
       highlightAnimationClass
     );
@@ -1335,7 +1345,8 @@ export default function ListView({
     timeRemaining,
     resetInactivityTimer,
     handleUserScroll,
-    resolvedTheme
+    resolvedTheme,
+    weekendHighlightColor
   ]);
 
   // Update the useEffect hook to call our updated synchronizeScrolls function
