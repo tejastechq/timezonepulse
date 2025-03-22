@@ -7,7 +7,7 @@ import { Timezone, useTimezoneStore } from '@/store/timezoneStore';
 import { isBusinessHours, isNightHours, isWeekend } from '@/lib/utils/dateTimeFormatter';
 import { FixedSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { ChevronUp, ChevronDown, Sun, Moon, Clock, Plus, X, Edit2, Settings } from 'lucide-react';
+import { Plus, X, Edit2, Settings } from 'lucide-react';
 import { getAllTimezones, isInDST } from '@/lib/utils/timezone';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
@@ -15,7 +15,6 @@ import TimezoneSelector from '../clock/TimezoneSelector'; // Import the shared T
 import { useTheme } from 'next-themes';
 import clsx from 'clsx';
 import { useSettingsStore, getWeekendHighlightClass } from '@/store/settingsStore';
-import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 
 interface ListViewProps {
   selectedTimezones: Timezone[];
@@ -771,54 +770,6 @@ export default function ListView({
     return "";
   }, []);
 
-  // Jump to a specific time period
-  const jumpToTime = useCallback((timePeriod: 'morning' | 'afternoon' | 'evening' | 'night' | 'now', timezone: string) => {
-    if (!listRefs.current[timezone]) return;
-    
-    let targetIndex = 0;
-    
-    switch (timePeriod) {
-      case 'morning':
-        // Jump to 8am
-        targetIndex = timeSlots.findIndex(t => {
-          const dt = DateTime.fromJSDate(t).setZone(timezone);
-          return dt.hour === 8 && dt.minute === 0;
-        });
-        break;
-      case 'afternoon':
-        // Jump to 12pm
-        targetIndex = timeSlots.findIndex(t => {
-          const dt = DateTime.fromJSDate(t).setZone(timezone);
-          return dt.hour === 12 && dt.minute === 0;
-        });
-        break;
-      case 'evening':
-        // Jump to 6pm
-        targetIndex = timeSlots.findIndex(t => {
-          const dt = DateTime.fromJSDate(t).setZone(timezone);
-          return dt.hour === 18 && dt.minute === 0;
-        });
-        break;
-      case 'night':
-        // Jump to 9pm
-        targetIndex = timeSlots.findIndex(t => {
-          const dt = DateTime.fromJSDate(t).setZone(timezone);
-          return dt.hour === 21 && dt.minute === 0;
-        });
-        break;
-      case 'now':
-        // Jump to current time
-        targetIndex = getCurrentTimeIndex();
-        break;
-    }
-    
-    // Default to 0 if not found
-    if (targetIndex === -1) targetIndex = 0;
-    
-    // Scroll to the target index
-    listRefs.current[timezone]?.scrollToItem(targetIndex, 'center');
-  }, [timeSlots, getCurrentTimeIndex]);
-  
   // Handle adding a new timezone
   const handleAddTimezone = useCallback((timezone: Timezone) => {
     addTimezone(timezone);
@@ -1184,28 +1135,6 @@ export default function ListView({
                         </DropdownMenu.Content>
                       </DropdownMenu.Portal>
                     </DropdownMenu.Root>
-                    
-                    {/* Replace quick navigation buttons with ExpandableTabs */}
-                    <div className="flex-shrink-0 w-[180px]">
-                      <ExpandableTabs
-                        tabs={[
-                          { title: "Morning", icon: Sun, color: "text-amber-500" },
-                          { title: "Afternoon", icon: ChevronUp, color: "text-blue-500" },
-                          { title: "Evening", icon: ChevronDown, color: "text-orange-500" },
-                          { title: "Night", icon: Moon, color: "text-indigo-500" },
-                          { title: "Now", icon: Clock, color: "text-green-500" }
-                        ]}
-                        className="bg-gray-100 dark:bg-gray-700 rounded-full w-full h-7"
-                        activeColor="text-primary-500"
-                        size="sm"
-                        maxWidth="w-full"
-                        onChange={(index) => {
-                          if (index === null) return;
-                          const timeValues = ['morning', 'afternoon', 'evening', 'night', 'now'] as const;
-                          jumpToTime(timeValues[index], timezone.id);
-                        }}
-                      />
-                    </div>
                   </div>
                 </div>
                 
@@ -1317,7 +1246,6 @@ export default function ListView({
     formatTime,
     handleTimeSelection,
     getCurrentTimeIndex,
-    jumpToTime,
     handleRemoveTimezone,
     timeRemaining,
     resetInactivityTimer,
