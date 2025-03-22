@@ -267,6 +267,9 @@ importers:
       tailwindcss-radix:
         specifier: ^2.8.0
         version: 2.9.0
+      usehooks-ts:
+        specifier: ^3.1.1
+        version: 3.1.1(react@19.0.0)
       vaul:
         specifier: ^0.9.0
         version: 0.9.9(@types/react-dom@18.3.5(@types/react@18.3.19))(@types/react@18.3.19)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -9718,6 +9721,12 @@ packages:
 
   use-sync-external-store@1.4.0:
     resolution: {integrity: sha512-9WXSPC5fMv61vaupRkCKCxsPxBocVnwakBEkMIHHpkTTg6icbJtg6jzgtLDm4bl3cSHAca52rYWih0k4K3PfHw==}
+    peerDependencies:
+      react: 19.0.0
+
+  usehooks-ts@3.1.1:
+    resolution: {integrity: sha512-I4diPp9Cq6ieSUH2wu+fDAVQO43xwtulo+fKEidHUwZPnYImbtkTjzIJYcDcJqxgmX31GVqNFURodvcgHcW0pA==}
+    engines: {node: '>=16.15.0'}
     peerDependencies:
       react: 19.0.0
 
@@ -21787,6 +21796,11 @@ snapshots:
 
   use-sync-external-store@1.4.0(react@19.0.0):
     dependencies:
+      react: 19.0.0
+
+  usehooks-ts@3.1.1(react@19.0.0):
+    dependencies:
+      lodash.debounce: 4.0.8
       react: 19.0.0
 
   util-deprecate@1.0.2: {}

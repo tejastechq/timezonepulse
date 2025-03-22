@@ -15,6 +15,7 @@ import TimezoneSelector from '../clock/TimezoneSelector'; // Import the shared T
 import { useTheme } from 'next-themes';
 import clsx from 'clsx';
 import { useSettingsStore, getWeekendHighlightClass } from '@/store/settingsStore';
+import { ExpandableTabs } from '@/components/ui/expandable-tabs';
 
 interface ListViewProps {
   selectedTimezones: Timezone[];
@@ -1183,49 +1184,24 @@ export default function ListView({
                       </DropdownMenu.Portal>
                     </DropdownMenu.Root>
                     
-                    {/* Quick navigation buttons */}
-                    <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-full p-1">
-                      <button 
-                        onClick={() => jumpToTime('morning', timezone.id)} 
-                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        title="Jump to morning (8 AM)"
-                        aria-label="Jump to morning"
-                      >
-                        <Sun className="h-3.5 w-3.5 text-amber-500" />
-                      </button>
-                      <button 
-                        onClick={() => jumpToTime('afternoon', timezone.id)} 
-                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        title="Jump to afternoon (12 PM)"
-                        aria-label="Jump to afternoon"
-                      >
-                        <ChevronUp className="h-3.5 w-3.5 text-blue-500" />
-                      </button>
-                      <button 
-                        onClick={() => jumpToTime('evening', timezone.id)} 
-                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        title="Jump to evening (6 PM)"
-                        aria-label="Jump to evening"
-                      >
-                        <ChevronDown className="h-3.5 w-3.5 text-orange-500" />
-                      </button>
-                      <button 
-                        onClick={() => jumpToTime('night', timezone.id)} 
-                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        title="Jump to night (9 PM)"
-                        aria-label="Jump to night"
-                      >
-                        <Moon className="h-3.5 w-3.5 text-indigo-500" />
-                      </button>
-                      <button 
-                        onClick={() => jumpToTime('now', timezone.id)} 
-                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        title="Jump to current time"
-                        aria-label="Jump to current time"
-                      >
-                        <Clock className="h-3.5 w-3.5 text-green-500" />
-                      </button>
-                    </div>
+                    {/* Replace quick navigation buttons with ExpandableTabs */}
+                    <ExpandableTabs
+                      tabs={[
+                        { title: "Morning", icon: Sun, color: "text-amber-500" },
+                        { title: "Afternoon", icon: ChevronUp, color: "text-blue-500" },
+                        { title: "Evening", icon: ChevronDown, color: "text-orange-500" },
+                        { title: "Night", icon: Moon, color: "text-indigo-500" },
+                        { title: "Now", icon: Clock, color: "text-green-500" }
+                      ]}
+                      className="bg-gray-100 dark:bg-gray-700 rounded-full"
+                      activeColor="text-primary-500"
+                      size="sm"
+                      onChange={(index) => {
+                        if (index === null) return;
+                        const timeValues = ['morning', 'afternoon', 'evening', 'night', 'now'] as const;
+                        jumpToTime(timeValues[index], timezone.id);
+                      }}
+                    />
                   </div>
                 </div>
                 
