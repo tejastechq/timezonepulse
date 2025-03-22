@@ -111,6 +111,7 @@ export default function TimezoneCard({
         {viewMode === 'analog' && (
           <AnalogClock
             time={zonedTime.toJSDate()}
+            timezone={timezone.id}
             size={150}
             highlightedTime={highlightedTime}
           />

@@ -41,7 +41,7 @@ const DEFAULT_SETTINGS = {
   weekendHighlightColor: 'red',
   timeFormat: '12h' as const,
   dateFormat: 'MM/DD/YYYY' as const,
-  showSeconds: false,
+  showSeconds: true,
   defaultView: 'analog' as const,
   businessHoursStart: 9,
   businessHoursEnd: 17,

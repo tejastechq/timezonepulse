@@ -458,6 +458,19 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [Framer Motion](https://www.framer.com/motion/) for smooth animations
 - All the contributors who have helped make this project better
 
+## Recent Updates
+
+### Analog Clock Timezone Fix
+
+We've fixed an issue where analog clocks weren't correctly displaying the time of their respective timezones. The clocks now properly reflect the time in each timezone, taking into account DST and other timezone-specific rules.
+
+See [Analog Clock Timezone Fix Documentation](docs/analog-clock-fix.md) for more details.
+
+To verify the fix:
+1. Add multiple timezones with significantly different times (e.g., New York, Tokyo)
+2. View the analog clocks and confirm they show different times that match the expected time in each timezone
+3. Run the tests with `pnpm test tests/analog-clock.test.tsx`
+
 
 
 

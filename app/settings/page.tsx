@@ -5,6 +5,7 @@ import { useSettingsStore, getWeekendHighlightClass } from '@/store/settingsStor
 import { ArrowLeft, Calendar, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { DateTime } from 'luxon';
+import SettingsVerifier from '@/components/dev/SettingsVerifier';
 
 /**
  * Settings Page
@@ -104,6 +105,9 @@ export default function SettingsPage() {
     setFeedbackMsg(message);
     setTimeout(() => setFeedbackMsg(null), 3000);
   };
+  
+  // Check if in development mode
+  const isDev = process.env.NODE_ENV === 'development';
   
   // Only render content after hydration to avoid mismatches
   if (!mounted) {
@@ -565,6 +569,12 @@ export default function SettingsPage() {
             </ul>
           </div>
         </section>
+      )}
+      
+      {isDev && (
+        <div className="mt-8">
+          <SettingsVerifier />
+        </div>
       )}
     </div>
   );

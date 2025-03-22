@@ -2,6 +2,8 @@
 
 import React, { useMemo, memo } from 'react';
 import { DateTime } from 'luxon';
+import { useSettingsStore } from '@/store/settingsStore';
+import { formatTime } from '@/lib/utils/dateTimeFormatter';
 
 interface DigitalClockProps {
   time: Date;
@@ -14,10 +16,15 @@ interface DigitalClockProps {
  * Optimized with memoization to prevent unnecessary re-renders
  */
 function DigitalClock({ time, timezone, highlightedTime }: DigitalClockProps) {
+  // Get showSeconds setting from the store
+  const { showSeconds } = useSettingsStore();
+  
   // Format the time for display - memoized to prevent recalculation on every render
   const { timeDisplay, dateDisplay, isHighlighted } = useMemo(() => {
     const dt = DateTime.fromJSDate(time).setZone(timezone);
-    const timeDisplay = dt.toFormat('HH:mm:ss');
+    
+    // Use the formatTime utility to format the time according to user settings
+    const timeDisplay = formatTime(dt);
     const dateDisplay = dt.toFormat('EEE, MMM d');
     
     // Check if the current time matches the highlighted time
@@ -28,13 +35,13 @@ function DigitalClock({ time, timezone, highlightedTime }: DigitalClockProps) {
     }
     
     return { timeDisplay, dateDisplay, isHighlighted };
-  }, [time, timezone, highlightedTime]);
+  }, [time, timezone, highlightedTime, showSeconds]);
   
   return (
     <div className="text-center">
       <div 
         className={`
-          text-4xl md:text-5xl lg:text-6xl font-mono font-bold mb-2 md:mb-3
+          text-3xl md:text-4xl lg:text-5xl font-mono font-bold mb-2 md:mb-3
           ${isHighlighted ? 'text-primary-500' : ''}
         `}
       >
