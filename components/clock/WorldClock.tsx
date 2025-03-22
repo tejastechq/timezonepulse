@@ -5,15 +5,12 @@ import { useTimezoneStore, ViewMode } from '@/store/timezoneStore';
 import { DateTime } from 'luxon';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useView } from '@/app/contexts/ViewContext';
-import { useIntegrations } from '@/app/contexts/IntegrationsContext';
 import dynamic from 'next/dynamic';
 import { ListView, ClocksView, DigitalView } from '../views';
 import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
 import type { Timezone } from '@/store/timezoneStore';
-// Import the static server component heading
-import WorldClockHeading from './WorldClockHeading';
 
 // Define interfaces for the view components based on their implementations
 interface ListViewProps {
@@ -23,8 +20,7 @@ interface ListViewProps {
   localTime: Date | null;
   highlightedTime: Date | null;
   handleTimeSelection: (time: Date | null) => void;
-  roundToNearestIncrement: (date: Date, increment: number) => Date;
-  removeTimezone?: (id: string) => void;
+  timezoneFormat: string;
 }
 
 interface ClocksViewProps {
@@ -43,29 +39,25 @@ interface DigitalViewProps {
  * Using original view components directly
  * Components are optimized using React's built-in memoization techniques
  */
-const OptimizedListView = ListView;
+const OptimizedListView = dynamic(() => import('../views/ListView'), { 
+  loading: () => <ViewPlaceholder />
+});
 const OptimizedClocksView = ClocksView;
 const OptimizedDigitalView = DigitalView;
 
 // Dynamically import less critical components to reduce initial load
 const ViewSwitcher = dynamic(() => import('./ViewSwitcher'), { ssr: true });
-const ContextualInfo = dynamic(() => import('./ContextualInfo'), { ssr: false });
-const PersonalNotes = dynamic(() => import('./PersonalNotes'), { ssr: false });
-const NotificationButton = dynamic(() => import('./NotificationButton'), { ssr: false });
 
 /**
  * Placeholder component shown during loading to prevent layout shifts
  */
 const ViewPlaceholder = () => (
-  <div 
-    className="w-full h-96 bg-gray-100 dark:bg-gray-800 rounded-lg animate-pulse"
-    aria-hidden="true"
-    role="presentation"
-    style={{ 
-      height: "600px",  // Reserve exact space to prevent CLS
-      contain: "layout" // Optimize paint performance
-    }}
-  />
+  <div className="w-full min-h-[400px] flex items-center justify-center">
+    <div className="animate-pulse flex flex-col items-center justify-center">
+      <div className="h-24 w-24 rounded-full bg-gray-300 dark:bg-gray-700"></div>
+      <div className="h-4 w-48 mt-4 bg-gray-300 dark:bg-gray-700 rounded"></div>
+    </div>
+  </div>
 );
 
 // Define the props interface for WorldClock
@@ -234,9 +226,6 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
         ref={clockContainerRef}
         className="w-full transition-all duration-300 ease-in-out mx-auto px-6"
       >
-        {/* Clock heading */}
-        {!skipHeading && <WorldClockHeading />}
-        
         <div className="min-h-96 flex items-center justify-center">
           <div className="w-24 h-24 rounded-full border-4 border-primary-500 border-t-transparent animate-spin"></div>
         </div>
@@ -246,12 +235,10 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
 
   return (
     <div className="clock-container w-full max-w-screen-xl mx-auto px-4 py-6">
-      {!skipHeading && <WorldClockHeading />}
-      
       <div className="flex justify-between items-center mb-4 h-12">
         <ViewSwitcher />
         <div className="flex items-center space-x-2">
-          <NotificationButton />
+          {/* Notification button removed */}
         </div>
       </div>
 

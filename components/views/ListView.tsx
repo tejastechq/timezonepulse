@@ -12,6 +12,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import TimezoneSelector from '../clock/TimezoneSelector'; // Import the shared TimezoneSelector
 import { useTheme } from 'next-themes';
+import clsx from 'clsx';
 
 interface ListViewProps {
   selectedTimezones: Timezone[];
@@ -855,8 +856,6 @@ export default function ListView({
     isDSTTransitionFn: (time: Date, timezone: string) => boolean;
     isCurrentTimeFn: (time: Date, timezone: string) => boolean;
     isWeekendFn: (time: Date, timezone: string) => boolean;
-    hasMeetingAtFn: (time: Date, timezone: string) => boolean;
-    getMeetingTitleFn: (time: Date, timezone: string) => string;
     formatTimeFn: (time: Date, timezone: string) => string;
     getHighlightAnimationClassFn: (isHighlight: boolean) => string;
     getTimezoneOffsetFn: (timezone: string) => string;
@@ -875,100 +874,82 @@ export default function ListView({
     isDSTTransitionFn,
     isCurrentTimeFn,
     isWeekendFn,
-    hasMeetingAtFn,
-    getMeetingTitleFn,
     formatTimeFn,
     getHighlightAnimationClassFn,
     getTimezoneOffsetFn,
     handleTimeSelectionFn
   }: TimeItemProps) {
-    // Compute all the boolean flags once
-    const isLocal = isLocalTimeFn(time, timezone);
+    // Check if this time should be highlighted
     const isHighlight = isHighlightedFn(time);
-    const isBusiness = isBusinessHoursFn(time, timezone);
-    const isNight = isNightTimeFn(time, timezone);
-    const isMidnight = isDateBoundaryFn(time, timezone);
-    const isDST = isDSTTransitionFn(time, timezone);
-    const isCurrent = isCurrentTimeFn(time, timezone);
+    const isLocalTime = isLocalTimeFn(time, timezone);
+    const isBusinessHours = isBusinessHoursFn(time, timezone);
+    const isNightTime = isNightTimeFn(time, timezone);
+    const isDateBoundary = isDateBoundaryFn(time, timezone);
+    const isDSTTransition = isDSTTransitionFn(time, timezone);
+    const isCurrentTime = isCurrentTimeFn(time, timezone);
     const isWeekend = isWeekendFn(time, timezone);
     
-    // Meeting check is disabled for now, but structure kept for future implementation
-    const isMeeting = hasMeetingAtFn(time, timezone);
-    const meetingTitle = isMeeting ? getMeetingTitleFn(time, timezone) : '';
+    // Get formatted time for display
+    const formattedTime = formatTimeFn(time, timezone);
     
-    // Build classes with direct style application to prevent flashing
-    const itemClasses = [
-      'time-item py-2 px-3 cursor-pointer relative',
-      isHighlight ? 'bg-primary-500 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700',
-      isLocal ? 'current-time-indicator pl-4' : '',
-      isBusiness ? 'font-medium' : '',
-      isNight ? 'text-gray-500 dark:text-gray-400' : '',
-      isMidnight ? 'border-t border-dashed border-gray-300 dark:border-gray-600 pt-3' : '',
-      isDST ? 'bg-amber-50 dark:bg-amber-900/20' : '',
-      isCurrent ? 'bg-primary-100 dark:bg-primary-900/30' : '',
-      isWeekend ? 'text-gray-500 dark:text-gray-400' : '',
-      isMeeting ? 'bg-red-50 dark:bg-red-900/20' : '', // Kept for future implementation
-      getHighlightAnimationClassFn(isHighlight),
-      'focus:outline-none focus:bg-gray-100 dark:focus:bg-gray-700 rounded-sm'
-    ].filter(Boolean).join(' ');
+    // Get animation class for highlighted times
+    const highlightAnimationClass = getHighlightAnimationClassFn(isHighlight);
     
-    // Apply additional inline styles to ensure consistent rendering
-    const combinedStyle = {
-      ...style,
-      // Force background color directly when highlighted to prevent flash
-      ...(isHighlight ? { 
-        backgroundColor: 'rgb(var(--primary-500-rgb))',
-        color: 'white',
-        transform: 'translateZ(0)'
-      } : {}),
-      // Force current time indicator background to prevent flash
-      ...(isCurrent && !isHighlight ? {
-        backgroundColor: 'rgba(var(--primary-500-rgb), 0.1)',
-        transform: 'translateZ(0)'
-      } : {})
-    };
+    // Calculate time cell classes based on properties
+    const timeCellClasses = clsx(
+      'relative z-10 px-3 py-3 transition-all duration-300 border-b border-gray-100 dark:border-gray-800',
+      isDSTTransition ? 'border-l-4 border-l-amber-400 dark:border-l-amber-500' : '',
+      isDateBoundary ? 'border-t-2 border-t-gray-300 dark:border-t-gray-600' : '',
+      isHighlight ? 'bg-blue-50 dark:bg-blue-900/20 font-semibold' : '', 
+      isLocalTime ? 'font-medium' : '',
+      isBusinessHours && !isHighlight ? 'bg-green-50/50 dark:bg-green-900/10' : '',
+      isNightTime && !isHighlight ? 'bg-gray-100/50 dark:bg-gray-800/50' : '',
+      isWeekend && !isHighlight ? 'bg-red-50/30 dark:bg-red-900/10' : '',
+      !isBusinessHours && !isNightTime && !isHighlight && !isWeekend ? 'bg-white dark:bg-gray-900' : '',
+      highlightAnimationClass
+    );
     
     return (
       <div
-        style={combinedStyle}
+        style={style}
         role="option"
         aria-selected={isHighlight}
         data-key={time.getTime()}
-        data-local-time={isLocal ? 'true' : 'false'}
+        data-local-time={isLocalTime ? 'true' : 'false'}
         data-time-item="true"
         onClick={() => handleTimeSelectionFn(time)}
-        className={itemClasses}
+        className={timeCellClasses}
         tabIndex={0}
       >
         {/* If it's midnight, show the date */}
-        {isMidnight && (
+        {isDateBoundary && (
           <div className="absolute top-0 left-0 w-full text-xs text-gray-500 dark:text-gray-400 pt-0.5 px-3 font-medium">
             {DateTime.fromJSDate(time).setZone(timezone).toFormat('EEE, MMM d')}
           </div>
         )}
         
         <div className="flex justify-between items-center">
-          <span className={`${isHighlight ? 'text-white' : ''} ${isCurrent ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}`}>
-            {formatTimeFn(time, timezone)}
+          <span className={`${isHighlight ? 'text-white' : ''} ${isCurrentTime ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}`}>
+            {formattedTime}
           </span>
           <div className="flex space-x-1">
-            {isLocal && !isHighlight && (
+            {isLocalTime && !isHighlight && (
               <span className="absolute left-0 top-0 h-full w-1 bg-primary-500 rounded-l-md" />
             )}
             
-            {isBusiness && !isHighlight && (
+            {isBusinessHours && !isHighlight && (
               <span className="text-xs text-green-500" title="Business hours">●</span>
             )}
             
-            {isNight && !isHighlight && (
+            {isNightTime && !isHighlight && (
               <span className="text-xs text-gray-400" title="Night time">○</span>
             )}
             
-            {isDST && !isHighlight && (
+            {isDSTTransition && !isHighlight && (
               <span className="text-xs text-amber-500 ml-1" title="DST transition soon">⚠️</span>
             )}
 
-            {isCurrent && !isHighlight && (
+            {isCurrentTime && !isHighlight && (
               <span className="text-xs text-blue-500 ml-1" title="Current time">⏰</span>
             )}
 
@@ -977,21 +958,6 @@ export default function ListView({
             )}
           </div>
         </div>
-
-        {/* Show meeting indicator for meetings */}
-        {/* Meeting display is disabled for now, but structure kept for future implementation */}
-        {isMeeting && !isHighlight && (
-          <div className="mt-1 text-xs bg-red-100 dark:bg-red-900/30 rounded p-1 text-red-700 dark:text-red-300">
-            🗓️ {meetingTitle}
-          </div>
-        )}
-
-        {/* Show DST information with more details */}
-        {isDST && !isHighlight && (
-          <div className="mt-1 text-xs bg-amber-100 dark:bg-amber-900/30 rounded p-1 text-amber-700 dark:text-amber-300">
-            DST change soon: {getTimezoneOffsetFn(timezone)}
-          </div>
-        )}
       </div>
     );
   }, (prevProps, nextProps) => {
@@ -1300,8 +1266,6 @@ export default function ListView({
                             isDSTTransitionFn={isDSTTransition}
                             isCurrentTimeFn={isCurrentTime}
                             isWeekendFn={isWeekend}
-                            hasMeetingAtFn={hasMeetingAt}
-                            getMeetingTitleFn={getMeetingTitle}
                             formatTimeFn={formatTime}
                             getHighlightAnimationClassFn={getHighlightAnimationClass}
                             getTimezoneOffsetFn={getTimezoneOffset}
@@ -1362,8 +1326,6 @@ export default function ListView({
     isDSTTransition,
     isCurrentTime,
     isWeekend,
-    hasMeetingAt,
-    getMeetingTitle,
     getTimezoneOffset,
     formatTime,
     handleTimeSelection,
