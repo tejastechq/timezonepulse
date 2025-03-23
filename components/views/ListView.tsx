@@ -1137,50 +1137,6 @@ export default function ListView({
     
     return (
       <>
-        {/* Search Box */}
-        <div className="mb-6 w-full max-w-md mx-auto">
-          <TimeSearch 
-            onSearch={handleSearch}
-            onClear={handleClearSearch}
-            className="w-full"
-            autoFormatTime={true}
-            earlyFormattingDelay={100}
-          />
-          
-          <AnimatePresence>
-            {(filteredTimeSlots.length > 0 || (searchTerm && filteredTimeSlots.length === 0)) && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.2 }}
-                className={clsx(
-                  'mt-2 py-2 px-3 rounded-md text-sm',
-                  filteredTimeSlots.length > 0 
-                    ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300'
-                    : 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
-                )}
-              >
-                {filteredTimeSlots.length > 0 ? (
-                  <div className="flex items-center">
-                    <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                    Found {filteredTimeSlots.length} time{filteredTimeSlots.length === 1 ? '' : 's'} matching {searchTerm.includes(':') 
-                      ? `time "${searchTerm}"` 
-                      : `${searchTerm} o'clock`} in local timezone
-                  </div>
-                ) : (
-                  <div className="flex items-center">
-                    <span className="inline-block w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
-                    No times matching {searchTerm.includes(':') 
-                      ? `time "${searchTerm}"` 
-                      : `${searchTerm} o'clock`} in local timezone
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
         {/* Time Relationship Indicator - show when a time is selected */}
         {highlightedTime && (
           <motion.div 
@@ -1477,9 +1433,6 @@ export default function ListView({
     userLocalTimezone,
     selectedTimezones,
     timeSlots,
-    filteredTimeSlots,
-    isSearching,
-    searchTerm,
     isLocalTime,
     isHighlighted,
     checkBusinessHours,
@@ -1496,13 +1449,10 @@ export default function ListView({
     handleRemoveTimezone,
     timeRemaining,
     resetInactivityTimer,
-    handleUserScroll,
     resolvedTheme,
     weekendHighlightColor,
-    handleSearch,
-    handleClearSearch,
-    AnimatePresence,
-    clsx
+    highlightedTime,
+    localTime
   ]);
 
   // Update the useEffect hook to call our updated synchronizeScrolls function
@@ -1550,6 +1500,65 @@ export default function ListView({
       style={{ isolation: 'isolate' }}
       onScroll={handleUserScroll} // Add onScroll handler
     >
+      {/* Search Box with title */}
+      <div className="mb-8 w-full max-w-md mx-auto">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Search Time
+          </h2>
+          {searchTerm && (
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              Searching in local timezone
+            </span>
+          )}
+        </div>
+        
+        <TimeSearch 
+          onSearch={handleSearch}
+          onClear={handleClearSearch}
+          className="w-full"
+          autoFormatTime={true}
+          earlyFormattingDelay={100}
+        />
+        
+        <AnimatePresence>
+          {(filteredTimeSlots.length > 0 || (searchTerm && filteredTimeSlots.length === 0)) && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className={clsx(
+                'mt-2 py-1.5 px-3 rounded-md text-xs font-medium',
+                filteredTimeSlots.length > 0 
+                  ? 'bg-primary-50/50 text-primary-700 dark:bg-primary-900/10 dark:text-primary-300 border border-primary-100 dark:border-primary-800/30'
+                  : 'bg-amber-50/50 text-amber-700 dark:bg-amber-900/10 dark:text-amber-300 border border-amber-100 dark:border-amber-800/30'
+              )}
+            >
+              {filteredTimeSlots.length > 0 ? (
+                <div className="flex items-center">
+                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mr-2 flex-shrink-0"></div>
+                  <span>
+                    Found {filteredTimeSlots.length} time{filteredTimeSlots.length === 1 ? '' : 's'} matching {searchTerm.includes(':') 
+                      ? `time "${searchTerm}"` 
+                      : `${searchTerm} o'clock`} in local timezone
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mr-2 flex-shrink-0"></div>
+                  <span>
+                    No times matching {searchTerm.includes(':') 
+                      ? `time "${searchTerm}"` 
+                      : `${searchTerm} o'clock`} in local timezone
+                  </span>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       {renderTimeColumns()}
       
       {/* Timezone Selection Modal */}

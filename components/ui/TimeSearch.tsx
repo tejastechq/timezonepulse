@@ -557,21 +557,20 @@ export default function TimeSearch({
       <div 
         className={clsx(
           'relative flex items-center w-full rounded-lg overflow-hidden',
-          'glass-card backdrop-blur-fix',
-          resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light',
-          'border border-gray-200 dark:border-gray-700',
-          'transition-all duration-200'
+          'bg-white/10 dark:bg-gray-800/10',
+          'border border-gray-200/50 dark:border-gray-700/50',
+          'transition-all duration-200',
+          'shadow-sm',
+          isFocused ? 'ring-2 ring-primary-500/30' : ''
         )}
         style={{
-          isolation: 'isolate',
-          backgroundColor: resolvedTheme === 'dark'
-            ? 'rgba(15, 15, 25, 0.2)'
-            : 'rgba(255, 255, 255, 0.15)'
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)'
         }}
       >
         <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none z-[1]">
           <Search 
-            className="w-4 h-4 text-gray-500 dark:text-gray-400" 
+            className="w-4 h-4 text-primary-500 dark:text-primary-400" 
             aria-hidden="true"
           />
         </div>
@@ -588,7 +587,7 @@ export default function TimeSearch({
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
           className={clsx(
-            'w-full py-3 pl-10 pr-10 text-sm bg-transparent z-[1]',
+            'w-full py-2.5 pl-10 pr-10 text-sm bg-transparent z-[1]',
             'text-gray-800 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400',
             'focus:outline-none focus:ring-0 border-none',
             'relative'
@@ -613,7 +612,7 @@ export default function TimeSearch({
               exit={{ opacity: 0, scale: 0.8 }}
               transition={{ duration: 0.15 }}
               onClick={handleClear}
-              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 z-[1]"
+              className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400 z-[1]"
               aria-label="Clear search"
             >
               <X className="w-4 h-4" />
