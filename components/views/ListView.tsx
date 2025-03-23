@@ -993,7 +993,7 @@ export default function ListView({
    * 
    * This search feature allows users to find specific times based on the first column (local timezone).
    * It works by:
-   * 1. Filtering time slots based on the search term in the local timezone only
+   * 1. Filtering time slots based on the specific hour or time pattern in the local timezone
    * 2. Displaying matching times and auto-scrolling to the first result
    * 3. Synchronizing the display across all timezone columns
    * 4. Supporting both 12-hour and 24-hour time formats
@@ -1019,16 +1019,30 @@ export default function ListView({
     setIsSearching(true);
     
     // Convert search term to lowercase for case-insensitive matching
-    const searchLower = term.toLowerCase();
+    const searchLower = term.toLowerCase().trim();
     
     // Filter time slots that match the search term ONLY in the local timezone (first column)
     const filtered = timeSlots.filter(timeSlot => {
-      // Only check the time in the local timezone (first column)
-      const formattedTime = DateTime.fromJSDate(timeSlot).setZone(userLocalTimezone).toFormat('h:mm a').toLowerCase();
-      // Also check 24-hour format
-      const formattedTime24 = DateTime.fromJSDate(timeSlot).setZone(userLocalTimezone).toFormat('HH:mm').toLowerCase();
+      const timeInLocalZone = DateTime.fromJSDate(timeSlot).setZone(userLocalTimezone);
       
-      return formattedTime.includes(searchLower) || formattedTime24.includes(searchLower);
+      // Format times for comparison
+      const hour12 = timeInLocalZone.toFormat('h');
+      const hour24 = timeInLocalZone.toFormat('HH');
+      const fullTime12 = timeInLocalZone.toFormat('h:mm a').toLowerCase();
+      const fullTime24 = timeInLocalZone.toFormat('HH:mm').toLowerCase();
+      
+      // Check if search has a colon (specific time pattern)
+      if (searchLower.includes(':')) {
+        // Match exact time pattern (e.g., "3:00" or "15:00")
+        return fullTime12.startsWith(searchLower) || fullTime24.startsWith(searchLower);
+      } 
+      
+      // When only hours are entered (e.g., "3" or "03" or "15")
+      else {
+        // When searching for just hour digits, match only those hours
+        // e.g., "3" matches "3:00 am", "3:30 am", "3:00 pm", "3:30 pm" 
+        return hour12 === searchLower || hour24 === searchLower;
+      }
     });
     
     setFilteredTimeSlots(filtered);
@@ -1150,12 +1164,16 @@ export default function ListView({
                 {filteredTimeSlots.length > 0 ? (
                   <div className="flex items-center">
                     <span className="inline-block w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                    Found {filteredTimeSlots.length} time{filteredTimeSlots.length === 1 ? '' : 's'} matching "{searchTerm}" in local timezone
+                    Found {filteredTimeSlots.length} time{filteredTimeSlots.length === 1 ? '' : 's'} matching {searchTerm.includes(':') 
+                      ? `time "${searchTerm}"` 
+                      : `${searchTerm} o'clock`} in local timezone
                   </div>
                 ) : (
                   <div className="flex items-center">
                     <span className="inline-block w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
-                    No times matching "{searchTerm}" in local timezone
+                    No times matching {searchTerm.includes(':') 
+                      ? `time "${searchTerm}"` 
+                      : `${searchTerm} o'clock`} in local timezone
                   </div>
                 )}
               </motion.div>

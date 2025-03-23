@@ -44,7 +44,7 @@ const TIME_PATTERNS = {
 export default function TimeSearch({
   onSearch,
   onClear,
-  placeholder = 'Search for a time in local timezone (e.g. 3:30 PM)',
+  placeholder = 'Search by hour (e.g. 3) or specific time (e.g. 3:30)',
   className = '',
   initialValue = '',
   debounceMs = 300,
