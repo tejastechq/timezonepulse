@@ -1500,8 +1500,8 @@ export default function ListView({
       style={{ isolation: 'isolate' }}
       onScroll={handleUserScroll} // Add onScroll handler
     >
-      {/* Search Box with minimal styling */}
-      <div className="mb-4 w-full max-w-sm mx-auto pt-3">
+      {/* Search Box with minimal styling - positioned above first column */}
+      <div className="mb-4 w-full sm:w-80 ml-0 pt-3">
         <TimeSearch 
           onSearch={handleSearch}
           onClear={handleClearSearch}
