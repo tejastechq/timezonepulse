@@ -1129,6 +1129,7 @@ export default function ListView({
             onSearch={handleSearch}
             onClear={handleClearSearch}
             className="w-full"
+            autoFormatTime={true}
           />
           
           <AnimatePresence>
