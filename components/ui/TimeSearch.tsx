@@ -14,6 +14,7 @@ interface TimeSearchProps {
   initialValue?: string;
   debounceMs?: number;
   autoFormatTime?: boolean;
+  earlyFormattingDelay?: number;
 }
 
 // Regular expressions for time pattern matching
@@ -38,6 +39,7 @@ const TIME_PATTERNS = {
  * A search input component specialized for time-based searches with debounce functionality.
  * Features clear button, animations, and theme-aware styling.
  * Includes auto-formatting for time inputs (e.g., "300" -> "3:00").
+ * Offers early colon insertion when users pause after typing 1-2 digits.
  */
 export default function TimeSearch({
   onSearch,
@@ -47,6 +49,7 @@ export default function TimeSearch({
   initialValue = '',
   debounceMs = 300,
   autoFormatTime = true,
+  earlyFormattingDelay = 500, // ms - Default delay for early formatting
 }: TimeSearchProps) {
   const [inputValue, setInputValue] = useState(initialValue);
   const [isFocused, setIsFocused] = useState(false);
@@ -56,6 +59,7 @@ export default function TimeSearch({
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const formattingTimeout = useRef<NodeJS.Timeout | null>(null);
+  const earlyFormattingTimeout = useRef<NodeJS.Timeout | null>(null); // For early colon insertion
   const lastCursorPosition = useRef<number | null>(null);
   const isFormattingRef = useRef<boolean>(false);
   const selectionStateRef = useRef<{start: number | null, end: number | null}>({
@@ -63,13 +67,110 @@ export default function TimeSearch({
     end: null
   });
   
+  // Constants
+  const patternFormattingDelay = 100; // ms - For full pattern recognition
+  
   const { resolvedTheme } = useTheme();
   
   /**
    * Time formatting utility functions
    */
   
-  // Format time string by inserting a colon where appropriate
+  // Determine if input is eligible for early formatting (1-2 digits)
+  const shouldApplyEarlyFormatting = useCallback((input: string): boolean => {
+    // Skip if input already has a colon
+    if (TIME_PATTERNS.HAS_COLON.test(input)) {
+      return false;
+    }
+    
+    // Extract any AM/PM suffix to ignore it for now
+    const amPmMatch = input.match(TIME_PATTERNS.AM_PM);
+    const numericPart = amPmMatch 
+      ? input.substring(0, amPmMatch.index).replace(/[^\d]/g, '')
+      : input.replace(/[^\d]/g, '');
+    
+    // Single digit 0-9 is valid for early formatting
+    if (numericPart.length === 1) {
+      console.log('Single digit eligible for early formatting:', input);
+      return true;
+    } 
+    // Two digits 00-23 are valid hours
+    else if (numericPart.length === 2) {
+      const hourValue = parseInt(numericPart, 10);
+      console.log('Two digits eligible for early formatting:', input, hourValue >= 0 && hourValue <= 23);
+      return hourValue >= 0 && hourValue <= 23;
+    }
+    
+    return false;
+  }, []);
+  
+  // Debounced search handler - moved up before it's used in applyEarlyFormatting
+  const debouncedSearch = useCallback(
+    (value: string) => {
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
+      }
+      
+      debounceTimeout.current = setTimeout(() => {
+        onSearch(value);
+      }, debounceMs);
+    },
+    [onSearch, debounceMs]
+  );
+  
+  // Apply early formatting (colon after 1-2 digits)
+  const applyEarlyFormatting = useCallback(() => {
+    console.log('Applying early formatting to:', inputValue);
+    
+    // Skip if formatting is disabled or input has a colon
+    if (!autoFormatTime || TIME_PATTERNS.HAS_COLON.test(inputValue)) {
+      console.log('Skipping early formatting - formatting disabled or input has colon');
+      return;
+    }
+    
+    // Only proceed if input matches early formatting criteria
+    if (shouldApplyEarlyFormatting(inputValue)) {
+      console.log('Input matches early formatting criteria');
+      // Set formatting flag to prevent concurrent formatting operations
+      isFormattingRef.current = true;
+      
+      // Extract any AM/PM suffix to preserve it
+      const amPmMatch = inputValue.match(TIME_PATTERNS.AM_PM);
+      const amPmSuffix = amPmMatch ? amPmMatch[0] : '';
+      const mainPart = amPmMatch ? inputValue.substring(0, amPmMatch.index) : inputValue;
+      
+      // Format by adding colon after the hour digits
+      const numericPart = mainPart.replace(/[^\d]/g, '');
+      const formatted = `${numericPart}:${amPmSuffix}`;
+      
+      console.log('Formatted value will be:', formatted);
+      
+      // Set the formatted value
+      setInputValue(formatted);
+      setWasFormatted(true);
+      
+      // Position cursor after the colon
+      setTimeout(() => {
+        if (inputRef.current) {
+          const newPosition = numericPart.length + 1; // Position after the colon
+          inputRef.current.selectionStart = newPosition;
+          inputRef.current.selectionEnd = newPosition;
+        }
+        // Reset formatting flag
+        isFormattingRef.current = false;
+        console.log('Cursor positioned and formatting flag reset');
+      }, 0);
+      
+      // Trigger search with formatted value
+      debouncedSearch(formatted);
+    } else {
+      console.log('Input does not match early formatting criteria');
+      // Reset formatting flag if we're not applying formatting
+      isFormattingRef.current = false;
+    }
+  }, [inputValue, autoFormatTime, shouldApplyEarlyFormatting, debouncedSearch]);
+  
+  // Format time string by inserting a colon where appropriate (for pattern-based formatting)
   const formatTimeInput = useCallback((input: string): { formatted: string, cursorOffset: number } => {
     // Skip formatting if disabled or input already contains a colon
     if (!autoFormatTime || TIME_PATTERNS.HAS_COLON.test(input)) {
@@ -142,20 +243,6 @@ export default function TimeSearch({
     // Otherwise, adjust cursor position by the offset
     return originalPosition + cursorOffset;
   }, []);
-  
-  // Debounced search handler - MOVED UP before any functions that use it
-  const debouncedSearch = useCallback(
-    (value: string) => {
-      if (debounceTimeout.current) {
-        clearTimeout(debounceTimeout.current);
-      }
-      
-      debounceTimeout.current = setTimeout(() => {
-        onSearch(value);
-      }, debounceMs);
-    },
-    [onSearch, debounceMs]
-  );
   
   // Handle special keydown events for better user experience
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -260,6 +347,8 @@ export default function TimeSearch({
     const cursorPos = e.target.selectionStart;
     const selectionEnd = e.target.selectionEnd;
     
+    console.log('⭐ Input changed to:', newValue);
+    
     // Store selection state
     lastCursorPosition.current = cursorPos;
     selectionStateRef.current = {
@@ -271,80 +360,137 @@ export default function TimeSearch({
     setInputValue(newValue);
     setWasFormatted(false);
     
-    // If auto-formatting is enabled and we're not already in a formatting operation
-    if (autoFormatTime && !isFormattingRef.current) {
-      // Apply formatting with debouncing to avoid jarring experience
+    // Clear any pending early formatting timeout
+    if (earlyFormattingTimeout.current) {
+      clearTimeout(earlyFormattingTimeout.current);
+      earlyFormattingTimeout.current = null;
+      console.log('Cleared existing early formatting timeout');
+    }
+    
+    // If auto-formatting is enabled
+    if (autoFormatTime) {
+      // SIMPLIFIED APPROACH: Directly check if this is a single digit (0-9)
+      // or a valid two-digit hour (00-23)
+      const singleDigitMatch = /^[0-9]$/.test(newValue);
+      const twoDigitHourMatch = /^(0[0-9]|1[0-9]|2[0-3])$/.test(newValue);
+      
+      if ((singleDigitMatch || twoDigitHourMatch) && !newValue.includes(':')) {
+        console.log(`✅ Setting up SIMPLIFIED early formatting for: "${newValue}"`);
+        
+        // Schedule early formatting with the specified delay
+        earlyFormattingTimeout.current = setTimeout(() => {
+          console.log(`⌛ Early formatting timeout triggered for: "${newValue}"`);
+          
+          // Directly format the value we captured, not using state
+          // This avoids any state closure issues
+          const formatted = `${newValue}:`;
+          console.log(`📝 SIMPLIFIED direct formatting - value will be: "${formatted}"`);
+          
+          // Update the input
+          setInputValue(formatted);
+          setWasFormatted(true);
+          
+          // Position cursor after the colon
+          setTimeout(() => {
+            if (inputRef.current) {
+              const newPosition = newValue.length + 1; // Position after the colon
+              inputRef.current.selectionStart = newPosition;
+              inputRef.current.selectionEnd = newPosition;
+              console.log(`⬅️ Positioned cursor at position: ${newPosition}`);
+            }
+            isFormattingRef.current = false;
+          }, 0);
+          
+          // Trigger search with formatted value
+          debouncedSearch(formatted);
+          
+        }, earlyFormattingDelay);
+        console.log(`⏱️ Early formatting timeout set with delay: ${earlyFormattingDelay}ms`);
+      }
+      
+      // Also set up pattern-based formatting with shorter debouncing
+      // but only if the input doesn't match the single/double digit patterns
+      // to avoid conflicts
       if (formattingTimeout.current) {
         clearTimeout(formattingTimeout.current);
       }
       
-      formattingTimeout.current = setTimeout(() => {
-        // Prevent recursive formatting
-        isFormattingRef.current = true;
-        
-        // Apply formatting
-        const { formatted, cursorOffset } = formatTimeInput(newValue);
-        
-        // Only update if formatting changed the value
-        if (formatted !== newValue) {
-          setInputValue(formatted);
-          setWasFormatted(true);
-          
-          // Calculate and set new cursor position
-          if (cursorPos !== null && inputRef.current) {
-            // Handle text selection case
-            let newCursorPos;
-            let newSelectionEnd;
-            
-            // If there's a selection range
-            if (selectionEnd !== null && selectionEnd !== cursorPos) {
-              newCursorPos = calculateCursorPosition(
-                cursorPos, 
-                newValue, 
-                formatted, 
-                cursorOffset
-              );
-              newSelectionEnd = calculateCursorPosition(
-                selectionEnd, 
-                newValue, 
-                formatted, 
-                cursorOffset
-              );
-            } else {
-              // No selection, just cursor position
-              newCursorPos = calculateCursorPosition(
-                cursorPos, 
-                newValue, 
-                formatted, 
-                cursorOffset
-              );
-              newSelectionEnd = newCursorPos;
-            }
-            
-            // Use setTimeout to ensure the cursor position is set after the value update
-            setTimeout(() => {
-              if (inputRef.current) {
-                inputRef.current.selectionStart = newCursorPos;
-                inputRef.current.selectionEnd = newSelectionEnd;
-              }
-              isFormattingRef.current = false;
-            }, 0);
-          } else {
-            isFormattingRef.current = false;
+      // Skip pattern formatting for 1-2 digit inputs to avoid conflicts
+      if (!isFormattingRef.current && !singleDigitMatch && !twoDigitHourMatch) {
+        formattingTimeout.current = setTimeout(() => {
+          // Clear early formatting timeout to avoid conflicts
+          if (earlyFormattingTimeout.current) {
+            clearTimeout(earlyFormattingTimeout.current);
+            earlyFormattingTimeout.current = null;
           }
           
-          // Trigger search with formatted value
-          debouncedSearch(formatted);
-        } else {
-          isFormattingRef.current = false;
-          // Trigger search with unchanged value
-          debouncedSearch(newValue);
-        }
-      }, 100); // Small delay to allow for continuous typing
-    } else {
-      // No formatting, just trigger search
-      debouncedSearch(newValue);
+          // Prevent recursive formatting
+          isFormattingRef.current = true;
+          
+          // Apply formatting
+          const { formatted, cursorOffset } = formatTimeInput(newValue);
+          
+          // Only update if formatting changed the value
+          if (formatted !== newValue) {
+            setInputValue(formatted);
+            setWasFormatted(true);
+            
+            // Calculate and set new cursor position
+            if (cursorPos !== null && inputRef.current) {
+              // Handle text selection case
+              let newCursorPos;
+              let newSelectionEnd;
+              
+              // If there's a selection range
+              if (selectionEnd !== null && selectionEnd !== cursorPos) {
+                newCursorPos = calculateCursorPosition(
+                  cursorPos, 
+                  newValue, 
+                  formatted, 
+                  cursorOffset
+                );
+                newSelectionEnd = calculateCursorPosition(
+                  selectionEnd, 
+                  newValue, 
+                  formatted, 
+                  cursorOffset
+                );
+              } else {
+                // No selection, just cursor position
+                newCursorPos = calculateCursorPosition(
+                  cursorPos, 
+                  newValue, 
+                  formatted, 
+                  cursorOffset
+                );
+                newSelectionEnd = newCursorPos;
+              }
+              
+              // Use setTimeout to ensure the cursor position is set after the value update
+              setTimeout(() => {
+                if (inputRef.current) {
+                  inputRef.current.selectionStart = newCursorPos;
+                  inputRef.current.selectionEnd = newSelectionEnd;
+                }
+                isFormattingRef.current = false;
+              }, 0);
+            } else {
+              isFormattingRef.current = false;
+            }
+            
+            // Trigger search with formatted value
+            debouncedSearch(formatted);
+          } else {
+            isFormattingRef.current = false;
+            // Trigger search with unchanged value
+            debouncedSearch(newValue);
+          }
+        }, patternFormattingDelay); // Shorter delay than early formatting
+      }
     }
+    
+    // Always trigger search with the new value regardless of formatting
+    debouncedSearch(newValue);
   };
   
   // Handle clearing the search
@@ -388,6 +534,9 @@ export default function TimeSearch({
       }
       if (formattingTimeout.current) {
         clearTimeout(formattingTimeout.current);
+      }
+      if (earlyFormattingTimeout.current) {
+        clearTimeout(earlyFormattingTimeout.current);
       }
       
       // Remove the live region if we created one
@@ -453,7 +602,7 @@ export default function TimeSearch({
         
         {/* Hidden description for screen readers */}
         <div id="time-search-description" className="sr-only">
-          Time entries will be auto-formatted. For example, typing 300 will become 3:00.
+          Time entries will be auto-formatted. For example, typing 3 and pausing will become 3:, and typing 300 will become 3:00.
         </div>
         
         <AnimatePresence>
