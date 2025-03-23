@@ -1500,19 +1500,8 @@ export default function ListView({
       style={{ isolation: 'isolate' }}
       onScroll={handleUserScroll} // Add onScroll handler
     >
-      {/* Search Box with title */}
-      <div className="mb-8 w-full max-w-md mx-auto">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            Search Time
-          </h2>
-          {searchTerm && (
-            <span className="text-xs text-gray-500 dark:text-gray-400">
-              Searching in local timezone
-            </span>
-          )}
-        </div>
-        
+      {/* Search Box with minimal styling */}
+      <div className="mb-4 w-full max-w-sm mx-auto">
         <TimeSearch 
           onSearch={handleSearch}
           onClear={handleClearSearch}
@@ -1529,28 +1518,24 @@ export default function ListView({
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
               className={clsx(
-                'mt-2 py-1.5 px-3 rounded-md text-xs font-medium',
+                'mt-2 py-1 px-3 text-xs',
                 filteredTimeSlots.length > 0 
-                  ? 'bg-primary-50/50 text-primary-700 dark:bg-primary-900/10 dark:text-primary-300 border border-primary-100 dark:border-primary-800/30'
-                  : 'bg-amber-50/50 text-amber-700 dark:bg-amber-900/10 dark:text-amber-300 border border-amber-100 dark:border-amber-800/30'
+                  ? 'text-gray-300'
+                  : 'text-amber-300'
               )}
             >
               {filteredTimeSlots.length > 0 ? (
                 <div className="flex items-center">
-                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mr-2 flex-shrink-0"></div>
                   <span>
                     Found {filteredTimeSlots.length} time{filteredTimeSlots.length === 1 ? '' : 's'} matching {searchTerm.includes(':') 
-                      ? `time "${searchTerm}"` 
-                      : `${searchTerm} o'clock`} in local timezone
+                      ? `"${searchTerm}"` 
+                      : `${searchTerm} o'clock`}
                   </span>
                 </div>
               ) : (
                 <div className="flex items-center">
-                  <div className="w-1.5 h-1.5 bg-amber-500 rounded-full mr-2 flex-shrink-0"></div>
                   <span>
-                    No times matching {searchTerm.includes(':') 
-                      ? `time "${searchTerm}"` 
-                      : `${searchTerm} o'clock`} in local timezone
+                    No results found
                   </span>
                 </div>
               )}
