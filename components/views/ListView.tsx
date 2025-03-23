@@ -7,11 +7,12 @@ import { Timezone, useTimezoneStore } from '@/store/timezoneStore';
 import { isBusinessHours, isNightHours, isWeekend } from '@/lib/utils/dateTimeFormatter';
 import { FixedSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { Plus, X, Edit2, Settings } from 'lucide-react';
+import { ChevronUp, ChevronDown, Sun, Moon, Clock, Plus, X, Edit2, Settings } from 'lucide-react';
 import { getAllTimezones, isInDST } from '@/lib/utils/timezone';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import TimezoneSelector from '../clock/TimezoneSelector'; // Import the shared TimezoneSelector
+import TimeSearch from '../ui/TimeSearch'; // Import the TimeSearch component
 import { useTheme } from 'next-themes';
 import clsx from 'clsx';
 import { useSettingsStore, getWeekendHighlightClass } from '@/store/settingsStore';
@@ -33,12 +34,6 @@ interface ListViewProps {
  * Displays multiple timezones in a list view with time columns.
  * Shows current time, business hours, and other time-related information.
  * 
- * TODO: Implement a proper event/meeting system to replace the mock implementation.
- * The system should:
- * - Connect to a calendar API or a custom events database
- * - Display real events with proper titles, durations, and participants
- * - Allow adding/editing events directly from the interface
- * - Support recurring events and notifications
  */
 export default function ListView({
   selectedTimezones,
@@ -92,6 +87,11 @@ export default function ListView({
   // Track the last time the user manually scrolled
   const lastScrollTimeRef = useRef<number>(0);
 
+  // Add search state variables
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredTimeSlots, setFilteredTimeSlots] = useState<Date[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  
   // Create a performance marker for debugging
   const markRender = useCallback((name: string) => {
     if (typeof performance !== 'undefined' && process.env.NODE_ENV === 'development') {
@@ -770,6 +770,54 @@ export default function ListView({
     return "";
   }, []);
 
+  // Jump to a specific time period
+  const jumpToTime = useCallback((timePeriod: 'morning' | 'afternoon' | 'evening' | 'night' | 'now', timezone: string) => {
+    if (!listRefs.current[timezone]) return;
+    
+    let targetIndex = 0;
+    
+    switch (timePeriod) {
+      case 'morning':
+        // Jump to 8am
+        targetIndex = timeSlots.findIndex(t => {
+          const dt = DateTime.fromJSDate(t).setZone(timezone);
+          return dt.hour === 8 && dt.minute === 0;
+        });
+        break;
+      case 'afternoon':
+        // Jump to 12pm
+        targetIndex = timeSlots.findIndex(t => {
+          const dt = DateTime.fromJSDate(t).setZone(timezone);
+          return dt.hour === 12 && dt.minute === 0;
+        });
+        break;
+      case 'evening':
+        // Jump to 6pm
+        targetIndex = timeSlots.findIndex(t => {
+          const dt = DateTime.fromJSDate(t).setZone(timezone);
+          return dt.hour === 18 && dt.minute === 0;
+        });
+        break;
+      case 'night':
+        // Jump to 9pm
+        targetIndex = timeSlots.findIndex(t => {
+          const dt = DateTime.fromJSDate(t).setZone(timezone);
+          return dt.hour === 21 && dt.minute === 0;
+        });
+        break;
+      case 'now':
+        // Jump to current time
+        targetIndex = getCurrentTimeIndex();
+        break;
+    }
+    
+    // Default to 0 if not found
+    if (targetIndex === -1) targetIndex = 0;
+    
+    // Scroll to the target index
+    listRefs.current[timezone]?.scrollToItem(targetIndex, 'center');
+  }, [timeSlots, getCurrentTimeIndex]);
+  
   // Handle adding a new timezone
   const handleAddTimezone = useCallback((timezone: Timezone) => {
     addTimezone(timezone);
@@ -931,7 +979,108 @@ export default function ListView({
     );
   });
 
-  // Updated renderTimeColumns function to include the countdown indicator
+  // Update useEffect to reset filteredTimeSlots when timeSlots change
+  useEffect(() => {
+    if (searchTerm) {
+      handleSearch(searchTerm);
+    } else {
+      setFilteredTimeSlots([]);
+    }
+  }, [timeSlots]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * Time Search Functionality
+   * 
+   * This search feature allows users to find specific times based on the first column (local timezone).
+   * It works by:
+   * 1. Filtering time slots based on the specific hour or time pattern in the local timezone
+   * 2. Displaying matching times and auto-scrolling to the first result
+   * 3. Synchronizing the display across all timezone columns
+   * 4. Supporting both 12-hour and 24-hour time formats
+   * 
+   * The search is debounced to prevent excessive filtering operations during typing,
+   * and results are found and displayed across all timezone columns simultaneously.
+   */
+  const handleSearch = useCallback((term: string) => {
+    setSearchTerm(term);
+    
+    if (!term.trim()) {
+      // Reset search
+      setFilteredTimeSlots([]);
+      setIsSearching(false);
+      
+      // If there was a previous search, reset scroll to current time
+      if (isSearching) {
+        synchronizeScrolls();
+      }
+      return;
+    }
+    
+    setIsSearching(true);
+    
+    // Convert search term to lowercase for case-insensitive matching
+    const searchLower = term.toLowerCase().trim();
+    
+    // Filter time slots that match the search term ONLY in the local timezone (first column)
+    const filtered = timeSlots.filter(timeSlot => {
+      const timeInLocalZone = DateTime.fromJSDate(timeSlot).setZone(userLocalTimezone);
+      
+      // Format times for comparison
+      const hour12 = timeInLocalZone.toFormat('h');
+      const hour24 = timeInLocalZone.toFormat('HH');
+      const fullTime12 = timeInLocalZone.toFormat('h:mm a').toLowerCase();
+      const fullTime24 = timeInLocalZone.toFormat('HH:mm').toLowerCase();
+      
+      // Check if search has a colon (specific time pattern)
+      if (searchLower.includes(':')) {
+        // Match exact time pattern (e.g., "3:00" or "15:00")
+        return fullTime12.startsWith(searchLower) || fullTime24.startsWith(searchLower);
+      } 
+      
+      // When only hours are entered (e.g., "3" or "03" or "15")
+      else {
+        // When searching for just hour digits, match only those hours
+        // e.g., "3" matches "3:00 am", "3:30 am", "3:00 pm", "3:30 pm" 
+        return hour12 === searchLower || hour24 === searchLower;
+      }
+    });
+    
+    setFilteredTimeSlots(filtered);
+    
+    // If we have results, scroll all lists to the first result
+    if (filtered.length > 0) {
+      // Temporarily disable user scrolling flag to allow programmatic scrolling
+      const wasScrolling = userIsScrollingRef.current;
+      userIsScrollingRef.current = false;
+      
+      // Find the index of the first result
+      const targetIndex = timeSlots.findIndex(t => t.getTime() === filtered[0].getTime());
+      
+      if (targetIndex !== -1) {
+        // Scroll all timezone columns to the target time
+        Object.entries(listRefs.current).forEach(([_, listRef]) => {
+          if (listRef) {
+            listRef.scrollToItem(targetIndex, 'center');
+          }
+        });
+      }
+      
+      // Restore user scrolling state
+      userIsScrollingRef.current = wasScrolling;
+    }
+  }, [timeSlots, userLocalTimezone, synchronizeScrolls, isSearching]);
+
+  // Add handleClearSearch function
+  const handleClearSearch = useCallback(() => {
+    setSearchTerm('');
+    setFilteredTimeSlots([]);
+    setIsSearching(false);
+    
+    // Return focus to current time
+    synchronizeScrolls();
+  }, [synchronizeScrolls]);
+
+  // Updated renderTimeColumns function to include the search box
   const renderTimeColumns = useCallback(() => {
     if (!mounted) return null;
     
@@ -1045,7 +1194,7 @@ export default function ListView({
           </motion.div>
         )}
       
-        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6 md:gap-8">
           {uniqueTimezones.map((timezone) => {
             // Check if the timezone is in DST
             const isDST = isInDST(timezone.id);
@@ -1066,14 +1215,13 @@ export default function ListView({
                   backgroundColor: resolvedTheme === 'dark'
                     ? 'rgba(15, 15, 25, 0.2)'
                     : 'rgba(255, 255, 255, 0.15)',
-                  minWidth: '280px',
-                  maxWidth: '100%'
+                  minWidth: '280px'
                 }}
                 data-timezone-id={timezone.id}
               >
                 <div className="flex justify-between items-center mb-3 md:mb-4 relative z-[2]">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate max-w-[180px]">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                       {timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}
                     </h3>
                     <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center space-x-2">
@@ -1091,7 +1239,7 @@ export default function ListView({
                     </div>
                   </div>
                   
-                  <div className="flex items-center space-x-2 relative z-[2] flex-shrink-0">
+                  <div className="flex items-center space-x-2 relative z-[2]">
                     {/* Timezone options dropdown */}
                     <DropdownMenu.Root>
                       <DropdownMenu.Trigger asChild>
@@ -1135,12 +1283,56 @@ export default function ListView({
                         </DropdownMenu.Content>
                       </DropdownMenu.Portal>
                     </DropdownMenu.Root>
+                    
+                    {/* Quick navigation buttons */}
+                    <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-full p-1">
+                      <button 
+                        onClick={() => jumpToTime('morning', timezone.id)} 
+                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        title="Jump to morning (8 AM)"
+                        aria-label="Jump to morning"
+                      >
+                        <Sun className="h-3.5 w-3.5 text-amber-500" />
+                      </button>
+                      <button 
+                        onClick={() => jumpToTime('afternoon', timezone.id)} 
+                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        title="Jump to afternoon (12 PM)"
+                        aria-label="Jump to afternoon"
+                      >
+                        <ChevronUp className="h-3.5 w-3.5 text-blue-500" />
+                      </button>
+                      <button 
+                        onClick={() => jumpToTime('evening', timezone.id)} 
+                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        title="Jump to evening (6 PM)"
+                        aria-label="Jump to evening"
+                      >
+                        <ChevronDown className="h-3.5 w-3.5 text-orange-500" />
+                      </button>
+                      <button 
+                        onClick={() => jumpToTime('night', timezone.id)} 
+                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        title="Jump to night (9 PM)"
+                        aria-label="Jump to night"
+                      >
+                        <Moon className="h-3.5 w-3.5 text-indigo-500" />
+                      </button>
+                      <button 
+                        onClick={() => jumpToTime('now', timezone.id)} 
+                        className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        title="Jump to current time"
+                        aria-label="Jump to current time"
+                      >
+                        <Clock className="h-3.5 w-3.5 text-green-500" />
+                      </button>
+                    </div>
                   </div>
                 </div>
                 
                 <div 
                   className="h-72 md:h-80 lg:h-96 rounded-md border border-gray-200/50 dark:border-gray-700/50 
-                    backdrop-blur-[2px] overflow-hidden mt-4 md:mt-5 w-full"
+                    backdrop-blur-[2px] overflow-hidden mt-4 md:mt-5 min-w-[300px] w-full"
                   style={{
                     backgroundColor: resolvedTheme === 'dark'
                       ? 'rgba(15, 15, 25, 0.1)'
@@ -1154,7 +1346,7 @@ export default function ListView({
                       <FixedSizeList
                         height={height}
                         width={width}
-                        itemCount={timeSlots.length}
+                        itemCount={isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots.length : timeSlots.length}
                         itemSize={48}
                         overscanCount={10}
                         ref={(ref) => { listRefs.current[timezone.id] = ref; }}
@@ -1165,28 +1357,35 @@ export default function ListView({
                             ? 'rgba(15, 15, 25, 0.05)'
                             : 'rgba(255, 255, 255, 0.05)'
                         }}
-                        itemKey={(index) => `${timezone.id}-${timeSlots[index].getTime()}`}
+                        itemKey={(index) => {
+                          const slots = isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots : timeSlots;
+                          return `${timezone.id}-${slots[index].getTime()}`;
+                        }}
                         onScroll={handleUserScroll}
                       >
-                        {({ index, style }) => (
-                          <TimeItem
-                            style={style}
-                            time={timeSlots[index]}
-                            timezone={timezone.id}
-                            isLocalTimeFn={isLocalTime}
-                            isHighlightedFn={isHighlighted}
-                            isBusinessHoursFn={checkBusinessHours}
-                            isNightTimeFn={checkNightHours}
-                            isDateBoundaryFn={isDateBoundary}
-                            isDSTTransitionFn={isDSTTransition}
-                            isCurrentTimeFn={isCurrentTime}
-                            isWeekendFn={isWeekend}
-                            formatTimeFn={formatTime}
-                            getHighlightAnimationClassFn={getHighlightAnimationClass}
-                            getTimezoneOffsetFn={getTimezoneOffset}
-                            handleTimeSelectionFn={handleTimeSelection}
-                          />
-                        )}
+                        {({ index, style }) => {
+                          // Use filtered time slots when searching and there are results, otherwise use all time slots
+                          const slots = isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots : timeSlots;
+                          return (
+                            <TimeItem
+                              style={style}
+                              time={slots[index]}
+                              timezone={timezone.id}
+                              isLocalTimeFn={isLocalTime}
+                              isHighlightedFn={isHighlighted}
+                              isBusinessHoursFn={checkBusinessHours}
+                              isNightTimeFn={checkNightHours}
+                              isDateBoundaryFn={isDateBoundary}
+                              isDSTTransitionFn={isDSTTransition}
+                              isCurrentTimeFn={isCurrentTime}
+                              isWeekendFn={isWeekend}
+                              formatTimeFn={formatTime}
+                              getHighlightAnimationClassFn={getHighlightAnimationClass}
+                              getTimezoneOffsetFn={getTimezoneOffset}
+                              handleTimeSelectionFn={handleTimeSelection}
+                            />
+                          );
+                        }}
                       </FixedSizeList>
                     )}
                   </AutoSizer>
@@ -1246,12 +1445,14 @@ export default function ListView({
     formatTime,
     handleTimeSelection,
     getCurrentTimeIndex,
+    jumpToTime,
     handleRemoveTimezone,
     timeRemaining,
     resetInactivityTimer,
-    handleUserScroll,
     resolvedTheme,
-    weekendHighlightColor
+    weekendHighlightColor,
+    highlightedTime,
+    localTime
   ]);
 
   // Update the useEffect hook to call our updated synchronizeScrolls function
@@ -1299,6 +1500,50 @@ export default function ListView({
       style={{ isolation: 'isolate' }}
       onScroll={handleUserScroll} // Add onScroll handler
     >
+      {/* Search Box with minimal styling - positioned above first column */}
+      <div className="mb-4 w-full sm:w-80 ml-0 pt-3">
+        <TimeSearch 
+          onSearch={handleSearch}
+          onClear={handleClearSearch}
+          className="w-full"
+          autoFormatTime={true}
+          earlyFormattingDelay={100}
+        />
+        
+        <AnimatePresence>
+          {(filteredTimeSlots.length > 0 || (searchTerm && filteredTimeSlots.length === 0)) && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className={clsx(
+                'mt-2 py-1 px-3 text-xs',
+                filteredTimeSlots.length > 0 
+                  ? 'text-gray-300'
+                  : 'text-amber-300'
+              )}
+            >
+              {filteredTimeSlots.length > 0 ? (
+                <div className="flex items-center">
+                  <span>
+                    Found {filteredTimeSlots.length} time{filteredTimeSlots.length === 1 ? '' : 's'} matching {searchTerm.includes(':') 
+                      ? `"${searchTerm}"` 
+                      : `${searchTerm} o'clock`}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <span>
+                    No results found
+                  </span>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       {renderTimeColumns()}
       
       {/* Timezone Selection Modal */}

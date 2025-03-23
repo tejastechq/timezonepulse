@@ -1,10 +1,5 @@
 {
   "mcpServers": {
-    "github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking": {
-      "command": "node",
-      "args": [
-        "index.js"
-      ]
-    }
+    
   }
 }
