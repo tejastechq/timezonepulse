@@ -1501,7 +1501,7 @@ export default function ListView({
       onScroll={handleUserScroll} // Add onScroll handler
     >
       {/* Search Box with minimal styling */}
-      <div className="mb-4 w-full max-w-sm mx-auto">
+      <div className="mb-4 w-full max-w-sm mx-auto pt-3">
         <TimeSearch 
           onSearch={handleSearch}
           onClear={handleClearSearch}

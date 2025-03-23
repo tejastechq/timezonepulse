@@ -550,7 +550,7 @@ export default function TimeSearch({
   return (
     <div 
       className={clsx(
-        'relative flex items-center w-full',
+        'relative flex items-center w-full py-0.5',
         className
       )}
     >
@@ -582,7 +582,7 @@ export default function TimeSearch({
           onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
           className={clsx(
-            'w-full py-2 pl-10 pr-10 text-sm bg-transparent z-[1]',
+            'w-full py-2.5 pl-10 pr-10 text-sm bg-transparent z-[1]',
             'text-white dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-400',
             'focus:outline-none focus:ring-0 border-none',
             'relative'
