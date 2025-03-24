@@ -138,7 +138,7 @@ export const useTimezoneStore = create<TimezoneState>()(
             country: 'United States',
           }] : []),
         ].slice(0, 3), // Ensure we have exactly 3 timezones
-        viewMode: 'analog',
+        viewMode: 'analog' as ViewMode,
         highlightedTime: null,
         localTimezone: localTz,
         appVersion: { ...APP_VERSION, timestamp: Date.now() },
@@ -215,7 +215,7 @@ export const useTimezoneStore = create<TimezoneState>()(
       // Filter out certain fields from persistence
       partialize: (state) => ({
         timezones: state.timezones,
-        viewMode: state.viewMode,
+        viewMode: state.viewMode as ViewMode,
         localTimezone: state.localTimezone
       }),
     }
