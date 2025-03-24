@@ -138,7 +138,7 @@ export const useTimezoneStore = create<TimezoneState>()(
             country: 'United States',
           }] : []),
         ].slice(0, 3), // Ensure we have exactly 3 timezones
-        viewMode: 'analog' as ViewMode,
+        viewMode: 'list' as ViewMode,
         highlightedTime: null,
         localTimezone: localTz,
         appVersion: { ...APP_VERSION, timestamp: Date.now() },

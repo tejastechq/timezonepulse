@@ -42,7 +42,7 @@ const DEFAULT_SETTINGS = {
   timeFormat: '12h' as const,
   dateFormat: 'MM/DD/YYYY' as const,
   showSeconds: true,
-  defaultView: 'analog' as const,
+  defaultView: 'list' as const,
   businessHoursStart: 9,
   businessHoursEnd: 17,
   nightHoursStart: 20,
