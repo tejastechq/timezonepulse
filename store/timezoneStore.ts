@@ -39,10 +39,13 @@ interface TimezoneState {
   highlightedTime: Date | null;
   localTimezone: string;
   appVersion: typeof APP_VERSION;
+  selectedDate: Date;
   addTimezone: (timezone: Timezone) => void;
   removeTimezone: (id: string) => void;
   setViewMode: (mode: ViewMode) => void;
   setHighlightedTime: (time: Date | null) => void;
+  setSelectedDate: (date: Date) => void;
+  resetToToday: () => void;
   reorderTimezones: (fromIndex: number, toIndex: number) => void;
   hydrate: () => void;
   resetStore: () => void;
@@ -141,6 +144,7 @@ export const useTimezoneStore = create<TimezoneState>()(
         viewMode: 'list' as ViewMode,
         highlightedTime: null,
         localTimezone: localTz,
+        selectedDate: new Date(), // Default to today
         appVersion: { ...APP_VERSION, timestamp: Date.now() },
       });
       
@@ -174,6 +178,12 @@ export const useTimezoneStore = create<TimezoneState>()(
           
         setHighlightedTime: (time: Date | null) => 
           set({ highlightedTime: time }),
+          
+        setSelectedDate: (date: Date) =>
+          set({ selectedDate: date }),
+        
+        resetToToday: () =>
+          set({ selectedDate: new Date() }),
           
         reorderTimezones: (fromIndex: number, toIndex: number) => 
           set((state) => {
@@ -227,6 +237,9 @@ export const useViewMode = () => useTimezoneStore((state) => state.viewMode);
 
 // Helper hook to get the highlighted time
 export const useHighlightedTime = () => useTimezoneStore((state) => state.highlightedTime);
+
+// Helper hook to get the selected date
+export const useSelectedDate = () => useTimezoneStore((state) => state.selectedDate);
 
 // Helper hook to get the app version (for debugging)
 export const useAppVersion = () => useTimezoneStore((state) => state.appVersion); 

@@ -7,7 +7,7 @@ import { Timezone, useTimezoneStore } from '@/store/timezoneStore';
 import { isBusinessHours, isNightHours, isWeekend } from '@/lib/utils/dateTimeFormatter';
 import { FixedSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
-import { ChevronUp, ChevronDown, Sun, Moon, Clock, Plus, X, Edit2, Settings } from 'lucide-react';
+import { ChevronUp, ChevronDown, Sun, Moon, Clock, Plus, X, Edit2, Settings, CalendarDays } from 'lucide-react';
 import { getAllTimezones, isInDST } from '@/lib/utils/timezone';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
@@ -24,8 +24,9 @@ interface ListViewProps {
   localTime: Date | null;
   highlightedTime: Date | null;
   handleTimeSelection: (time: Date | null) => void;
-  roundToNearestIncrement: (date: Date, increment: number) => Date;
+  roundToNearestIncrement?: (date: Date, increment: number) => Date;
   removeTimezone?: (id: string) => void;
+  currentDate?: Date | null;
 }
 
 /**
@@ -42,8 +43,15 @@ export default function ListView({
   localTime,
   highlightedTime,
   handleTimeSelection,
-  roundToNearestIncrement,
-  removeTimezone: externalRemoveTimezone
+  roundToNearestIncrement = (date, increment) => {
+    // Default implementation if not provided
+    const dt = DateTime.fromJSDate(date);
+    const minutes = dt.minute;
+    const roundedMinutes = Math.round(minutes / increment) * increment;
+    return dt.set({ minute: roundedMinutes, second: 0, millisecond: 0 }).toJSDate();
+  },
+  removeTimezone: externalRemoveTimezone,
+  currentDate
 }: ListViewProps) {
   const timeColumnsContainerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -92,6 +100,9 @@ export default function ListView({
   const [filteredTimeSlots, setFilteredTimeSlots] = useState<Date[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   
+  // Near the beginning of the component, after the timer-related state
+  const [selectedDateInfo, setSelectedDateInfo] = useState<string | null>(null);
+  
   // Create a performance marker for debugging
   const markRender = useCallback((name: string) => {
     if (typeof performance !== 'undefined' && process.env.NODE_ENV === 'development') {
@@ -103,6 +114,19 @@ export default function ListView({
   useEffect(() => {
     setMounted(true);
     markRender('mount');
+    
+    // Set selected date info if we're not on today's date
+    if (timeSlots.length > 0) {
+      const firstSlot = timeSlots[0];
+      const firstSlotDate = DateTime.fromJSDate(firstSlot);
+      const currentDateTime = currentDate ? DateTime.fromJSDate(currentDate).startOf('day') : DateTime.local().startOf('day');
+      
+      if (!firstSlotDate.hasSame(currentDateTime, 'day')) {
+        setSelectedDateInfo(firstSlotDate.toFormat('EEEE, MMMM d, yyyy'));
+      } else {
+        setSelectedDateInfo(null);
+      }
+    }
     
     // Comprehensive cleanup function
     return () => {
@@ -135,7 +159,7 @@ export default function ListView({
       timeRemainingRef.current = 120;
       highlightedTimeRef.current = null;
     };
-  }, [markRender]);
+  }, [markRender, timeSlots, currentDate]);
 
   // Add a ref to keep track of the currently highlighted time
   const highlightedTimeRef = useRef<Date | null>(null);
@@ -210,7 +234,7 @@ export default function ListView({
         animationFrameRef.current = null;
       }
     };
-  }, [mounted, handleTimeSelection]); // Remove highlightedTime from dependencies, use ref instead
+  }, [mounted, handleTimeSelection]);
 
   // Auto-cancel selection after 1 minute of inactivity with visual countdown
   useEffect(() => {
@@ -473,7 +497,7 @@ export default function ListView({
         }
       });
     }, 50); // Small delay to batch scroll operations
-  }, [highlightedTime, localTime, timeSlots, getCurrentTimeIndex, roundToNearestIncrement]); // Add proper dependencies
+  }, [highlightedTime, localTime, timeSlots, getCurrentTimeIndex, roundToNearestIncrement]);
 
   // Update throttledUserInteraction to include scrolling events
   const throttledUserInteraction = useCallback((event: Event) => {
@@ -1574,7 +1598,8 @@ export default function ListView({
     resolvedTheme,
     weekendHighlightColor,
     highlightedTime,
-    localTime
+    localTime,
+    currentDate
   ]);
 
   // Update the useEffect hook to call our updated synchronizeScrolls function
@@ -1611,6 +1636,17 @@ export default function ListView({
       }
     };
   }, []);
+
+  // Add this before the return statement in the component
+  const isViewingFutureDate = useMemo(() => {
+    if (!timeSlots.length) return false;
+    
+    const firstSlot = timeSlots[0];
+    const firstSlotDate = DateTime.fromJSDate(firstSlot);
+    const currentDateTime = currentDate ? DateTime.fromJSDate(currentDate).startOf('day') : DateTime.local().startOf('day');
+    
+    return !firstSlotDate.hasSame(currentDateTime, 'day');
+  }, [timeSlots, currentDate]);
 
   return (
     <motion.div
@@ -1683,6 +1719,69 @@ export default function ListView({
           />
         )}
       </AnimatePresence>
+
+      {/* Add this right before or after the timezone header section */}
+      {selectedDateInfo && (
+        <div className="sticky top-0 z-20 bg-background mb-4 p-2 w-full rounded-md border border-primary">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <CalendarDays className="text-primary h-5 w-5 mr-2" />
+              <span className="font-medium text-primary">{selectedDateInfo}</span>
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }
+
+// Update the TimeHeaderRow component to show the selected date
+const TimeHeaderRow = memo(function TimeHeaderRow({
+  timeSlot,
+  isHalfHour,
+  isDateBoundary,
+  isDSTTransition,
+  isCurrentTime,
+  formattedTime
+}: {
+  timeSlot: Date;
+  isHalfHour: boolean;
+  isDateBoundary: boolean;
+  isDSTTransition: boolean;
+  isCurrentTime: boolean;
+  formattedTime: string;
+}) {
+  // Convert to Luxon DateTime for easier formatting
+  const dt = DateTime.fromJSDate(timeSlot);
+  
+  // Format the date for display in the header
+  const dateDisplay = dt.toFormat('EEE, MMM d');
+  
+  return (
+    <div 
+      className={`
+        px-2 py-1 text-sm 
+        ${isHalfHour ? 'opacity-60 text-xs' : 'font-semibold'}
+        ${isCurrentTime ? 'text-primary-500 font-bold' : ''}
+        ${isDateBoundary ? 'border-t border-gray-300 dark:border-gray-700 pt-4 mt-4' : ''}
+      `}
+    >
+      {/* Show date at midnight or first time slot */}
+      {(dt.hour === 0 && dt.minute === 0) || ((dt.hour === 0 || dt.hour === 12) && dt.minute === 0) ? (
+        <div className="flex flex-col">
+          <span className="text-primary-500 font-bold">{dateDisplay}</span>
+          <span className="mt-1">{formattedTime}</span>
+        </div>
+      ) : (
+        <span>{formattedTime}</span>
+      )}
+      
+      {/* Show DST transition indicator */}
+      {isDSTTransition && (
+        <span className="block text-xs text-amber-500 dark:text-amber-400 mt-1">
+          DST {dt.isInDST ? 'begins' : 'ends'}
+        </span>
+      )}
+    </div>
+  );
+});

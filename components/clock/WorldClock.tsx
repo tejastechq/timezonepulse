@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { useTimezoneStore, ViewMode } from '@/store/timezoneStore';
+import { useTimezoneStore, ViewMode, useSelectedDate } from '@/store/timezoneStore';
 import { DateTime } from 'luxon';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useView } from '@/app/contexts/ViewContext';
@@ -11,6 +11,7 @@ import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
 import type { Timezone } from '@/store/timezoneStore';
+import { CalendarDays, ArrowLeftCircle } from 'lucide-react';
 
 // Define interfaces for the view components based on their implementations
 interface ListViewProps {
@@ -21,6 +22,7 @@ interface ListViewProps {
   highlightedTime: Date | null;
   handleTimeSelection: (time: Date | null) => void;
   timezoneFormat: string;
+  currentDate: Date | null;
 }
 
 interface ClocksViewProps {
@@ -47,6 +49,11 @@ const OptimizedDigitalView = DigitalView;
 
 // Dynamically import less critical components to reduce initial load
 const ViewSwitcher = dynamic(() => import('./ViewSwitcher'), { ssr: true });
+
+// Import the DatePicker
+const DatePicker = dynamic(() => import('../ui/date-picker').then(mod => mod.DatePicker), { 
+  ssr: false 
+});
 
 /**
  * Placeholder component shown during loading to prevent layout shifts
@@ -79,7 +86,10 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
     removeTimezone,
     highlightedTime,
     setHighlightedTime,
-    localTimezone
+    localTimezone,
+    selectedDate,
+    setSelectedDate,
+    resetToToday
   } = useTimezoneStore();
 
   // Get view state from the view context
@@ -108,10 +118,15 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
   const timeColumnsContainerRef = useRef<HTMLDivElement>(null);
   const lcpContentRef = useRef<HTMLDivElement>(null);
 
+  // Near the top of the component, after the local time state
+  // Make sure we track the real-time current date
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
+
   // Hydration safe initialization
   useEffect(() => {
     setIsClient(true);
     setCurrentTime(new Date());
+    setCurrentDate(new Date());
   }, []);
 
   // Optimize layout stability when component mounts
@@ -157,29 +172,47 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
     // Delay timer initialization to improve TTI
     const timerDelay = setTimeout(() => {
       const timer = setInterval(() => {
-        setCurrentTime(new Date());
+        const now = new Date();
+        setCurrentTime(now);
+        
+        // If the date changes, update the current date as well
+        const currentStoredDate = currentDate ? new Date(currentDate) : null;
+        if (currentStoredDate && currentStoredDate.getDate() !== now.getDate()) {
+          setCurrentDate(now);
+        }
       }, 1000);
       
       return () => clearInterval(timer);
     }, 1000); // Delay by 1 second
     
     return () => clearTimeout(timerDelay);
-  }, []);
+  }, [currentDate]);
 
-  // Generate time slots for the current day at 30-minute intervals
+  // Check if we're viewing a date other than today
+  const isViewingFutureDate = useMemo(() => {
+    if (!selectedDate) return false;
+    
+    const today = DateTime.local().startOf('day');
+    const selected = DateTime.fromJSDate(selectedDate).startOf('day');
+    
+    return !selected.equals(today);
+  }, [selectedDate]);
+
+  // Generate time slots for the selected date at 30-minute intervals
   const timeSlots = useMemo(() => {
     if (!currentTime) return [];
     
     const slots = [];
-    const now = DateTime.fromJSDate(currentTime);
-    const startOfDay = now.startOf('day');
+    const dateToUse = selectedDate || currentTime;
+    const date = DateTime.fromJSDate(dateToUse);
+    const startOfDay = date.startOf('day');
 
     for (let i = 0; i < 48; i++) {
       slots.push(startOfDay.plus({ minutes: i * 30 }).toJSDate());
     }
 
     return slots;
-  }, [currentTime]);
+  }, [currentTime, selectedDate]);
 
   // Handle time selection for highlighting with optimized callback
   const handleTimeSelection = useCallback((time: Date | null) => {
@@ -238,7 +271,25 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
       <div className="flex justify-between items-center mb-4 h-12">
         <ViewSwitcher />
         <div className="flex items-center space-x-2">
-          {/* Notification button removed */}
+          {/* Add the date picker */}
+          <DatePicker
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            minDate={new Date()} // Prevent selecting dates in the past
+          />
+          
+          {/* Show reset to today button if viewing a future date */}
+          {isViewingFutureDate && (
+            <button
+              type="button"
+              onClick={resetToToday}
+              className="flex items-center gap-1 px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+              aria-label="Return to today"
+            >
+              <ArrowLeftCircle className="h-4 w-4" />
+              <span className="text-sm">Today</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -248,12 +299,7 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
           {currentView === 'list' && (
             <div
               ref={timeColumnsContainerRef}
-              className={`isolate overflow-hidden ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}
-              style={{
-                contain: 'paint layout',
-                isolation: 'isolate',
-                position: 'relative'
-              }}
+              className={`time-columns-container w-full transition-opacity ${isViewTransitioning ? 'opacity-0' : 'opacity-100'}`}
             >
               <OptimizedListView
                 selectedTimezones={timezones}
@@ -264,6 +310,7 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
                 handleTimeSelection={handleTimeSelection}
                 roundToNearestIncrement={roundToNearestIncrement}
                 removeTimezone={removeTimezone}
+                currentDate={currentDate}
               />
             </div>
           )}
