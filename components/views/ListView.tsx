@@ -439,13 +439,16 @@ export default function ListView({
       let targetIndex: number;
       
       if (highlightedTime) {
-        // Find index of highlighted time using timestamp comparison
-        targetIndex = timeSlots.findIndex(t => 
-          t.getTime() === highlightedTime.getTime()
-        );
+        // Find index of highlighted time using timestamp comparison for precision
+        targetIndex = timeSlots.findIndex(t => t.getTime() === highlightedTime.getTime());
       } else if (localTime) {
-        // If no highlighted time, use current time
-        targetIndex = getCurrentTimeIndex();
+        // If no highlighted time, use current time with rounded 30-min increment for consistency
+        const roundedCurrentTime = roundToNearestIncrement(localTime, 30);
+        targetIndex = timeSlots.findIndex(t => {
+          // Compare timestamps for more reliable and precise matching
+          const roundedT = roundToNearestIncrement(t, 30);
+          return roundedT.getTime() === roundedCurrentTime.getTime();
+        });
       } else {
         // Fallback
         targetIndex = 0;
@@ -470,7 +473,7 @@ export default function ListView({
         }
       });
     }, 50); // Small delay to batch scroll operations
-  }, [highlightedTime, localTime, timeSlots, getCurrentTimeIndex]); // Add proper dependencies
+  }, [highlightedTime, localTime, timeSlots, getCurrentTimeIndex, roundToNearestIncrement]); // Add proper dependencies
 
   // Update throttledUserInteraction to include scrolling events
   const throttledUserInteraction = useCallback((event: Event) => {
@@ -562,15 +565,16 @@ export default function ListView({
   const isHighlighted = useCallback((time: Date) => {
     if (!highlightedTime) return false;
     
+    // Use timestamp comparison for exact match
     return time.getTime() === highlightedTime.getTime();
   }, [highlightedTime]);
 
-  // Helper to generate animation class for highlighted items - optimize to use CSS variables
+  // Helper to generate animation class for highlighted items
   const getHighlightAnimationClass = useCallback((isHighlight: boolean) => {
     if (!isHighlight) return '';
     
-    // Use a class that applies hardware-accelerated animations
-    return 'highlight-item-optimized';
+    // Apply a more distinct animation class for highlighted items
+    return 'highlight-item-optimized highlight-pulse-effect';
   }, []);
 
   // Add optimized CSS keyframes for animations
@@ -623,6 +627,44 @@ export default function ListView({
           transform: translateZ(0);
         }
         
+        /* Enhanced current time highlight */
+        .current-time-highlight {
+          background-color: rgba(59, 130, 246, 0.08);
+          border-left: 3px solid rgb(59, 130, 246);
+          font-weight: 500;
+          position: relative;
+        }
+        
+        .dark .current-time-highlight {
+          background-color: rgba(96, 165, 250, 0.1);
+          border-left: 3px solid rgb(96, 165, 250);
+        }
+        
+        .current-time-highlight::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          right: 0;
+          bottom: 0;
+          border-radius: 0 3px 3px 0;
+          background: radial-gradient(
+            circle at left,
+            rgba(59, 130, 246, 0.15),
+            transparent 70%
+          );
+          pointer-events: none;
+          z-index: 0;
+        }
+        
+        .dark .current-time-highlight::after {
+          background: radial-gradient(
+            circle at left,
+            rgba(96, 165, 250, 0.15),
+            transparent 70%
+          );
+        }
+        
         /* When using hardware-accelerated animations */
         .highlight-item-optimized {
           /* Use transform for hardware acceleration but no actual animation */
@@ -632,6 +674,45 @@ export default function ListView({
           transform: translateZ(0);
           /* No opacity changes that could cause flashing */
           opacity: 1 !important;
+          /* Add box shadow for depth */
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+        
+        .dark .highlight-item-optimized {
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Enhanced highlight animation effect */
+        .highlight-pulse-effect {
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .highlight-pulse-effect::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(
+            45deg,
+            rgba(255, 255, 255, 0.1),
+            rgba(255, 255, 255, 0.3) 50%,
+            rgba(255, 255, 255, 0.1)
+          );
+          z-index: 3;
+          transform: translateX(-100%);
+          animation: shimmerHighlight 2s infinite;
+        }
+        
+        @keyframes shimmerHighlight {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
         }
         
         /* Instead of animating properties that can cause flashing, 
@@ -648,23 +729,26 @@ export default function ListView({
           border-radius: inherit;
           box-shadow: 0 0 0 0 rgba(var(--primary-500-rgb), 0.4);
           /* Use this instead of scaling the parent element */
-          animation: optimizedHighlightPulse 1s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+          animation: optimizedHighlightPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
         
         @keyframes optimizedHighlightPulse {
           0% { 
             box-shadow: 0 0 0 0 rgba(var(--primary-500-rgb), 0.4);
+            background-color: rgba(var(--primary-500-rgb), 0.05);
           }
           50% { 
             box-shadow: 0 0 0 8px rgba(var(--primary-500-rgb), 0.2);
+            background-color: rgba(var(--primary-500-rgb), 0);
           }
           100% { 
             box-shadow: 0 0 0 0 rgba(var(--primary-500-rgb), 0);
+            background-color: rgba(var(--primary-500-rgb), 0.05);
           }
         }
         
         /* Additional fix to prevent highlight flashing when adding/removing classes */
-        .bg-primary-100, .bg-primary-500, .bg-primary-900\\/30 {
+        .bg-primary-100, .bg-primary-500, .bg-blue-500, .bg-blue-600, .bg-primary-900\\/30 {
           transition: none !important;
         }
         
@@ -729,7 +813,11 @@ export default function ListView({
     const now = DateTime.fromJSDate(localTime);
     const timeToCheck = DateTime.fromJSDate(time).setZone(timezone);
     
+    // Consider a time to be "current" if it's within the same minute
+    // This makes current time highlight more accurate and predictable
     const result = now.hasSame(timeToCheck, 'minute');
+    
+    // Cache the result
     timeCalculationCache.current.set(cacheKey, result);
     
     return result;
@@ -905,12 +993,13 @@ export default function ListView({
       'relative z-10 px-3 py-3 transition-all duration-300 border-b border-gray-100 dark:border-gray-800',
       isDSTTransition ? 'border-l-4 border-l-amber-400 dark:border-l-amber-500' : '',
       isDateBoundary ? 'border-t-2 border-t-gray-300 dark:border-t-gray-600' : '',
-      isHighlight ? 'bg-blue-50 dark:bg-blue-900/20 font-semibold' : '', 
-      isLocalTime ? 'font-medium' : '',
-      isBusinessHours && !isHighlight ? 'bg-green-50/50 dark:bg-green-900/10' : '',
-      isNightTime && !isHighlight ? 'bg-gray-100/50 dark:bg-gray-800/50' : '',
-      isWeekend && !isHighlight ? getWeekendHighlightClass(weekendHighlightColor) : '',
-      !isBusinessHours && !isNightTime && !isHighlight && !isWeekend ? 'bg-white dark:bg-gray-900' : '',
+      isHighlight ? 'bg-blue-500 dark:bg-blue-600 text-white shadow-md' : '', 
+      isCurrentTime && !isHighlight ? 'current-time-highlight' : '',
+      isLocalTime && !isCurrentTime && !isHighlight ? 'font-medium' : '',
+      isBusinessHours && !isHighlight && !isCurrentTime ? 'bg-green-50/50 dark:bg-green-900/10' : '',
+      isNightTime && !isHighlight && !isCurrentTime ? 'bg-gray-100/50 dark:bg-gray-800/50' : '',
+      isWeekend && !isHighlight && !isCurrentTime ? getWeekendHighlightClass(weekendHighlightColor) : '',
+      !isBusinessHours && !isNightTime && !isHighlight && !isWeekend && !isCurrentTime ? 'bg-white dark:bg-gray-900' : '',
       highlightAnimationClass
     );
     
@@ -921,6 +1010,7 @@ export default function ListView({
         aria-selected={isHighlight}
         data-key={time.getTime()}
         data-local-time={isLocalTime ? 'true' : 'false'}
+        data-current-time={isCurrentTime ? 'true' : 'false'}
         data-time-item="true"
         onClick={() => handleTimeSelectionFn(time)}
         className={timeCellClasses}
@@ -934,11 +1024,11 @@ export default function ListView({
         )}
         
         <div className="flex justify-between items-center">
-          <span className={`${isHighlight ? 'text-white' : ''} ${isCurrentTime ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}`}>
+          <span className={`${isHighlight ? 'text-white font-semibold' : ''} ${isCurrentTime && !isHighlight ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}`}>
             {formattedTime}
           </span>
           <div className="flex space-x-1">
-            {isLocalTime && !isHighlight && (
+            {isLocalTime && !isHighlight && !isCurrentTime && (
               <span className="absolute left-0 top-0 h-full w-1 bg-primary-500 rounded-l-md" />
             )}
             
@@ -955,7 +1045,7 @@ export default function ListView({
             )}
 
             {isCurrentTime && !isHighlight && (
-              <span className="text-xs text-blue-500 ml-1" title="Current time">⏰</span>
+              <span className="text-xs text-blue-500 ml-1 animate-pulse" title="Current time">⏰</span>
             )}
 
             {isWeekend && !isHighlight && (
@@ -1116,82 +1206,114 @@ export default function ListView({
       const selected = DateTime.fromJSDate(highlightedTime);
       const diff = selected.diff(now, ['hours', 'minutes']);
       
-      const hours = Math.floor(diff.hours);
-      const minutes = Math.floor(diff.minutes);
+      // Get absolute values for hours and minutes
+      const absHours = Math.abs(Math.floor(diff.hours));
+      const absMinutes = Math.abs(Math.floor(diff.minutes));
       
+      // Determine if the time is in the future or past
+      const isFuture = diff.hours >= 0 && diff.minutes >= 0;
+      const direction = isFuture ? 'from now' : 'ago';
+      
+      // Format the time difference text
       let diffText = '';
-      if (hours !== 0) {
-        diffText += `${Math.abs(hours)} hour${Math.abs(hours) !== 1 ? 's' : ''}`;
+      if (absHours > 0) {
+        diffText += `${absHours} ${absHours === 1 ? 'hour' : 'hours'}`;
       }
-      if (minutes !== 0) {
+      if (absMinutes > 0 || (absHours === 0 && absMinutes === 0)) {
         if (diffText) diffText += ' ';
-        diffText += `${Math.abs(minutes)} minute${Math.abs(minutes) !== 1 ? 's' : ''}`;
+        diffText += `${absMinutes} ${absMinutes === 1 ? 'minute' : 'minutes'}`;
       }
       
-      if (!diffText) return 'Current time';
+      // If there's no difference, it's the current time
+      if (absHours === 0 && absMinutes === 0) {
+        return 'Current time';
+      }
       
-      return `${diff.hours >= 0 && diff.minutes >= 0 ? '+' : '-'} ${diffText} from now`;
+      return `${diffText} ${direction}`;
     };
     
     const timeDifference = getTimeDifference();
+
+    // Determine the color class for the time difference badge
+    const getTimeDiffColorClass = () => {
+      if (!timeDifference || timeDifference === 'Current time') {
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      }
+      
+      if (timeDifference.includes('from now')) {
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      }
+      
+      return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300';
+    };
     
     return (
       <>
-        {/* Time Relationship Indicator - show when a time is selected */}
+        {/* Time difference indicator - only shown when a time is selected */}
         {highlightedTime && (
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className={`mb-4 p-3 rounded-lg shadow-sm glass-card backdrop-blur-fix ${
-              resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'
-            }`}
-            style={{
-              isolation: 'isolate',
-              backgroundColor: resolvedTheme === 'dark'
-                ? 'rgba(15, 15, 25, 0.2)'
-                : 'rgba(255, 255, 255, 0.15)'
-            }}
-          >
-            <div className="flex items-center justify-between mb-2 relative z-[2]">
-              <div className="flex items-center">
-                <span className="inline-block w-3 h-3 bg-primary-500 rounded-full mr-2"></span>
-                <span className="text-sm font-medium text-gray-900 dark:text-white">
-                  {DateTime.fromJSDate(highlightedTime).toFormat('h:mm a')} {' '}
-                  <span className="text-gray-600 dark:text-gray-300">
-                    ({timeDifference})
-                  </span>
-                </span>
-              </div>
-              <button 
-                onClick={() => handleTimeSelection(null)} 
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
-                aria-label="Clear time selection"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+          <>
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className={`${getTimeDiffColorClass()} p-1.5 px-3 rounded-md text-sm font-medium mb-2 flex items-center mx-auto shadow-sm`}
+            >
+              <Clock className="w-4 h-4 mr-2" />
+              {timeDifference}
+            </motion.div>
             
-            {/* Countdown indicator */}
-            <div className="mt-2 relative z-[2]">
-              <div className="flex justify-between text-xs text-gray-600 dark:text-gray-300 mb-1">
-                <span>Auto-clear in {timeRemaining}s</span>
+            {/* Countdown timer */}
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className={`mb-4 p-3 rounded-lg shadow-sm glass-card backdrop-blur-fix ${
+                resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'
+              }`}
+              style={{
+                isolation: 'isolate',
+                backgroundColor: resolvedTheme === 'dark'
+                  ? 'rgba(15, 15, 25, 0.2)'
+                  : 'rgba(255, 255, 255, 0.15)'
+              }}
+            >
+              <div className="flex items-center justify-between mb-2 relative z-[2]">
+                <div className="flex items-center">
+                  <span className="inline-block w-3 h-3 bg-primary-500 rounded-full mr-2"></span>
+                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                    {DateTime.fromJSDate(highlightedTime).toFormat('h:mm a')}
+                  </span>
+                </div>
                 <button 
-                  onClick={resetInactivityTimer}
-                  className="text-primary-500 hover:text-primary-600 focus:outline-none"
-                  data-reset-timer="true"
+                  onClick={() => handleTimeSelection(null)} 
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 rounded focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  aria-label="Clear time selection"
                 >
-                  Reset
+                  <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                <div 
-                  className="bg-primary-500 h-1.5 rounded-full transition-all duration-1000"
-                  style={{ width: `${(timeRemaining / 60) * 100}%` }}
-                ></div>
+              
+              {/* Countdown indicator */}
+              <div className="mt-2 relative z-[2]">
+                <div className="flex justify-between text-xs text-gray-600 dark:text-gray-300 mb-1">
+                  <span>Auto-clear in {timeRemaining}s</span>
+                  <button 
+                    onClick={resetInactivityTimer}
+                    className="text-primary-500 hover:text-primary-600 focus:outline-none"
+                    data-reset-timer="true"
+                  >
+                    Reset
+                  </button>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
+                  <div 
+                    className="bg-primary-500 h-1.5 rounded-full transition-all duration-1000"
+                    style={{ width: `${(timeRemaining / 120) * 100}%` }}
+                  ></div>
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </>
         )}
       
         <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6 md:gap-8">
