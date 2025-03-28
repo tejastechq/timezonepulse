@@ -4,7 +4,6 @@
   "devCommand": "next dev",
   "installCommand": "npm install --no-package-lock",
   "framework": "nextjs",
-  "nodeVersion": "18.x",
   "outputDirectory": ".next",
   "env": {
     "NODE_ENV": "production"
