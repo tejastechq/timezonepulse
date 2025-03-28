@@ -22,27 +22,66 @@ export function generateNonce(): string {
 export function getCspWithNonce(nonce: string): string {
   const isDevelopment = process.env.NODE_ENV === 'development';
   
-  // Allow unsafe-eval in development for React DevTools and HMR
+  // Allow unsafe-eval and unsafe-inline in development for React DevTools and HMR
   const scriptSrcDirective = isDevelopment
-    ? `script-src 'self' 'unsafe-eval' 'nonce-${nonce}' 'strict-dynamic' https:`
+    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic' https:`
     : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https:`;
 
   // In development, we need to be more permissive with trusted types
   const trustedTypesDirective = isDevelopment
-    ? `trusted-types 'allow-duplicates' default dompurify nextjs#bundler`
+    ? `trusted-types 'allow-duplicates' default dompurify nextjs#bundler webpack#bundler`
     : `trusted-types 'allow-duplicates' default dompurify`;
 
+  // Base URI restriction
+  const baseUri = `base-uri 'self'`;
+
+  // Object security
+  const objectSrc = `object-src 'none'`;
+
+  // Frame security
+  const frameSrc = `frame-src 'none'`;
+  const frameAncestors = `frame-ancestors 'none'`;
+  const formAction = `form-action 'self'`;
+
+  // Media and font security
+  const mediaSrc = `media-src 'self'`;
+  const fontSrc = `font-src 'self' data: https:`;
+  
+  // Image security with strict sources
+  const imgSrc = `img-src 'self' data: https: blob: ${isDevelopment ? 'http://localhost:* http://127.0.0.1:*' : ''}`;
+  
+  // Style security
+  const styleSrc = isDevelopment
+    ? `style-src 'self' 'unsafe-inline'`
+    : `style-src 'self' 'unsafe-inline'`; // Keep unsafe-inline for both as it's needed for styled-components
+
+  // Connect sources including development needs
+  const connectSrc = isDevelopment
+    ? `connect-src 'self' https://va.vercel-analytics.com https://*.vercel-analytics.com https://*.vercel.com ws: http://localhost:* http://127.0.0.1:*`
+    : `connect-src 'self' https://va.vercel-analytics.com https://*.vercel-analytics.com https://*.vercel.com`;
+
+  // Manifest security
+  const manifestSrc = `manifest-src 'self'`;
+
+  // Prefetch control
+  const prefetchSrc = `prefetch-src 'self'`;
+
+  // Combine all directives
   return `
     default-src 'self';
     ${scriptSrcDirective};
-    style-src 'self' 'unsafe-inline';
-    img-src 'self' data: https: blob:;
-    font-src 'self' data:;
-    connect-src 'self' https://va.vercel-analytics.com https://*.vercel-analytics.com https://*.vercel.com;
-    frame-ancestors 'none';
-    base-uri 'self';
-    form-action 'self';
-    object-src 'none';
+    ${styleSrc};
+    ${imgSrc};
+    ${fontSrc};
+    ${connectSrc};
+    ${mediaSrc};
+    ${manifestSrc};
+    ${prefetchSrc};
+    ${baseUri};
+    ${objectSrc};
+    ${frameSrc};
+    ${frameAncestors};
+    ${formAction};
     ${trustedTypesDirective}
   `.replace(/\s+/g, ' ').trim();
 }

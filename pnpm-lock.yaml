@@ -142,7 +142,7 @@ importers:
         specifier: ^1.6.0
         version: 1.6.0
       '@types/dompurify':
-        specifier: ^3.2.0
+        specifier: ^3.0.5
         version: 3.2.0
       '@types/react-window':
         specifier: ^1.8.8
@@ -222,6 +222,9 @@ importers:
       query-string:
         specifier: ^8.2.0
         version: 8.2.0
+      rate-limiter-flexible:
+        specifier: ^6.2.1
+        version: 6.2.1
       react:
         specifier: 19.0.0
         version: 19.0.0
@@ -8674,6 +8677,9 @@ packages:
   range-parser@1.2.1:
     resolution: {integrity: sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==}
     engines: {node: '>= 0.6'}
+
+  rate-limiter-flexible@6.2.1:
+    resolution: {integrity: sha512-d9AN+d/wwKW3/yHAL0G3zKpWZQFe55VjRGIFK9VG1w3CSOkcRqRqh0NhCiIXvgKhihNZPjGfISuN3it07NjPbw==}
 
   raw-body@3.0.0:
     resolution: {integrity: sha512-RmkhL8CAyCRPXCE28MMH0z2PNWQBNk2Q09ZdxM9IOOXwxwZbN+qbWaatPkdkWIKL2ZVDImrN/pK5HTRz2PcS4g==}
@@ -20498,6 +20504,8 @@ snapshots:
       safe-buffer: 5.2.1
 
   range-parser@1.2.1: {}
+
+  rate-limiter-flexible@6.2.1: {}
 
   raw-body@3.0.0:
     dependencies:

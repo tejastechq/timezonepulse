@@ -2,9 +2,6 @@
 .env
 .env.*
 !.env.example
-
-# But allow public env files that don't contain secrets
-!.env.local
 !.env.development
 
 # Cache and build directories

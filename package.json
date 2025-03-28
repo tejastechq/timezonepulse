@@ -24,6 +24,7 @@
     "test:e2e": "playwright test",
     "security:audit": "pnpm audit",
     "security:outdated": "pnpm outdated",
+    "security:secrets": "node scripts/generate-secrets.js",
     "preinstall": "npx @ljharb/npm-lockfile-lint",
     "prepare": "husky install"
   },
