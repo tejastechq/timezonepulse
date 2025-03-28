@@ -1,8 +1,12 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "devCommand": "npm run dev",
-  "installCommand": "npm install",
-  "framework": null,
-  "outputDirectory": ".next"
+  "buildCommand": "npm run vercel-build",
+  "devCommand": "next dev",
+  "installCommand": "npm install --no-package-lock",
+  "framework": "nextjs",
+  "nodeVersion": "18.x",
+  "outputDirectory": ".next",
+  "env": {
+    "NODE_ENV": "production"
+  }
 } 
