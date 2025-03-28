@@ -4,7 +4,7 @@ import React, { useRef, useEffect, useState, useCallback, useMemo, memo } from '
 import { DateTime } from 'luxon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Timezone, useTimezoneStore } from '@/store/timezoneStore';
-import { isBusinessHours, isNightHours, isWeekend } from '@/lib/utils/dateTimeFormatter';
+import { isNightHours, isWeekend } from '@/lib/utils/dateTimeFormatter';
 import { FixedSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { ChevronUp, ChevronDown, Sun, Moon, Clock, Plus, X, Edit2, Settings, CalendarDays } from 'lucide-react';
@@ -793,11 +793,6 @@ export default function ListView({
     }
   }, [mounted]);
 
-  // Use the business hours function from utils that uses settings store
-  const checkBusinessHours = useCallback((time: Date, timezone: string) => {
-    return isBusinessHours(time, timezone);
-  }, []);
-
   // Use the night hours function from utils that uses settings store
   const checkNightHours = useCallback((time: Date, timezone: string) => {
     return isNightHours(time, timezone);
@@ -961,7 +956,6 @@ export default function ListView({
     timezone: string;
     isLocalTimeFn: (time: Date, timezone: string) => boolean;
     isHighlightedFn: (time: Date) => boolean;
-    isBusinessHoursFn: (time: Date, timezone: string) => boolean;
     isNightTimeFn: (time: Date, timezone: string) => boolean;
     isDateBoundaryFn: (time: Date, timezone: string) => boolean;
     isDSTTransitionFn: (time: Date, timezone: string) => boolean;
@@ -985,7 +979,6 @@ export default function ListView({
     timezone,
     isLocalTimeFn,
     isHighlightedFn,
-    isBusinessHoursFn,
     isNightTimeFn,
     isDateBoundaryFn,
     isDSTTransitionFn,
@@ -999,8 +992,8 @@ export default function ListView({
     // Check if this time should be highlighted
     const isHighlight = isHighlightedFn(time);
     const isLocalTime = isLocalTimeFn(time, timezone);
-    const isBusinessHours = isBusinessHoursFn(time, timezone);
     const isNightTime = isNightTimeFn(time, timezone);
+    const isDayTime = !isNightTime;
     const isDateBoundary = isDateBoundaryFn(time, timezone);
     const isDSTTransition = isDSTTransitionFn(time, timezone);
     const isCurrentTime = isCurrentTimeFn(time, timezone);
@@ -1020,10 +1013,10 @@ export default function ListView({
       isHighlight ? 'bg-blue-500 dark:bg-blue-600 text-white shadow-md' : '', 
       isCurrentTime && !isHighlight ? 'current-time-highlight' : '',
       isLocalTime && !isCurrentTime && !isHighlight ? 'font-medium' : '',
-      isBusinessHours && !isHighlight && !isCurrentTime ? 'bg-green-50/50 dark:bg-green-900/10' : '',
-      isNightTime && !isHighlight && !isCurrentTime ? 'bg-gray-100/50 dark:bg-gray-800/50' : '',
+      isNightTime && !isHighlight && !isCurrentTime ? 'bg-gray-100/80 dark:bg-gray-800/80' : '',
+      isDayTime && !isHighlight && !isCurrentTime ? 'bg-amber-50/30 dark:bg-amber-900/5 border-l-2 border-l-amber-300/50 dark:border-l-amber-700/30' : '',
       isWeekend && !isHighlight && !isCurrentTime ? getWeekendHighlightClass(weekendHighlightColor) : '',
-      !isBusinessHours && !isNightTime && !isHighlight && !isWeekend && !isCurrentTime ? 'bg-white dark:bg-gray-900' : '',
+      !isNightTime && !isHighlight && !isWeekend && !isCurrentTime ? 'bg-white dark:bg-gray-900' : '',
       highlightAnimationClass
     );
     
@@ -1051,17 +1044,18 @@ export default function ListView({
           <span className={`${isHighlight ? 'text-white font-semibold' : ''} ${isCurrentTime && !isHighlight ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}`}>
             {formattedTime}
           </span>
-          <div className="flex space-x-1">
+          
+          <div className="flex items-center space-x-1">
             {isLocalTime && !isHighlight && !isCurrentTime && (
               <span className="absolute left-0 top-0 h-full w-1 bg-primary-500 rounded-l-md" />
             )}
             
-            {isBusinessHours && !isHighlight && (
-              <span className="text-xs text-green-500" title="Business hours">●</span>
+            {isNightTime && !isHighlight && (
+              <span className="text-xs text-indigo-400 dark:text-indigo-300" title="Night time"><Moon className="h-3 w-3" /></span>
             )}
             
-            {isNightTime && !isHighlight && (
-              <span className="text-xs text-gray-400" title="Night time">○</span>
+            {isDayTime && !isHighlight && (
+              <span className="text-xs text-amber-500 dark:text-amber-400" title="Day time"><Sun className="h-3 w-3" /></span>
             )}
             
             {isDSTTransition && !isHighlight && (
@@ -1519,7 +1513,6 @@ export default function ListView({
                               timezone={timezone.id}
                               isLocalTimeFn={isLocalTime}
                               isHighlightedFn={isHighlighted}
-                              isBusinessHoursFn={checkBusinessHours}
                               isNightTimeFn={checkNightHours}
                               isDateBoundaryFn={isDateBoundary}
                               isDSTTransitionFn={isDSTTransition}
@@ -1581,7 +1574,6 @@ export default function ListView({
     timeSlots,
     isLocalTime,
     isHighlighted,
-    checkBusinessHours,
     checkNightHours,
     isDateBoundary,
     isDSTTransition,
@@ -1757,6 +1749,17 @@ const TimeHeaderRow = memo(function TimeHeaderRow({
   // Format the date for display in the header
   const dateDisplay = dt.toFormat('EEE, MMM d');
   
+  // Check if time is during night hours using the same function as in ListView
+  const store = useSettingsStore.getState();
+  const hour = dt.hour;
+  const isNightTime = store.nightHoursStart > store.nightHoursEnd
+    ? hour >= store.nightHoursStart || hour < store.nightHoursEnd
+    : hour >= store.nightHoursStart && hour < store.nightHoursEnd;
+  
+  // Set day/night theme colors
+  const dayTimeColor = 'text-amber-500 dark:text-amber-400';
+  const nightTimeColor = 'text-indigo-400 dark:text-indigo-300';
+  
   return (
     <div 
       className={`
@@ -1764,16 +1767,31 @@ const TimeHeaderRow = memo(function TimeHeaderRow({
         ${isHalfHour ? 'opacity-60 text-xs' : 'font-semibold'}
         ${isCurrentTime ? 'text-primary-500 font-bold' : ''}
         ${isDateBoundary ? 'border-t border-gray-300 dark:border-gray-700 pt-4 mt-4' : ''}
+        ${isNightTime ? 'bg-gray-100/50 dark:bg-gray-800/30' : 'bg-transparent'}
       `}
     >
       {/* Show date at midnight or first time slot */}
       {(dt.hour === 0 && dt.minute === 0) || ((dt.hour === 0 || dt.hour === 12) && dt.minute === 0) ? (
         <div className="flex flex-col">
           <span className="text-primary-500 font-bold">{dateDisplay}</span>
-          <span className="mt-1">{formattedTime}</span>
+          <div className="mt-1 flex items-center">
+            <span>{formattedTime}</span>
+            {isNightTime ? (
+              <Moon className={`ml-2 h-3.5 w-3.5 ${nightTimeColor}`} />
+            ) : (
+              <Sun className={`ml-2 h-3.5 w-3.5 ${dayTimeColor}`} />
+            )}
+          </div>
         </div>
       ) : (
-        <span>{formattedTime}</span>
+        <div className="flex items-center">
+          <span>{formattedTime}</span>
+          {isNightTime ? (
+            <Moon className={`ml-2 h-3 w-3 ${nightTimeColor}`} />
+          ) : (
+            <Sun className={`ml-2 h-3 w-3 ${dayTimeColor}`} />
+          )}
+        </div>
       )}
       
       {/* Show DST transition indicator */}

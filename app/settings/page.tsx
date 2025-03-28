@@ -342,79 +342,6 @@ export default function SettingsPage() {
               </div>
             </div>
             
-            {/* Business Hours */}
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium">
-                  Business Hours
-                </label>
-                <span className="text-sm text-primary-600 dark:text-primary-400 font-medium">
-                  {settings.businessHoursStart}:00 - {settings.businessHoursEnd}:00
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="businessHoursStart" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    Start Time
-                  </label>
-                  <select
-                    id="businessHoursStart"
-                    value={settings.businessHoursStart}
-                    onChange={(e) => {
-                      const startHour = parseInt(e.target.value, 10);
-                      settings.setBusinessHours(startHour, settings.businessHoursEnd);
-                      showFeedback('Business hours updated');
-                    }}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    {Array.from({ length: 24 }, (_, i) => (
-                      <option key={i} value={i}>
-                        {settings.timeFormat === '12h' 
-                          ? `${i === 0 ? 12 : i > 12 ? i - 12 : i}${i >= 12 ? ' PM' : ' AM'}`
-                          : `${i.toString().padStart(2, '0')}:00`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label htmlFor="businessHoursEnd" className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    End Time
-                  </label>
-                  <select
-                    id="businessHoursEnd"
-                    value={settings.businessHoursEnd}
-                    onChange={(e) => {
-                      const endHour = parseInt(e.target.value, 10);
-                      settings.setBusinessHours(settings.businessHoursStart, endHour);
-                      showFeedback('Business hours updated');
-                    }}
-                    className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  >
-                    {Array.from({ length: 24 }, (_, i) => (
-                      <option key={i} value={i}>
-                        {settings.timeFormat === '12h' 
-                          ? `${i === 0 ? 12 : i > 12 ? i - 12 : i}${i >= 12 ? ' PM' : ' AM'}`
-                          : `${i.toString().padStart(2, '0')}:00`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Define your business hours to highlight work time in clock views.
-              </p>
-              
-              <div className="mt-3 p-3 border border-green-200 dark:border-green-900/30 rounded-md bg-green-50 dark:bg-green-900/10">
-                <div className="flex items-center text-xs text-green-800 dark:text-green-300">
-                  <span className="w-3 h-3 bg-green-400 dark:bg-green-700 rounded-full mr-2"></span>
-                  Business hours will be highlighted in clock and list views
-                </div>
-              </div>
-            </div>
-            
             {/* Night Hours */}
             <div>
               <div className="flex justify-between items-center mb-2">
@@ -561,7 +488,6 @@ export default function SettingsPage() {
           <div className="border-t pt-4 mt-4">
             <h3 className="text-lg font-medium mb-2">Time Settings</h3>
             <ul className="list-disc pl-5 space-y-1 text-sm text-gray-600 dark:text-gray-400">
-              <li>Business Hours: {settings.businessHoursStart}:00 - {settings.businessHoursEnd}:00</li>
               <li>Night Hours: {settings.nightHoursStart}:00 - {settings.nightHoursEnd}:00</li>
               <li>Weekend highlight: {settings.weekendHighlightColor}</li>
               <li>Time format: {settings.timeFormat}</li>

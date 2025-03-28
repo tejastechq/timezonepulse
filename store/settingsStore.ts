@@ -14,8 +14,6 @@ interface SettingsState {
   defaultView: 'analog' | 'digital' | 'list';
   
   // Time preferences
-  businessHoursStart: number; // 0-23
-  businessHoursEnd: number; // 0-23
   nightHoursStart: number; // 0-23
   nightHoursEnd: number; // 0-23
   
@@ -29,7 +27,6 @@ interface SettingsState {
   setDateFormat: (format: 'MM/DD/YYYY' | 'DD/MM/YYYY' | 'YYYY-MM-DD') => void;
   setShowSeconds: (show: boolean) => void;
   setDefaultView: (view: 'analog' | 'digital' | 'list') => void;
-  setBusinessHours: (start: number, end: number) => void;
   setNightHours: (start: number, end: number) => void;
   setEnableNotifications: (enable: boolean) => void;
   setMeetingReminders: (enable: boolean) => void;
@@ -43,8 +40,6 @@ const DEFAULT_SETTINGS = {
   dateFormat: 'MM/DD/YYYY' as const,
   showSeconds: true,
   defaultView: 'list' as const,
-  businessHoursStart: 9,
-  businessHoursEnd: 17,
   nightHoursStart: 20,
   nightHoursEnd: 6,
   enableNotifications: false,
@@ -67,7 +62,6 @@ export const useSettingsStore = create<SettingsState>()(
       setDateFormat: (format) => set({ dateFormat: format }),
       setShowSeconds: (show) => set({ showSeconds: show }),
       setDefaultView: (view) => set({ defaultView: view }),
-      setBusinessHours: (start, end) => set({ businessHoursStart: start, businessHoursEnd: end }),
       setNightHours: (start, end) => set({ nightHoursStart: start, nightHoursEnd: end }),
       setEnableNotifications: (enable) => set({ enableNotifications: enable }),
       setMeetingReminders: (enable) => set({ meetingReminders: enable }),
