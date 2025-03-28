@@ -32,7 +32,7 @@ export function getCspWithNonce(nonce: string): string {
   // In development, we need to be more permissive with trusted types
   const trustedTypesDirective = isDevelopment
     ? `trusted-types 'allow-duplicates' default dompurify nextjs#bundler webpack#bundler`
-    : `trusted-types 'allow-duplicates' default dompurify`;
+    : `trusted-types 'allow-duplicates' default dompurify nextjs#bundler webpack#bundler`;
 
   // Base URI restriction
   const baseUri = `base-uri 'self'`;

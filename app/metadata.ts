@@ -51,7 +51,8 @@ export const baseMetadata: Metadata = {
     creator: '@worldclockapp',
   },
   
-  manifest: '/manifest.json',
+  // Now using app route /manifest.ts instead of static file
+  // manifest: '/manifest.json',
   
   icons: {
     icon: [
