@@ -8,11 +8,8 @@
  */
 
 import * as Sentry from '@sentry/react';
+import { browserTracingIntegration, replayIntegration } from '@sentry/react';
 
-/**
- * Initialize Sentry with appropriate configuration
- * Only initialized in production to avoid noise during development
- */
 export function initSentry() {
   if (process.env.NODE_ENV === 'production') {
     Sentry.init({
@@ -21,9 +18,11 @@ export function initSentry() {
       replaysSessionSampleRate: 0.1,
       replaysOnErrorSampleRate: 1.0,
       integrations: [
-        new Sentry.BrowserTracing({
-          tracePropagationTargets: ['localhost', 'your-production-domain.com'],
+        browserTracingIntegration({
+          enableLongTask: true,
+          markBackgroundSpan: true,
         }),
+        replayIntegration(),
       ],
       beforeSend(event) {
         // Sanitize error messages and remove sensitive data
@@ -34,7 +33,6 @@ export function initSentry() {
         }
         return event;
       },
-      // Disable console logging in production
       debug: false,
       enabled: true,
       environment: process.env.NODE_ENV,

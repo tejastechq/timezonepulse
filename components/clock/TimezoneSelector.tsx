@@ -50,8 +50,13 @@ export default function TimezoneSelector({
   ...props
 }: TimezoneSelectorProps) {
   const [search, setSearch] = useState('');
-  // Use local debounce as fallback if the imported hook fails
-  const debouncedSearch = useDebounce ? useDebounce(search, 300) : useLocalDebounce(search, 300);
+  
+  // Combine both debounce hooks into one to avoid conditional hook calls
+  const debouncedSearch = useMemo(() => {
+    const debounceHook = useDebounce || useLocalDebounce;
+    return debounceHook(search, 300);
+  }, [search]);
+  
   const [timezones, setTimezones] = useState<Timezone[]>([]);
   const [filteredTimezones, setFilteredTimezones] = useState<Timezone[]>([]);
   const [recentTimezones] = useState<Set<string>>(() => {
@@ -509,4 +514,4 @@ export default function TimezoneSelector({
       </AnimatePresence>
     </Dialog.Root>
   );
-} 
+}

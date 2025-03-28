@@ -1,0 +1,72 @@
+/**
+ * Utilities for security-related functionality using Web Crypto API
+ */
+
+/**
+ * Generates a cryptographically secure nonce for CSP using Web Crypto API
+ * @returns A base64 encoded nonce string
+ */
+export function generateNonce(): string {
+  // Use the Web Crypto API which is available in both Edge and Node.js environments
+  const arr = new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  // Convert to base64
+  return btoa(String.fromCharCode.apply(null, Array.from(arr)));
+}
+
+/**
+ * Creates CSP header value with nonce
+ * @param nonce The nonce to include in the CSP
+ * @returns CSP header value string
+ */
+export function getCspWithNonce(nonce: string): string {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  // Allow unsafe-eval in development for React DevTools and HMR
+  const scriptSrcDirective = isDevelopment
+    ? `script-src 'self' 'unsafe-eval' 'nonce-${nonce}' 'strict-dynamic' https:`
+    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https:`;
+
+  // In development, we need to be more permissive with trusted types
+  const trustedTypesDirective = isDevelopment
+    ? `trusted-types 'allow-duplicates' default dompurify nextjs#bundler`
+    : `trusted-types 'allow-duplicates' default dompurify`;
+
+  return `
+    default-src 'self';
+    ${scriptSrcDirective};
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' data: https: blob:;
+    font-src 'self' data:;
+    connect-src 'self' https://va.vercel-analytics.com https://*.vercel-analytics.com https://*.vercel.com;
+    frame-ancestors 'none';
+    base-uri 'self';
+    form-action 'self';
+    object-src 'none';
+    ${trustedTypesDirective}
+  `.replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Validates if a given string is a valid base64 nonce
+ * @param nonce The nonce string to validate
+ * @returns boolean indicating if the nonce is valid
+ */
+export function isValidNonce(nonce: string): boolean {
+  if (!nonce || typeof nonce !== 'string') return false;
+  // Check if it's a valid base64 string of correct length (24 characters for 16 bytes)
+  return /^[A-Za-z0-9+/]{24}$/.test(nonce);
+}
+
+/**
+ * Creates a secure hash using Web Crypto API
+ * @param input String to hash
+ * @returns Promise that resolves to hex-encoded hash
+ */
+export async function createSecureHash(input: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(input);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}

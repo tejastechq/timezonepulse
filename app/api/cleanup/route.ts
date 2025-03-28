@@ -3,36 +3,48 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { headers } from 'next/headers';
+import { createSecureHash } from '@/lib/utils/security';
 
 const execAsync = promisify(exec);
 
+// Additional security check for admin token
+async function validateAdminToken(token: string | null): Promise<boolean> {
+  if (!process.env.ADMIN_API_SECRET) return false;
+  if (!token) return false;
+  
+  const hash = await createSecureHash(process.env.ADMIN_API_SECRET);
+  return hash === token;
+}
+
 // Validate path is within project directory to prevent path traversal
 function isPathWithinProject(targetPath: string): boolean {
-  const normalizedTarget = path.normalize(targetPath);
-  const projectRoot = path.normalize(process.cwd());
+  const normalizedTarget = path.normalize(targetPath).replace(/\\/g, '/');
+  const projectRoot = path.normalize(process.cwd()).replace(/\\/g, '/');
   return normalizedTarget.startsWith(projectRoot);
 }
 
-/**
- * Cleanup API Route
- * 
- * This API performs a comprehensive cleanup of Next.js server-side caches
- * to ensure consistent application state.
- */
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Only allow in development mode
-    if (process.env.NODE_ENV !== 'development') {
-      return NextResponse.json({
-        success: false,
-        message: 'Cleanup API is only available in development mode'
-      }, { 
-        status: 403,
-        headers: {
-          'Cache-Control': 'no-store',
-          'Content-Security-Policy': "default-src 'none'",
-        }
-      });
+    // Get headers asynchronously
+    const headersList = await headers();
+    
+    // Only allow in development mode or with admin token in production
+    if (process.env.NODE_ENV === 'production') {
+      const authToken = headersList.get('x-admin-token');
+      if (!await validateAdminToken(authToken)) {
+        return NextResponse.json({
+          success: false,
+          message: 'Unauthorized access'
+        }, { 
+          status: 401,
+          headers: {
+            'Cache-Control': 'no-store',
+            'Content-Security-Policy': "default-src 'none'",
+            'X-Content-Type-Options': 'nosniff'
+          }
+        });
+      }
     }
 
     const results: Record<string, string> = {};
@@ -82,13 +94,17 @@ export async function GET() {
       success: true,
       message: 'Server-side cleanup completed',
       results,
-      timestamp: new Date().toISOString(),
-      buildId: process.env.NEXT_PUBLIC_BUILD_ID || 'development'
+      timestamp: new Date().toISOString()
     }, {
       headers: {
-        'Cache-Control': 'no-store',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store',
         'Content-Security-Policy': "default-src 'none'",
-        'X-Content-Type-Options': 'nosniff'
+        'X-Content-Type-Options': 'nosniff',
+        'X-Frame-Options': 'DENY',
+        'Referrer-Policy': 'no-referrer'
       }
     });
   } catch (error) {
@@ -96,12 +112,13 @@ export async function GET() {
     return NextResponse.json({
       success: false,
       message: 'Cleanup failed',
-      error: 'Internal server error'  // Don't expose internal error details
+      error: 'Internal server error'
     }, { 
       status: 500,
       headers: {
         'Cache-Control': 'no-store',
         'Content-Security-Policy': "default-src 'none'",
+        'X-Content-Type-Options': 'nosniff'
       }
     });
   }

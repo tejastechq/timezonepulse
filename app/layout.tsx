@@ -1,3 +1,16 @@
+import { validateEnv } from '@/lib/utils/env';
+
+// Validate environment variables at startup
+const envValidation = validateEnv();
+if (!envValidation.success) {
+  console.error('Application startup failed:', envValidation.error);
+  // In production, we might want to show a maintenance page instead of crashing
+  if (process.env.NODE_ENV === 'production') {
+    // Log to error reporting service but continue
+    console.error('Critical: Invalid environment configuration in production');
+  }
+}
+
 import './globals.css';
 import { baseMetadata, viewport } from './metadata';
 import { inter, robotoMono } from './font';
@@ -40,4 +53,4 @@ export default function RootLayout({
       </body>
     </html>
   );
-} 
+}

@@ -16,9 +16,6 @@ interface DigitalClockProps {
  * Optimized with memoization to prevent unnecessary re-renders
  */
 function DigitalClock({ time, timezone, highlightedTime }: DigitalClockProps) {
-  // Get showSeconds setting from the store
-  const { showSeconds } = useSettingsStore();
-  
   // Format the time for display - memoized to prevent recalculation on every render
   const { timeDisplay, dateDisplay, isHighlighted } = useMemo(() => {
     const dt = DateTime.fromJSDate(time).setZone(timezone);
@@ -35,8 +32,8 @@ function DigitalClock({ time, timezone, highlightedTime }: DigitalClockProps) {
     }
     
     return { timeDisplay, dateDisplay, isHighlighted };
-  }, [time, timezone, highlightedTime, showSeconds]);
-  
+  }, [time, timezone, highlightedTime]); // Removed showSeconds from dependencies since it's handled by formatTime
+
   return (
     <div className="text-center">
       <div 
@@ -55,4 +52,4 @@ function DigitalClock({ time, timezone, highlightedTime }: DigitalClockProps) {
 }
 
 // Export a memoized version of the component
-export default memo(DigitalClock); 
+export default memo(DigitalClock);
