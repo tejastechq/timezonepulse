@@ -19,12 +19,13 @@ function checkRateLimit(key: string, endpoint: 'default' | 'time' | 'cleanup' = 
   const now = Date.now();
   const limit = getRateLimit(endpoint);
   
-  // Clean up old entries
-  for (const [entryKey, entry] of rateLimits.entries()) {
-    if (now - entry.timestamp > RATE_LIMIT_WINDOW) {
+  // Clean up old entries - use Array.from to avoid iterator issues
+  Array.from(rateLimits.keys()).forEach(entryKey => {
+    const entry = rateLimits.get(entryKey);
+    if (entry && now - entry.timestamp > RATE_LIMIT_WINDOW) {
       rateLimits.delete(entryKey);
     }
-  }
+  });
   
   // Get or create entry
   const entry = rateLimits.get(key) || { count: 0, timestamp: now };
