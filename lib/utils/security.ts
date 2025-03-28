@@ -24,8 +24,8 @@ export function getCspWithNonce(nonce: string): string {
   
   // Allow unsafe-eval and unsafe-inline in development for React DevTools and HMR
   const scriptSrcDirective = isDevelopment
-    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic' https:`
-    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https:`;
+    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' https:`
+    : `script-src 'self' 'unsafe-inline' 'nonce-${nonce}' https:`;
 
   // In development, we need to be more permissive with trusted types
   const trustedTypesDirective = isDevelopment
@@ -39,7 +39,7 @@ export function getCspWithNonce(nonce: string): string {
   const objectSrc = `object-src 'none'`;
 
   // Frame security
-  const frameSrc = `frame-src 'none'`;
+  const frameSrc = `frame-src 'self'`;
   const frameAncestors = `frame-ancestors 'none'`;
   const formAction = `form-action 'self'`;
 
@@ -53,7 +53,7 @@ export function getCspWithNonce(nonce: string): string {
   // Style security
   const styleSrc = isDevelopment
     ? `style-src 'self' 'unsafe-inline'` // Allow inline styles in development for convenience
-    : `style-src 'self'`; // Remove 'unsafe-inline' in production for better security
+    : `style-src 'self' 'unsafe-inline'`; // Allow inline styles for production as Next.js uses them
 
   // Connect sources including development needs
   const connectSrc = isDevelopment
@@ -62,9 +62,6 @@ export function getCspWithNonce(nonce: string): string {
 
   // Manifest security
   const manifestSrc = `manifest-src 'self'`;
-
-  // Prefetch control
-  const prefetchSrc = `prefetch-src 'self'`;
 
   // Combine all directives
   return `
@@ -76,7 +73,6 @@ export function getCspWithNonce(nonce: string): string {
     ${connectSrc};
     ${mediaSrc};
     ${manifestSrc};
-    ${prefetchSrc};
     ${baseUri};
     ${objectSrc};
     ${frameSrc};
