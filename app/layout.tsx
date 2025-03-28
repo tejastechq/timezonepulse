@@ -19,6 +19,7 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import GlassmorphismAnimation from '@/components/GlassmorphismAnimation';
 import DevInfo from '@/components/DevInfo';
+import '@/lib/utils/trusted-types'; // Import trusted-types configuration
 
 // Export metadata and viewport configurations
 export const metadata = baseMetadata;
