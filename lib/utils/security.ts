@@ -52,8 +52,8 @@ export function getCspWithNonce(nonce: string): string {
   
   // Style security
   const styleSrc = isDevelopment
-    ? `style-src 'self' 'unsafe-inline'`
-    : `style-src 'self' 'unsafe-inline'`; // Keep unsafe-inline for both as it's needed for styled-components
+    ? `style-src 'self' 'unsafe-inline'` // Allow inline styles in development for convenience
+    : `style-src 'self'`; // Remove 'unsafe-inline' in production for better security
 
   // Connect sources including development needs
   const connectSrc = isDevelopment

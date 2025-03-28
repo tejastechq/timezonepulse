@@ -40,7 +40,7 @@ export async function middleware(request: NextRequest) {
       response.headers.set('Expect-CT', 'enforce, max-age=86400');
       
       // Ensure CORS is strict in production
-      response.headers.set('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_APP_URL || '*');
+      response.headers.set('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_APP_URL || 'null');
       response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
       response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       response.headers.set('Access-Control-Max-Age', '86400');
