@@ -9,6 +9,9 @@ const DEFAULT_RATE_LIMIT = 60;
 const TIME_RATE_LIMIT = 120;
 const CLEANUP_RATE_LIMIT = 10;
 
+// List of paths that should bypass certain security headers
+const BYPASS_CSP_PATHS = ['/manifest.json', '/favicon.ico', '/robots.txt', '/sitemap.xml'];
+
 function getRateLimit(endpoint: string): number {
   if (endpoint === 'time') return TIME_RATE_LIMIT;
   if (endpoint === 'cleanup') return CLEANUP_RATE_LIMIT;
@@ -50,9 +53,16 @@ export async function middleware(request: NextRequest) {
   // Generate CSP nonce for this request
   const nonce = generateNonce();
   
+  const pathname = request.nextUrl.pathname;
+  
+  // Skip processing for manifest.json and other static files that need exemptions
+  if (BYPASS_CSP_PATHS.includes(pathname)) {
+    return NextResponse.next();
+  }
+  
   // Skip rate limiting for non-API routes
-  if (!request.nextUrl.pathname.startsWith('/api/') || 
-      request.nextUrl.pathname === '/api/health') {
+  if (!pathname.startsWith('/api/') || 
+      pathname === '/api/health') {
     const response = NextResponse.next();
     
     // Add comprehensive security headers for all routes
@@ -99,11 +109,11 @@ export async function middleware(request: NextRequest) {
 
   // Determine rate limit endpoint based on path
   let endpoint: 'default' | 'time' | 'cleanup' = 'default';
-  if (request.nextUrl.pathname === '/api/time') endpoint = 'time';
-  if (request.nextUrl.pathname === '/api/cleanup') endpoint = 'cleanup';
+  if (pathname === '/api/time') endpoint = 'time';
+  if (pathname === '/api/cleanup') endpoint = 'cleanup';
 
   // Check rate limit
-  const rateLimitResult = checkRateLimit(`${clientIp}-${request.nextUrl.pathname}`, endpoint);
+  const rateLimitResult = checkRateLimit(`${clientIp}-${pathname}`, endpoint);
 
   if (!rateLimitResult.success) {
     return new NextResponse(JSON.stringify({

@@ -22,11 +22,13 @@ export function generateNonce(): string {
 export function getCspWithNonce(nonce: string): string {
   const isDevelopment = process.env.NODE_ENV === 'development';
   
-  // Allow unsafe-eval and unsafe-inline in development for React DevTools and HMR
+  // Since Next.js 13+ extensively uses inline scripts, we need to allow either:
+  // 1. unsafe-inline without nonce (less secure but more compatible)
+  // 2. specific hashes for known scripts
   const scriptSrcDirective = isDevelopment
-    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' https:`
-    : `script-src 'self' 'unsafe-inline' 'nonce-${nonce}' https:`;
-
+    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' https:`
+    : `script-src 'self' 'unsafe-inline' https:`;
+  
   // In development, we need to be more permissive with trusted types
   const trustedTypesDirective = isDevelopment
     ? `trusted-types 'allow-duplicates' default dompurify nextjs#bundler webpack#bundler`
@@ -51,9 +53,7 @@ export function getCspWithNonce(nonce: string): string {
   const imgSrc = `img-src 'self' data: https: blob: ${isDevelopment ? 'http://localhost:* http://127.0.0.1:*' : ''}`;
   
   // Style security
-  const styleSrc = isDevelopment
-    ? `style-src 'self' 'unsafe-inline'` // Allow inline styles in development for convenience
-    : `style-src 'self' 'unsafe-inline'`; // Allow inline styles for production as Next.js uses them
+  const styleSrc = `style-src 'self' 'unsafe-inline'`; // Allow inline styles which Next.js requires
 
   // Connect sources including development needs
   const connectSrc = isDevelopment
