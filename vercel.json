@@ -2,10 +2,11 @@
   "version": 2,
   "build": {
     "env": {
-      "NPM_FLAGS": "--prefer-offline --no-audit"
+      "NPM_FLAGS": "--prefer-offline --no-audit",
+      "ENABLE_EXPERIMENTAL_COREPACK": "1"
     }
   },
-  "installCommand": "pnpm install --no-frozen-lockfile --ignore-scripts",
+  "installCommand": "corepack enable pnpm && pnpm install --no-frozen-lockfile",
   "buildCommand": "pnpm build",
   "outputDirectory": ".next",
   "devCommand": "pnpm dev",
