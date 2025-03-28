@@ -245,22 +245,22 @@ export default function SettingsVerifier() {
   // Test Business Hours
   const testBusinessHours = async (): Promise<TestResult> => {
     // Get original values
-    const originalStart = settings.businessHoursStart;
-    const originalEnd = settings.businessHoursEnd;
+    const originalStart = settings.nightHoursStart;
+    const originalEnd = settings.nightHoursEnd;
     
     try {
       // Test changing to different hours
       const newStart = (originalStart + 1) % 24;
       const newEnd = (originalEnd + 1) % 24;
-      settings.setBusinessHours(newStart, newEnd);
+      settings.setNightHours(newStart, newEnd);
       
       // Verify store was updated
       const currentState = useSettingsStore.getState();
-      if (currentState.businessHoursStart !== newStart || currentState.businessHoursEnd !== newEnd) {
+      if (currentState.nightHoursStart !== newStart || currentState.nightHoursEnd !== newEnd) {
         return {
           name: 'Business Hours Setting',
           passed: false,
-          details: `Settings not saved correctly. Expected ${newStart}-${newEnd}, got ${currentState.businessHoursStart}-${currentState.businessHoursEnd}`
+          details: `Settings not saved correctly. Expected ${newStart}-${newEnd}, got ${currentState.nightHoursStart}-${currentState.nightHoursEnd}`
         };
       }
       
@@ -284,7 +284,7 @@ export default function SettingsVerifier() {
       }
       
       // Restore original values
-      settings.setBusinessHours(originalStart, originalEnd);
+      settings.setNightHours(originalStart, originalEnd);
       
       return {
         name: 'Business Hours Setting',
@@ -293,7 +293,7 @@ export default function SettingsVerifier() {
       };
     } catch (error) {
       // Restore original values
-      settings.setBusinessHours(originalStart, originalEnd);
+      settings.setNightHours(originalStart, originalEnd);
       
       return {
         name: 'Business Hours Setting',

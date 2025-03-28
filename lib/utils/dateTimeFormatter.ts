@@ -108,8 +108,8 @@ export function isBusinessHours(date: Date | DateTime, timezone?: string): boole
   
   // Check if the time is within business hours and on a weekday
   return isWeekday && 
-    hour >= store.businessHoursStart && 
-    hour < store.businessHoursEnd;
+    hour >= store.nightHoursStart && 
+    hour < store.nightHoursEnd;
 }
 
 /**
