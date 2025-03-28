@@ -1,7 +1,49 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { generateNonce, getCspWithNonce } from './lib/utils/security';
-import { checkRateLimit } from './lib/utils/rateLimiter';
+
+// Simple in-memory rate limiting for Edge Runtime
+const rateLimits = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 60 seconds in ms
+const DEFAULT_RATE_LIMIT = 60;
+const TIME_RATE_LIMIT = 120;
+const CLEANUP_RATE_LIMIT = 10;
+
+function getRateLimit(endpoint: string): number {
+  if (endpoint === 'time') return TIME_RATE_LIMIT;
+  if (endpoint === 'cleanup') return CLEANUP_RATE_LIMIT;
+  return DEFAULT_RATE_LIMIT;
+}
+
+function checkRateLimit(key: string, endpoint: 'default' | 'time' | 'cleanup' = 'default') {
+  const now = Date.now();
+  const limit = getRateLimit(endpoint);
+  
+  // Clean up old entries
+  for (const [entryKey, entry] of rateLimits.entries()) {
+    if (now - entry.timestamp > RATE_LIMIT_WINDOW) {
+      rateLimits.delete(entryKey);
+    }
+  }
+  
+  // Get or create entry
+  const entry = rateLimits.get(key) || { count: 0, timestamp: now };
+  
+  // If entry is old, reset it
+  if (now - entry.timestamp > RATE_LIMIT_WINDOW) {
+    entry.count = 0;
+    entry.timestamp = now;
+  }
+  
+  entry.count++;
+  rateLimits.set(key, entry);
+  
+  return {
+    success: entry.count <= limit,
+    remaining: Math.max(0, limit - entry.count),
+    resetTime: new Date(entry.timestamp + RATE_LIMIT_WINDOW)
+  };
+}
 
 export async function middleware(request: NextRequest) {
   // Generate CSP nonce for this request
@@ -60,7 +102,7 @@ export async function middleware(request: NextRequest) {
   if (request.nextUrl.pathname === '/api/cleanup') endpoint = 'cleanup';
 
   // Check rate limit
-  const rateLimitResult = await checkRateLimit(`${clientIp}-${request.nextUrl.pathname}`, endpoint);
+  const rateLimitResult = checkRateLimit(`${clientIp}-${request.nextUrl.pathname}`, endpoint);
 
   if (!rateLimitResult.success) {
     return new NextResponse(JSON.stringify({
