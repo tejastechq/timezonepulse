@@ -8,6 +8,19 @@ interface ErrorProps {
   reset: () => void;
 }
 
+// Sanitize error messages to prevent sensitive info leakage
+function sanitizeErrorMessage(message: string): string {
+  // Remove file paths
+  message = message.replace(/(?:\/[\w.-]+)+/g, '[path]');
+  // Remove potential stack traces
+  message = message.replace(/at .*?\((.*?)\)/g, '[stack]');
+  // Remove potential database errors
+  message = message.replace(/(?:mongodb|postgres|mysql):\/\/[^\s]*/g, '[database-url]');
+  // Remove potential API keys or tokens
+  message = message.replace(/['"](sk|pk|key|token|secret)_[a-zA-Z0-9]+['"]/, '[redacted]');
+  return message;
+}
+
 /**
  * Error component for handling and displaying application errors
  * This is used by Next.js to display errors that occur during rendering
@@ -16,6 +29,18 @@ export default function Error({ error, reset }: ErrorProps) {
   useEffect(() => {
     // Log the error to an error reporting service
     console.error('Application error:', error);
+    
+    // You can send to error tracking service here
+    if (process.env.NODE_ENV === 'production') {
+      // Don't log sensitive error details in production
+      const sanitizedError = {
+        name: error.name,
+        message: sanitizeErrorMessage(error.message),
+        digest: error.digest,
+      };
+      // Log sanitized error
+      console.error('Sanitized error:', sanitizedError);
+    }
   }, [error]);
 
   return (
@@ -25,13 +50,16 @@ export default function Error({ error, reset }: ErrorProps) {
         We're sorry, but an unexpected error occurred. Our team has been notified.
       </p>
       
-      {/* Show error details in development mode */}
+      {/* Only show detailed error info in development */}
       {process.env.NODE_ENV === 'development' && (
         <div className="mb-6 max-w-2xl w-full text-left">
           <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-auto max-h-[200px]">
-            <p className="font-bold mb-2">Error: {error.message}</p>
-            {error.digest && <p className="text-sm text-gray-600 dark:text-gray-400">Digest: {error.digest}</p>}
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{error.stack}</p>
+            <p className="font-bold mb-2">Error: {sanitizeErrorMessage(error.message)}</p>
+            {error.digest && 
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Error ID: {error.digest}
+              </p>
+            }
           </div>
         </div>
       )}
@@ -52,4 +80,4 @@ export default function Error({ error, reset }: ErrorProps) {
       </div>
     </div>
   );
-} 
+}

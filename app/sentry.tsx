@@ -17,11 +17,27 @@ export function initSentry() {
   if (process.env.NODE_ENV === 'production') {
     Sentry.init({
       dsn: process.env.NEXT_PUBLIC_SENTRY_DSN || '',
-      tracesSampleRate: 0.2, // Capture 20% of transactions for performance monitoring
-      replaysSessionSampleRate: 0.1, // Capture 10% of sessions for replay
-      replaysOnErrorSampleRate: 1.0, // Capture all sessions with errors
-      // Use basic configuration without problematic imports
-      integrations: [],
+      tracesSampleRate: 0.2,
+      replaysSessionSampleRate: 0.1,
+      replaysOnErrorSampleRate: 1.0,
+      integrations: [
+        new Sentry.BrowserTracing({
+          tracePropagationTargets: ['localhost', 'your-production-domain.com'],
+        }),
+      ],
+      beforeSend(event) {
+        // Sanitize error messages and remove sensitive data
+        if (event.exception) {
+          delete event.request?.cookies;
+          delete event.request?.headers;
+          delete event.request?.query_string;
+        }
+        return event;
+      },
+      // Disable console logging in production
+      debug: false,
+      enabled: true,
+      environment: process.env.NODE_ENV,
     });
   }
 }
@@ -69,4 +85,4 @@ export function withErrorBoundary(component: React.ComponentType, options = {}) 
     ),
     ...options
   });
-} 
+}
