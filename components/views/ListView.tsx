@@ -24,7 +24,7 @@ interface ListViewProps {
   localTime: Date | null;
   highlightedTime: Date | null;
   handleTimeSelection: (time: Date | null) => void;
-  roundToNearestIncrement?: (date: Date, increment: number) => Date;
+  roundToNearestIncrement: (date: Date, increment: number) => Date; // Make this required, not optional
   removeTimezone?: (id: string) => void;
   currentDate?: Date | null;
 }
@@ -221,7 +221,8 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
 
   const getCurrentTimeIndex = useCallback(() => {
     if (!localTime || !timeSlots.length) return 0;
-    const roundedLocalTime = roundToNearestIncrement(localTime, 30);
+    // Using non-null assertion since we know roundToNearestIncrement is required in props
+    const roundedLocalTime = roundToNearestIncrement!(localTime, 30);
     const index = timeSlots.findIndex(t => DateTime.fromJSDate(t).hasSame(DateTime.fromJSDate(roundedLocalTime), 'minute'));
     return index > -1 ? index : 0;
   }, [localTime, timeSlots, roundToNearestIncrement]);
@@ -308,7 +309,8 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
   const formatTime = useCallback((date: Date, timezone: string) => formatTimeFunction(date, timezone), [formatTimeFunction]);
   const isLocalTime = useCallback((time: Date, timezone: string) => {
     if (!localTime) return false;
-    const roundedLocalTime = roundToNearestIncrement(localTime, 30);
+    // Using non-null assertion since we know roundToNearestIncrement is required in props
+    const roundedLocalTime = roundToNearestIncrement!(localTime, 30);
     const timeInTimezone = DateTime.fromJSDate(time).setZone(timezone);
     const localTimeInTimezone = DateTime.fromJSDate(roundedLocalTime).setZone(timezone);
     return timeInTimezone.hasSame(localTimeInTimezone, 'minute');
