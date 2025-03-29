@@ -229,7 +229,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
 
   const scrollToIndex = useCallback((index: number, alignment: 'start' | 'center' | 'end' | 'smart' | 'auto' = 'center') => {
     // Don't scroll if user is actively scrolling
-    if (userIsScrollingRef.current) return () => {};
+    if (userIsScrollingRef.current) return;
 
     const prefersReducedMotion = typeof window !== 'undefined' && 
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -240,16 +240,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         listRef.scrollToItem(index, prefersReducedMotion ? 'start' : alignment);
       }
     });
-
-    // Return a cleanup function
-    return () => {
-      // Cancel any pending scroll operations if needed
-      if (scrollSyncTimeoutRef.current) {
-        clearTimeout(scrollSyncTimeoutRef.current);
-        scrollSyncTimeoutRef.current = null;
-      }
-    };
-  }, []); // No dependencies needed as we only use refs
+  }, []);
 
   // Expose the scrollToTime function via ref
   useImperativeHandle(ref, () => ({
@@ -582,7 +573,30 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     );
   }, [mounted, userLocalTimezone, selectedTimezones, timeSlots, isLocalTime, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, jumpToTime, handleRemoveTimezone, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate]);
 
-  // REMOVED useEffect for scrolling to HIGHLIGHTED time (parent will trigger via ref)
+  // Add this effect to handle synchronization of scrolling across timezone columns when highlightedTime changes
+  useEffect(() => {
+    if (!mounted || !highlightedTime || userIsScrollingRef.current) return;
+    
+    // Find the target index for the highlighted time in UTC to ensure consistent behavior across timezones
+    const highlightedDateTime = DateTime.fromJSDate(highlightedTime).toUTC();
+    
+    const targetIndex = timeSlots.findIndex(slot => {
+      const slotDateTime = DateTime.fromJSDate(slot).toUTC();
+      return slotDateTime.hasSame(highlightedDateTime, 'minute');
+    });
+    
+    if (targetIndex !== -1) {
+      // Small delay to ensure React has finished rendering all timezone columns
+      setTimeout(() => {
+        // Scroll all timezone columns to the highlighted time
+        Object.values(listRefs.current).forEach(listRef => {
+          if (listRef) {
+            listRef.scrollToItem(targetIndex, 'center');
+          }
+        });
+      }, 50);
+    }
+  }, [highlightedTime, timeSlots, mounted]);
 
   // NEW useEffect for scrolling to CURRENT time (or initial load / when highlight is cleared)
   useEffect(() => {
@@ -684,6 +698,18 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         </AnimatePresence>
       </div>
 
+      {/* Add date notification banner - moved to a more prominent position */}
+      {selectedDateInfo && (
+        <div className="sticky top-0 z-20 bg-background mb-4 p-3 w-full rounded-md border border-primary-500 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <CalendarDays className="text-primary-500 h-5 w-5 mr-2" />
+              <span className="font-medium text-primary-500">{selectedDateInfo}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {renderTimeColumns()}
       
       {/* Timezone Selection Modal */}
@@ -701,18 +727,6 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
           />
         )}
       </AnimatePresence>
-
-      {/* Add this right before or after the timezone header section */}
-      {selectedDateInfo && (
-        <div className="sticky top-0 z-20 bg-background mb-4 p-2 w-full rounded-md border border-primary">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <CalendarDays className="text-primary h-5 w-5 mr-2" />
-              <span className="font-medium text-primary">{selectedDateInfo}</span>
-            </div>
-          </div>
-        </div>
-      )}
     </motion.div>
   );
 });
