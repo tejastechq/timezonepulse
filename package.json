@@ -7,7 +7,6 @@
     "dev:turbo": "next dev --turbo",
     "dev:trace": "NEXT_TURBOPACK_TRACING=1 next dev --turbo",
     "build": "next build",
-    "vercel-build": "NODE_OPTIONS='--max_old_space_size=4096' next build",
     "start": "next start",
     "lint": "next lint",
     "build:production": "cross-env NEXT_PUBLIC_ENV=production next build",
@@ -26,6 +25,7 @@
     "security:audit": "pnpm audit",
     "security:outdated": "pnpm outdated",
     "security:secrets": "node scripts/generate-secrets.js",
+    "preinstall": "npx @ljharb/npm-lockfile-lint",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -87,7 +87,6 @@
     "fflate": "^0.8.2",
     "framer-motion": "^11.0.5",
     "geolib": "^3.3.4",
-    "iron-session": "^8.0.4",
     "jotai": "^2.6.4",
     "lodash": "^4.17.21",
     "lucide-react": "^0.330.0",

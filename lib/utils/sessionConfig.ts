@@ -1,15 +1,11 @@
-import { SessionOptions } from 'iron-session';
+import { IronSessionOptions } from 'iron-session';
 import { createSecureHash } from './security';
 
 /**
  * Secure session configuration using iron-session
  */
-if (!process.env.SESSION_SECRET || process.env.SESSION_SECRET.length < 32) {
-  throw new Error('SESSION_SECRET environment variable is required and must be at least 32 characters long.');
-}
-
-export const sessionConfig: SessionOptions = {
-  password: process.env.SESSION_SECRET,
+export const sessionConfig: IronSessionOptions = {
+  password: process.env.SESSION_SECRET || (process.env.NODE_ENV === 'development' ? 'complex_password_at_least_32_characters_long' : ''),
   cookieName: 'world_clock_session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',

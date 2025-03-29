@@ -55,14 +55,14 @@ export default function manifest(): MetadataRoute.Manifest {
         src: "/screenshots/digital-view.png",
         sizes: "1280x720",
         type: "image/png",
-        platform: "wide",
+        platform: "windows",
         label: "Digital Clock View"
       },
       {
         src: "/screenshots/analog-view.png",
         sizes: "1280x720",
         type: "image/png",
-        platform: "wide",
+        platform: "windows",
         label: "Analog Clock View"
       }
     ]

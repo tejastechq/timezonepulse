@@ -22,17 +22,15 @@ export function generateNonce(): string {
 export function getCspWithNonce(nonce: string): string {
   const isDevelopment = process.env.NODE_ENV === 'development';
   
-  // Since Next.js 13+ extensively uses inline scripts, we need to allow either:
-  // 1. unsafe-inline without nonce (less secure but more compatible)
-  // 2. specific hashes for known scripts
+  // Allow unsafe-eval and unsafe-inline in development for React DevTools and HMR
   const scriptSrcDirective = isDevelopment
-    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' https:`
-    : `script-src 'self' 'unsafe-inline' https:`;
-  
+    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic' https:`
+    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https:`;
+
   // In development, we need to be more permissive with trusted types
   const trustedTypesDirective = isDevelopment
     ? `trusted-types 'allow-duplicates' default dompurify nextjs#bundler webpack#bundler`
-    : `trusted-types 'allow-duplicates' default dompurify nextjs#bundler webpack#bundler`;
+    : `trusted-types 'allow-duplicates' default dompurify`;
 
   // Base URI restriction
   const baseUri = `base-uri 'self'`;
@@ -41,7 +39,7 @@ export function getCspWithNonce(nonce: string): string {
   const objectSrc = `object-src 'none'`;
 
   // Frame security
-  const frameSrc = `frame-src 'self'`;
+  const frameSrc = `frame-src 'none'`;
   const frameAncestors = `frame-ancestors 'none'`;
   const formAction = `form-action 'self'`;
 
@@ -53,7 +51,9 @@ export function getCspWithNonce(nonce: string): string {
   const imgSrc = `img-src 'self' data: https: blob: ${isDevelopment ? 'http://localhost:* http://127.0.0.1:*' : ''}`;
   
   // Style security
-  const styleSrc = `style-src 'self' 'unsafe-inline'`; // Allow inline styles which Next.js requires
+  const styleSrc = isDevelopment
+    ? `style-src 'self' 'unsafe-inline'`
+    : `style-src 'self' 'unsafe-inline'`; // Keep unsafe-inline for both as it's needed for styled-components
 
   // Connect sources including development needs
   const connectSrc = isDevelopment
@@ -62,6 +62,9 @@ export function getCspWithNonce(nonce: string): string {
 
   // Manifest security
   const manifestSrc = `manifest-src 'self'`;
+
+  // Prefetch control
+  const prefetchSrc = `prefetch-src 'self'`;
 
   // Combine all directives
   return `
@@ -73,6 +76,7 @@ export function getCspWithNonce(nonce: string): string {
     ${connectSrc};
     ${mediaSrc};
     ${manifestSrc};
+    ${prefetchSrc};
     ${baseUri};
     ${objectSrc};
     ${frameSrc};

@@ -19,10 +19,9 @@ async function validateAdminToken(token: string | null): Promise<boolean> {
 
 // Validate path is within project directory to prevent path traversal
 function isPathWithinProject(targetPath: string): boolean {
-  const resolvedTarget = path.resolve(targetPath);
-  const projectRoot = path.resolve(process.cwd());
-  
-  return resolvedTarget.startsWith(projectRoot);
+  const normalizedTarget = path.normalize(targetPath).replace(/\\/g, '/');
+  const projectRoot = path.normalize(process.cwd()).replace(/\\/g, '/');
+  return normalizedTarget.startsWith(projectRoot);
 }
 
 export async function GET(request: Request) {

@@ -1,68 +1,15 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { generateNonce, getCspWithNonce } from './lib/utils/security';
-
-// Simple in-memory rate limiting for Edge Runtime
-const rateLimits = new Map();
-const RATE_LIMIT_WINDOW = 60 * 1000; // 60 seconds in ms
-const DEFAULT_RATE_LIMIT = 60;
-const TIME_RATE_LIMIT = 120;
-const CLEANUP_RATE_LIMIT = 10;
-
-// List of paths that should bypass certain security headers
-const BYPASS_CSP_PATHS = ['/manifest.json', '/favicon.ico', '/robots.txt', '/sitemap.xml'];
-
-function getRateLimit(endpoint: string): number {
-  if (endpoint === 'time') return TIME_RATE_LIMIT;
-  if (endpoint === 'cleanup') return CLEANUP_RATE_LIMIT;
-  return DEFAULT_RATE_LIMIT;
-}
-
-function checkRateLimit(key: string, endpoint: 'default' | 'time' | 'cleanup' = 'default') {
-  const now = Date.now();
-  const limit = getRateLimit(endpoint);
-  
-  // Clean up old entries - use Array.from to avoid iterator issues
-  Array.from(rateLimits.keys()).forEach(entryKey => {
-    const entry = rateLimits.get(entryKey);
-    if (entry && now - entry.timestamp > RATE_LIMIT_WINDOW) {
-      rateLimits.delete(entryKey);
-    }
-  });
-  
-  // Get or create entry
-  const entry = rateLimits.get(key) || { count: 0, timestamp: now };
-  
-  // If entry is old, reset it
-  if (now - entry.timestamp > RATE_LIMIT_WINDOW) {
-    entry.count = 0;
-    entry.timestamp = now;
-  }
-  
-  entry.count++;
-  rateLimits.set(key, entry);
-  
-  return {
-    success: entry.count <= limit,
-    remaining: Math.max(0, limit - entry.count),
-    resetTime: new Date(entry.timestamp + RATE_LIMIT_WINDOW)
-  };
-}
+import { checkRateLimit } from './lib/utils/rateLimiter';
 
 export async function middleware(request: NextRequest) {
   // Generate CSP nonce for this request
   const nonce = generateNonce();
   
-  const pathname = request.nextUrl.pathname;
-  
-  // Skip processing for manifest.json and other static files that need exemptions
-  if (BYPASS_CSP_PATHS.includes(pathname)) {
-    return NextResponse.next();
-  }
-  
   // Skip rate limiting for non-API routes
-  if (!pathname.startsWith('/api/') || 
-      pathname === '/api/health') {
+  if (!request.nextUrl.pathname.startsWith('/api/') || 
+      request.nextUrl.pathname === '/api/health') {
     const response = NextResponse.next();
     
     // Add comprehensive security headers for all routes
@@ -93,7 +40,7 @@ export async function middleware(request: NextRequest) {
       response.headers.set('Expect-CT', 'enforce, max-age=86400');
       
       // Ensure CORS is strict in production
-      response.headers.set('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_APP_URL || 'null');
+      response.headers.set('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_APP_URL || '*');
       response.headers.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
       response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       response.headers.set('Access-Control-Max-Age', '86400');
@@ -109,11 +56,11 @@ export async function middleware(request: NextRequest) {
 
   // Determine rate limit endpoint based on path
   let endpoint: 'default' | 'time' | 'cleanup' = 'default';
-  if (pathname === '/api/time') endpoint = 'time';
-  if (pathname === '/api/cleanup') endpoint = 'cleanup';
+  if (request.nextUrl.pathname === '/api/time') endpoint = 'time';
+  if (request.nextUrl.pathname === '/api/cleanup') endpoint = 'cleanup';
 
   // Check rate limit
-  const rateLimitResult = checkRateLimit(`${clientIp}-${pathname}`, endpoint);
+  const rateLimitResult = await checkRateLimit(`${clientIp}-${request.nextUrl.pathname}`, endpoint);
 
   if (!rateLimitResult.success) {
     return new NextResponse(JSON.stringify({
