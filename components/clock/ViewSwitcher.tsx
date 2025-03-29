@@ -2,8 +2,6 @@
 
 import React from 'react';
 import { useView, ViewType } from '@/app/contexts/ViewContext';
-import Link from 'next/link';
-import { Settings } from 'lucide-react';
 
 /**
  * ViewSwitcher component for switching between different views
@@ -97,16 +95,6 @@ export default function ViewSwitcher() {
           </span>
         </button>
       </div>
-      
-      {/* Settings button */}
-      <Link 
-        href="/settings" 
-        className="p-2 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 shadow-sm transition-colors"
-        aria-label="Settings"
-        title="Settings"
-      >
-        <Settings size={20} />
-      </Link>
     </div>
   );
 }
