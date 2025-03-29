@@ -228,32 +228,49 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
   }, [localTime, timeSlots, roundToNearestIncrement]);
 
   const scrollToIndex = useCallback((index: number, alignment: 'start' | 'center' | 'end' | 'smart' | 'auto' = 'center') => {
-    // Don't scroll if user is actively scrolling
+    // Don't scroll if user is actively scrolling, unless forced
     if (userIsScrollingRef.current) return;
 
     const prefersReducedMotion = typeof window !== 'undefined' && 
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Scroll all lists to the same index
-    Object.values(listRefs.current).forEach(listRef => {
-      if (listRef) {
-        listRef.scrollToItem(index, prefersReducedMotion ? 'start' : alignment);
-      }
+    // Batch scrolling operations in requestAnimationFrame for better performance
+    requestAnimationFrame(() => {
+      // Scroll all lists to the same index
+      Object.values(listRefs.current).forEach(listRef => {
+        if (listRef) {
+          listRef.scrollToItem(index, prefersReducedMotion ? 'start' : alignment);
+        }
+      });
     });
   }, []);
 
   // Expose the scrollToTime function via ref
   useImperativeHandle(ref, () => ({
     scrollToTime: (time: Date, alignment: 'start' | 'center' | 'end' | 'smart' | 'auto' = 'center') => {
-      const targetIndex = timeSlots.findIndex(t => t.getTime() === time.getTime());
+      if (!time || !timeSlots.length) return;
+      
+      // Convert to UTC for consistent timezone handling
+      const targetTimeUTC = DateTime.fromJSDate(time).toUTC();
+      
+      // Find the matching time slot using a more precise comparison
+      const targetIndex = timeSlots.findIndex(t => {
+        const slotTimeUTC = DateTime.fromJSDate(t).toUTC();
+        return slotTimeUTC.hasSame(targetTimeUTC, 'minute');
+      });
+      
       if (targetIndex !== -1) {
-         // Directly call scrollToItem on all list refs
-         const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-         Object.values(listRefs.current).forEach(listRef => {
+        // Use requestAnimationFrame for immediate visual response
+        requestAnimationFrame(() => {
+          const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          
+          // Scroll all timezone columns to show the selected time
+          Object.values(listRefs.current).forEach(listRef => {
             if (listRef) {
-                listRef.scrollToItem(targetIndex, prefersReducedMotion ? 'start' : alignment);
+              listRef.scrollToItem(targetIndex, prefersReducedMotion ? 'start' : alignment);
             }
-         });
+          });
+        });
       }
     }
   }), [timeSlots]); // Dependency: timeSlots (if they change, index calculation needs update)
@@ -445,9 +462,15 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     if (!term.trim()) {
       setFilteredTimeSlots([]);
       setIsSearching(false);
-      if (isSearching) scrollToIndex(getCurrentTimeIndex(), 'center'); 
+      if (isSearching) {
+        // When exiting search mode, sync back to current time position
+        requestAnimationFrame(() => {
+          scrollToIndex(getCurrentTimeIndex(), 'center');
+        });
+      }
       return;
     }
+    
     setIsSearching(true);
     const searchLower = term.toLowerCase().trim();
     const filtered = timeSlots.filter(timeSlot => {
@@ -459,13 +482,29 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
       if (searchLower.includes(':')) return fullTime12.startsWith(searchLower) || fullTime24.startsWith(searchLower);
       else return hour12 === searchLower || hour24 === searchLower;
     });
+    
     setFilteredTimeSlots(filtered);
+    
     if (filtered.length > 0) {
+      // Store current user scrolling state
       const wasScrolling = userIsScrollingRef.current;
+      
+      // Temporarily disable user scrolling flag to ensure scroll action happens
       userIsScrollingRef.current = false;
+      
       const targetIndex = timeSlots.findIndex(t => t.getTime() === filtered[0].getTime());
-      if (targetIndex !== -1) scrollToIndex(targetIndex, 'center'); 
-      userIsScrollingRef.current = wasScrolling;
+      if (targetIndex !== -1) {
+        // Use requestAnimationFrame for smoother scrolling
+        requestAnimationFrame(() => {
+          scrollToIndex(targetIndex, 'center');
+          
+          // Restore previous user scrolling state
+          userIsScrollingRef.current = wasScrolling;
+        });
+      } else {
+        // Restore previous user scrolling state if no scrolling occurred
+        userIsScrollingRef.current = wasScrolling;
+      }
     }
   }, [timeSlots, userLocalTimezone, isSearching, scrollToIndex, getCurrentTimeIndex]);
 
@@ -573,9 +612,36 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     );
   }, [mounted, userLocalTimezone, selectedTimezones, timeSlots, isLocalTime, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, jumpToTime, handleRemoveTimezone, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate]);
 
-  // Add this effect to handle synchronization of scrolling across timezone columns when highlightedTime changes
+  // Optimize synchronization of scrolling across timezone columns when highlightedTime changes
   useEffect(() => {
-    if (!mounted || !highlightedTime || userIsScrollingRef.current) return;
+    if (!mounted || !highlightedTime) return;
+    
+    // Skip if user is actively scrolling to avoid interrupting user interaction
+    if (userIsScrollingRef.current) {
+      // Set a flag to sync after user stops scrolling
+      const syncAfterScrolling = () => {
+        if (!highlightedTime) return;
+        
+        const targetIndex = timeSlots.findIndex(slot => {
+          const slotDateTime = DateTime.fromJSDate(slot).toUTC();
+          const highlightedDateTime = DateTime.fromJSDate(highlightedTime).toUTC();
+          return slotDateTime.hasSame(highlightedDateTime, 'minute');
+        });
+        
+        if (targetIndex !== -1) {
+          Object.values(listRefs.current).forEach(listRef => {
+            if (listRef) {
+              listRef.scrollToItem(targetIndex, 'center');
+            }
+          });
+        }
+      };
+
+      // Wait until user stops scrolling
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      scrollTimeoutRef.current = setTimeout(syncAfterScrolling, 500);
+      return;
+    }
     
     // Find the target index for the highlighted time in UTC to ensure consistent behavior across timezones
     const highlightedDateTime = DateTime.fromJSDate(highlightedTime).toUTC();
@@ -586,15 +652,20 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     });
     
     if (targetIndex !== -1) {
-      // Small delay to ensure React has finished rendering all timezone columns
-      setTimeout(() => {
+      // Use requestAnimationFrame instead of setTimeout for better performance
+      // This will run the scrolling on the next frame, which is visually immediate
+      // but still gives React enough time to finish rendering
+      requestAnimationFrame(() => {
         // Scroll all timezone columns to the highlighted time
         Object.values(listRefs.current).forEach(listRef => {
           if (listRef) {
-            listRef.scrollToItem(targetIndex, 'center');
+            const prefersReducedMotion = typeof window !== 'undefined' && 
+              window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            
+            listRef.scrollToItem(targetIndex, prefersReducedMotion ? 'start' : 'center');
           }
         });
-      }, 50);
+      });
     }
   }, [highlightedTime, timeSlots, mounted]);
 
