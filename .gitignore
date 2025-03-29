@@ -10,6 +10,7 @@ out/
 build/
 dist/
 .cache/
+/node_modules/
 
 # Debug logs
 npm-debug.log*
@@ -19,3 +20,5 @@ yarn-error.log*
 
 # Local SSL certificates
 *.pem
+node_modules
+node_modules
