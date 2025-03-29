@@ -63,9 +63,6 @@ export function getCspWithNonce(nonce: string): string {
   // Manifest security
   const manifestSrc = `manifest-src 'self'`;
 
-  // Prefetch control
-  const prefetchSrc = `prefetch-src 'self'`;
-
   // Combine all directives
   return `
     default-src 'self';
@@ -76,7 +73,6 @@ export function getCspWithNonce(nonce: string): string {
     ${connectSrc};
     ${mediaSrc};
     ${manifestSrc};
-    ${prefetchSrc};
     ${baseUri};
     ${objectSrc};
     ${frameSrc};

@@ -48,13 +48,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
   localTime,
   highlightedTime,
   handleTimeSelection,
-  roundToNearestIncrement = (date, increment) => {
-    // Default implementation if not provided
-    const dt = DateTime.fromJSDate(date);
-    const minutes = dt.minute;
-    const roundedMinutes = Math.round(minutes / increment) * increment;
-    return dt.set({ minute: roundedMinutes, second: 0, millisecond: 0 }).toJSDate();
-  },
+  roundToNearestIncrement,
   removeTimezone: externalRemoveTimezone,
   currentDate
 }, ref) => {
@@ -231,6 +225,30 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     const index = timeSlots.findIndex(t => DateTime.fromJSDate(t).hasSame(DateTime.fromJSDate(roundedLocalTime), 'minute'));
     return index > -1 ? index : 0;
   }, [localTime, timeSlots, roundToNearestIncrement]);
+
+  const scrollToIndex = useCallback((index: number, alignment: 'start' | 'center' | 'end' | 'smart' | 'auto' = 'center') => {
+    // Don't scroll if user is actively scrolling
+    if (userIsScrollingRef.current) return () => {};
+
+    const prefersReducedMotion = typeof window !== 'undefined' && 
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Scroll all lists to the same index
+    Object.values(listRefs.current).forEach(listRef => {
+      if (listRef) {
+        listRef.scrollToItem(index, prefersReducedMotion ? 'start' : alignment);
+      }
+    });
+
+    // Return a cleanup function
+    return () => {
+      // Cancel any pending scroll operations if needed
+      if (scrollSyncTimeoutRef.current) {
+        clearTimeout(scrollSyncTimeoutRef.current);
+        scrollSyncTimeoutRef.current = null;
+      }
+    };
+  }, []); // No dependencies needed as we only use refs
 
   // Expose the scrollToTime function via ref
   useImperativeHandle(ref, () => ({
