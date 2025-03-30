@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { DateTime } from 'luxon';
 import { Timezone } from '@/store/timezoneStore';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, Variants } from 'framer-motion'; // Import Variants
 import { ChevronDown, ChevronUp } from 'lucide-react'; // Icons for expand/collapse
 import MobileTimeList from './MobileTimeList'; // Integrated
 
@@ -64,19 +64,48 @@ const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
 
   // --- Render Logic ---
 
+// Animation variants for the card tap
+const cardTapVariants: Variants = {
+  tap: { scale: 0.98, backgroundColor: 'rgba(55, 65, 81, 0.7)', transition: { duration: 0.1 } }, // Slightly darker gray-700
+  initial: { scale: 1, backgroundColor: 'rgba(31, 41, 55, 0.5)' } // Default bg-gray-800/50
+};
+
+// Animation variants for the time list container
+const listContainerVariants: Variants = {
+  open: {
+    height: 'auto',
+    opacity: 1,
+    marginTop: '16px',
+    transition: { duration: 0.25, ease: 'easeOut' } // Faster, easeOut
+  },
+  closed: {
+    height: 0,
+    opacity: 0,
+    marginTop: 0,
+    transition: { duration: 0.2, ease: 'easeIn' } // Slightly faster collapse
+  }
+};
+
+
   return (
     <motion.div
       layout // Animate layout changes (like expansion)
       className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 shadow-md cursor-pointer overflow-hidden"
       onClick={!isExpanded ? toggleExpand : undefined} // Only allow opening via card click
-      transition={{ duration: 0.3, ease: 'easeInOut' }}
+      whileTap={!isExpanded ? "tap" : ""} // Apply tap animation only when clicking to expand
+      variants={cardTapVariants}
+      initial="initial"
+      animate="initial" // Reset background on release (handled by initial state)
+      transition={{ duration: 0.2, ease: 'easeOut' }} // General layout transition
     >
       {/* Collapsed View */}
-      <div className="flex flex-col">
+      <div className="flex flex-col font-sans"> {/* Apply font-sans to the container */}
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-bold">{timezone.city || timezone.name.split('/').pop()?.replace('_', ' ')}</h2>
-            <p className="text-xs text-gray-400">
+            {/* Slightly larger, less bold city name */}
+            <h2 className="text-xl font-medium">{timezone.city || timezone.name.split('/').pop()?.replace('_', ' ')}</h2>
+            {/* Slightly larger, lighter offset */}
+            <p className="text-sm text-gray-400 mt-0.5">
               {timezoneAbbreviation} {timezoneOffset}
             </p>
           </div>
@@ -90,13 +119,13 @@ const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
           </motion.div>
         </div>
 
-        <div className="flex justify-between mt-3">
-          {/* Current Time */}
-          <p className="text-3xl font-bold tabular-nums tracking-tight">
+        <div className="flex justify-between items-baseline mt-3"> {/* Align baselines */}
+          {/* Current Time - Slightly smaller, lighter weight */}
+          <p className="text-2xl font-normal tabular-nums tracking-tight">
             {currentTimeFormatted}
           </p>
-          {/* Selected Time */}
-          <p className="text-3xl font-bold text-blue-400 tabular-nums tracking-tight">
+          {/* Selected Time - Slightly smaller, lighter weight */}
+          <p className="text-2xl font-normal text-blue-400 tabular-nums tracking-tight">
             {selectedTimeFormatted}
           </p>
         </div>
@@ -107,10 +136,10 @@ const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
         {isExpanded && (
           <motion.div
             key="time-list"
-            initial={{ height: 0, opacity: 0, marginTop: 0 }}
-            animate={{ height: 'auto', opacity: 1, marginTop: '16px' }} // Adjust height and add margin
-            exit={{ height: 0, opacity: 0, marginTop: 0 }}
-            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            variants={listContainerVariants}
+            initial="closed"
+            animate="open"
+            exit="closed"
             className="overflow-hidden" // Important for smooth animation
           >
             {/* Integrated MobileTimeList */}

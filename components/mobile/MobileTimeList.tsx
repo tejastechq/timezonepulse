@@ -43,10 +43,11 @@ const TimeItem = memo(function TimeItem({
   const formatted = formatTimeFn(time, timezoneId);
 
   const cellClasses = clsx(
-    'flex justify-between items-center px-3 py-2 border-b border-gray-700/50 cursor-pointer',
+    'flex justify-between items-center px-4 py-2 border-b border-gray-700/50 cursor-pointer font-sans', // Added font-sans, increased padding
     'hover:bg-gray-700/60 transition-colors duration-150',
-    isHighlight ? 'bg-blue-600 text-white font-semibold' : 'text-gray-200',
-    isCurrent && !isHighlight ? 'bg-blue-900/50 border-l-2 border-blue-400 font-medium' : '',
+    // Use slightly lighter font weights for normal/current states
+    isHighlight ? 'bg-blue-600 text-white font-medium' : 'text-gray-100 font-normal', // Highlighted is medium, default is normal
+    isCurrent && !isHighlight ? 'bg-blue-900/50 border-l-2 border-blue-400' : '', // Removed font-medium here, rely on default
     isNight && !isHighlight && !isCurrent ? 'bg-gray-800/40' : '',
     !isNight && !isHighlight && !isCurrent ? 'bg-gray-800/20' : ''
   );
@@ -61,13 +62,14 @@ const TimeItem = memo(function TimeItem({
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onTimeSelectFn(time); }}
     >
-      <span className={clsx(isHighlight ? 'text-white' : isCurrent ? 'text-blue-300' : 'text-gray-100')}>
+      {/* Apply consistent text size and color adjustments */}
+      <span className={clsx('text-sm', isHighlight ? 'text-white' : isCurrent ? 'text-blue-300' : 'text-gray-100')}>
         {formatted}
       </span>
-      <div className="flex items-center space-x-1">
-         {isNight && !isHighlight && <Moon className="h-3 w-3 text-indigo-300" />}
-         {!isNight && !isHighlight && <Sun className="h-3 w-3 text-amber-300" />}
-         {isCurrent && !isHighlight && <span className="text-xs text-blue-400">(Now)</span>}
+      <div className="flex items-center space-x-1.5"> {/* Slightly increased spacing */}
+         {isNight && !isHighlight && <Moon className="h-3.5 w-3.5 text-indigo-300" />} {/* Slightly larger icons */}
+         {!isNight && !isHighlight && <Sun className="h-3.5 w-3.5 text-amber-300" />} {/* Slightly larger icons */}
+         {isCurrent && !isHighlight && <span className="text-xs font-medium text-blue-400">(Now)</span>} {/* Added font-medium to (Now) */}
       </div>
     </div>
   );
