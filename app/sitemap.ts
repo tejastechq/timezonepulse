@@ -5,7 +5,7 @@ import { MetadataRoute } from 'next';
  * This helps search engines discover and index all pages of the site
  */
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://worldclock.app';
+  const baseUrl = 'https://www.timezonepulse.com'; // Updated base URL
   
   // Default pages with static routes
   const routes = [
@@ -30,4 +30,4 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ];
   
   return routes;
-} 
+}
