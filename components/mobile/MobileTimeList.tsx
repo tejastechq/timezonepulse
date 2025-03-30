@@ -2,7 +2,7 @@
 
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { DateTime } from 'luxon';
-import { FixedSizeList, ListOnScrollProps } from 'react-window';
+import { FixedSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import clsx from 'clsx';
 import { Sun, Moon } from 'lucide-react';
@@ -82,8 +82,7 @@ const MobileTimeList: React.FC<MobileTimeListProps> = ({
   roundToNearestIncrement,
 }) => {
   const listRef = useRef<FixedSizeList | null>(null);
-  const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [hasScrolledInitially, setHasScrolledInitially] = useState(false);
 
   // --- Callbacks for TimeItem ---
   const isCurrentTime = useCallback((time: Date): boolean => {
@@ -113,10 +112,13 @@ const MobileTimeList: React.FC<MobileTimeListProps> = ({
     return DateTime.fromJSDate(time).setZone(tzId).toFormat('h:mm a');
   }, []);
 
-  // --- Scroll to Current/Selected Time ---
+  // --- Scroll to Current/Selected Time (Only Once on Mount/Relevant Prop Change) ---
   useEffect(() => {
-    // Don't auto-scroll if the user is manually scrolling
-    if (isUserScrolling || !listRef.current || timeSlots.length === 0) return;
+    // Only scroll if we haven't done the initial scroll for this mount
+    // and the list ref and time slots are ready.
+    if (hasScrolledInitially || !listRef.current || timeSlots.length === 0) {
+      return;
+    }
 
     let targetIndex = -1;
 
@@ -134,39 +136,22 @@ const MobileTimeList: React.FC<MobileTimeListProps> = ({
       // Use requestAnimationFrame for smoother scrolling
       requestAnimationFrame(() => {
         // Check ref again inside animation frame
-        if (listRef.current && !isUserScrolling) {
+        if (listRef.current) {
           listRef.current.scrollToItem(targetIndex, 'center');
+          // Mark that the initial scroll has been performed for this mount
+          setHasScrolledInitially(true);
         }
       });
+    } else {
+      // If no specific time is found to scroll to initially,
+      // still mark as scrolled to prevent future attempts for this mount.
+      setHasScrolledInitially(true);
     }
-  }, [localTime, highlightedTime, timeSlots, roundToNearestIncrement, isUserScrolling]); // Add isUserScrolling dependency
-
-  // --- Handle Manual Scroll ---
-  const handleScroll = useCallback(({ scrollUpdateWasRequested }: ListOnScrollProps) => {
-    // If the scroll was not triggered by scrollToItem (i.e., user scrolled)
-    if (!scrollUpdateWasRequested) {
-      setIsUserScrolling(true);
-      // Clear any existing timeout
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-      // Set a timeout to reset the user scrolling state after 7 seconds of inactivity
-      scrollTimeoutRef.current = setTimeout(() => {
-        setIsUserScrolling(false);
-        scrollTimeoutRef.current = null;
-      }, 7000); // 7 seconds delay
-    }
-  }, []);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (scrollTimeoutRef.current) {
-        clearTimeout(scrollTimeoutRef.current);
-      }
-    };
-  }, []);
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeSlots, highlightedTime, localTime, roundToNearestIncrement]);
+  // Dependencies include the factors determining the *initial* scroll target
+  // and the data needed for it. The hasScrolledInitially flag prevents
+  // re-scrolling if localTime or highlightedTime change later.
 
   return (
     <div className="h-60 bg-gray-900/50 rounded border border-gray-700 overflow-hidden">
@@ -181,7 +166,7 @@ const MobileTimeList: React.FC<MobileTimeListProps> = ({
             overscanCount={5}
             itemKey={(index) => `${timezoneId}-${timeSlots[index].getTime()}`}
             className="focus:outline-none"
-            onScroll={handleScroll} // Add the scroll handler
+            // No onScroll handler needed anymore
           >
             {({ index, style }) => (
               <TimeItem
