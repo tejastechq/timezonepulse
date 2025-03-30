@@ -1,10 +1,10 @@
-import { IronSessionOptions } from 'iron-session';
+import { SessionOptions } from 'iron-session';
 import { createSecureHash } from './security';
 
 /**
  * Secure session configuration using iron-session
  */
-export const sessionConfig: IronSessionOptions = {
+export const sessionConfig: SessionOptions = {
   password: process.env.SESSION_SECRET || (process.env.NODE_ENV === 'development' ? 'complex_password_at_least_32_characters_long' : ''),
   cookieName: 'world_clock_session',
   cookieOptions: {
