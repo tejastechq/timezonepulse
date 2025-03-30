@@ -23,9 +23,11 @@ export function getCspWithNonce(nonce: string): string {
   const isDevelopment = process.env.NODE_ENV === 'development';
   
   // Allow unsafe-eval and unsafe-inline in both development and production
+  // Removed 'strict-dynamic' because it causes 'unsafe-inline' to be ignored when nonces are present
+  // This fixes Next.js scripts that don't have nonces
   const scriptSrcDirective = isDevelopment
-    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic' https:`
-    : `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic' https:`;
+    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' https:`
+    : `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' https:`;
 
   // In development, we need to be more permissive with trusted types
   const trustedTypesDirective = isDevelopment
