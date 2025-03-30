@@ -22,10 +22,10 @@ export function generateNonce(): string {
 export function getCspWithNonce(nonce: string): string {
   const isDevelopment = process.env.NODE_ENV === 'development';
   
-  // Apply nonce and remove 'unsafe-inline'. Keep 'unsafe-eval' for now.
+  // Restore 'unsafe-inline' temporarily due to breakage. Nonce is still present but less effective with unsafe-inline.
   const scriptSrcDirective = isDevelopment
-    ? `script-src 'self' 'unsafe-eval' 'nonce-${nonce}' https:` // Added nonce, removed unsafe-inline
-    : `script-src 'self' 'unsafe-eval' 'nonce-${nonce}' https:`; // Added nonce, removed unsafe-inline
+    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' https:` // Restored unsafe-inline
+    : `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' https:`; // Restored unsafe-inline
 
   // In development, we need to be more permissive with trusted types
   const trustedTypesDirective = isDevelopment
