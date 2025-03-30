@@ -22,11 +22,10 @@ export function generateNonce(): string {
 export function getCspWithNonce(nonce: string): string {
   const isDevelopment = process.env.NODE_ENV === 'development';
   
-  // Allow unsafe-eval and unsafe-inline in both development and production
-  // Removed nonce completely to ensure unsafe-inline works properly
+  // Apply nonce and remove 'unsafe-inline'. Keep 'unsafe-eval' for now.
   const scriptSrcDirective = isDevelopment
-    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' https:`
-    : `script-src 'self' 'unsafe-eval' 'unsafe-inline' https:`;
+    ? `script-src 'self' 'unsafe-eval' 'nonce-${nonce}' https:` // Added nonce, removed unsafe-inline
+    : `script-src 'self' 'unsafe-eval' 'nonce-${nonce}' https:`; // Added nonce, removed unsafe-inline
 
   // In development, we need to be more permissive with trusted types
   const trustedTypesDirective = isDevelopment
@@ -51,10 +50,10 @@ export function getCspWithNonce(nonce: string): string {
   // Image security with strict sources
   const imgSrc = `img-src 'self' data: https: blob: ${isDevelopment ? 'http://localhost:* http://127.0.0.1:*' : ''}`;
   
-  // Style security
+  // Style security - Keep unsafe-inline for now due to potential library needs
   const styleSrc = isDevelopment
     ? `style-src 'self' 'unsafe-inline'`
-    : `style-src 'self' 'unsafe-inline'`; // Keep unsafe-inline for both as it's needed for styled-components
+    : `style-src 'self' 'unsafe-inline'`; 
 
   // Connect sources including development needs
   const connectSrc = isDevelopment
