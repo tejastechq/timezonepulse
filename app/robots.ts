@@ -9,8 +9,8 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: '*',
       allow: '/',
-      disallow: ['/api/*', '/settings/admin'],
-    },
-    sitemap: 'https://worldclock.app/sitemap.xml',
-  };
-} 
+       disallow: ['/api/*', '/settings/admin'],
+     },
+     sitemap: 'https://www.timezonepulse.com/sitemap.xml', // Updated sitemap URL
+   };
+ }
