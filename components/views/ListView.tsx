@@ -398,6 +398,22 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
 
   const getHighlightClass = useCallback((isWeekend: boolean) => isWeekend ? getWeekendHighlightClass(weekendHighlightColor) : '', [weekendHighlightColor]);
 
+  interface TimeItemProps {
+    style: React.CSSProperties;
+    time: Date;
+    timezone: string;
+    isLocalTimeFn: (time: Date, timezone: string) => boolean;
+    isHighlightedFn: (time: Date) => boolean;
+    isNightTimeFn: (time: Date, timezone: string) => boolean;
+    isDateBoundaryFn: (time: Date, timezone: string) => boolean;
+    isDSTTransitionFn: (time: Date, timezone: string) => boolean;
+    isCurrentTimeFn: (time: Date) => boolean;
+    isWeekendFn: (time: Date, timezone: string) => boolean;
+    formatTimeFn: (time: Date, timezone: string) => string;
+    getHighlightAnimationClassFn: (isHighlight: boolean) => string;
+    handleTimeSelectionFn: (time: Date) => void;
+  }
+
   const TimeItem = memo(function TimeItem({ style, time, timezone, isLocalTimeFn, isHighlightedFn, isNightTimeFn, isDateBoundaryFn, isDSTTransitionFn, isCurrentTimeFn, isWeekendFn, formatTimeFn, getHighlightAnimationClassFn, handleTimeSelectionFn }: TimeItemProps) {
     const isHighlight = isHighlightedFn(time);
     const isLocal = isLocalTimeFn(time, timezone);
@@ -570,7 +586,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
                   <AutoSizer>
                     {({ height, width }) => (
                       <FixedSizeList height={height} width={width} itemCount={isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots.length : timeSlots.length} itemSize={48} overscanCount={10} ref={(ref) => { listRefs.current[timezone.id] = ref; }} className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md" style={{ backdropFilter: 'blur(2px)', backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.05)' : 'rgba(255, 255, 255, 0.05)' }} itemKey={(index) => { const slots = isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots : timeSlots; return `${timezone.id}-${slots[index].getTime()}`; }} onScroll={handleUserScroll}>
-                        {({ index, style }) => { const slots = isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots : timeSlots; return (<TimeItem style={style} time={slots[index]} timezone={timezone.id} isLocalTimeFn={isLocalTime} isHighlightedFn={isHighlighted} isNightTimeFn={checkNightHours} isDateBoundaryFn={isDateBoundary} isDSTTransitionFn={isDSTTransition} isCurrentTimeFn={isCurrentTime} isWeekendFn={isWeekend} formatTimeFn={formatTime} getHighlightAnimationClassFn={getHighlightAnimationClass} getTimezoneOffsetFn={getTimezoneOffset} handleTimeSelectionFn={handleTimeSelection} />); }}
+                        {({ index, style }) => { const slots = isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots : timeSlots; return (<TimeItem style={style} time={slots[index]} timezone={timezone.id} isLocalTimeFn={isLocalTime} isHighlightedFn={isHighlighted} isNightTimeFn={checkNightHours} isDateBoundaryFn={isDateBoundary} isDSTTransitionFn={isDSTTransition} isCurrentTimeFn={isCurrentTime} isWeekendFn={isWeekend} formatTimeFn={formatTime} getHighlightAnimationClassFn={getHighlightAnimationClass} handleTimeSelectionFn={handleTimeSelection} />); }}
                       </FixedSizeList>
                     )}
                   </AutoSizer>
