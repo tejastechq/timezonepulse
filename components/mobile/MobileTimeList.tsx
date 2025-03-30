@@ -44,7 +44,8 @@ const TimeItem = memo(function TimeItem({
 
   const cellClasses = clsx(
     'flex justify-between items-center px-4 py-2 border-b border-gray-700/50 cursor-pointer font-sans', // Added font-sans, increased padding
-    'hover:bg-gray-700/60 transition-colors duration-150',
+    'transition-colors duration-200 ease-out', // Apply transition to all color changes (hover, highlight, etc.)
+    'hover:bg-gray-700/60', // Hover state
     // Use slightly lighter font weights for normal/current states
     isHighlight ? 'bg-blue-600 text-white font-medium' : 'text-gray-100 font-normal', // Highlighted is medium, default is normal
     isCurrent && !isHighlight ? 'bg-blue-900/50 border-l-2 border-blue-400' : '', // Removed font-medium here, rely on default
@@ -57,10 +58,18 @@ const TimeItem = memo(function TimeItem({
       style={style}
       role="option"
       aria-selected={isHighlight}
-      onClick={() => onTimeSelectFn(time)}
+      onClick={(e) => {
+        e.stopPropagation(); // Prevent click from bubbling to parent card
+        onTimeSelectFn(time);
+      }}
       className={cellClasses}
       tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onTimeSelectFn(time); }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.stopPropagation(); // Prevent keydown from bubbling if necessary
+          onTimeSelectFn(time);
+        }
+      }}
     >
       {/* Apply consistent text size and color adjustments */}
       <span className={clsx('text-sm', isHighlight ? 'text-white' : isCurrent ? 'text-blue-300' : 'text-gray-100')}>
