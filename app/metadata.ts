@@ -58,9 +58,9 @@ export const baseMetadata: Metadata = {
     apple: '/timezonepulse.png', // Simplified apple icon reference
   },
   
-  // verification: { // Removed Google verification for now
-  //   google: 'google-site-verification-code',
-  // },
+  verification: {
+    google: 'QlTpR2EmL9cag8Vpd2_iJLCeldIlPOTWs--8r_-4Oe0', // Added Google verification code
+  },
   
   alternates: {
     canonical: 'https://www.timezonepulse.com', // Updated canonical URL
