@@ -129,17 +129,32 @@ export default function TimezoneCard({
           <div className="w-full max-h-40 overflow-y-auto">
             {timeSlots.map((slot) => {
               const slotInTimezone = DateTime.fromJSDate(slot).setZone(timezone.id);
-              const isHighlighted = highlightedTime && 
-                DateTime.fromJSDate(highlightedTime).hasSame(slotInTimezone, 'hour') && 
-                DateTime.fromJSDate(highlightedTime).hasSame(slotInTimezone, 'minute');
+              
+              // Round the current time down to the nearest slot increment
+              const roundedCurrentTime = highlightedTime 
+                ? roundToNearestIncrement(highlightedTime, 30 * 60 * 1000) // Assuming 30 min increment
+                : null;
+
+              // Convert rounded time to the card's timezone for comparison
+              const roundedCurrentInTimezone = roundedCurrentTime
+                ? DateTime.fromJSDate(roundedCurrentTime).setZone(timezone.id)
+                : null;
+
+              // Check if the slot matches the rounded current time
+              const isHighlighted = roundedCurrentInTimezone && 
+                roundedCurrentInTimezone.hasSame(slotInTimezone, 'hour') && 
+                roundedCurrentInTimezone.hasSame(slotInTimezone, 'minute');
               
               return (
                 <button
                   key={slot.getTime()}
                   onClick={() => onTimeSelect(slot)}
                   className={`
-                    w-full text-left px-2 py-1 rounded-md mb-1
-                    ${isHighlighted ? 'bg-primary-500 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}
+                    w-full text-left px-2 py-1 rounded-md mb-1 transition-colors duration-150 ease-in-out
+                    ${isHighlighted 
+                      ? 'bg-primary-500 text-white' // Highlight style: background color, white text
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-700' // Normal style: standard padding, hover effect
+                    }
                   `}
                 >
                   {slotInTimezone.toFormat('HH:mm')}
@@ -161,4 +176,4 @@ export default function TimezoneCard({
       </div>
     </motion.div>
   );
-} 
+}

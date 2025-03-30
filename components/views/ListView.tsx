@@ -373,8 +373,14 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     const timeDateTime = DateTime.fromJSDate(time);
     const localDateTime = DateTime.fromJSDate(localTime);
     
-    const diffInMinutes = Math.abs(timeDateTime.diff(localDateTime, 'minutes').minutes);
-    return diffInMinutes <= 5;  // Within 5 minutes
+    // Use a wider window for "current time" to ensure the highlight appears
+    // and round down the local time to nearest 30 minutes increment
+    const roundedLocalTime = Math.floor(localDateTime.minute / 30) * 30;
+    const roundedLocalDateTime = localDateTime.set({ minute: roundedLocalTime, second: 0, millisecond: 0 });
+    
+    // Check if time slot matches the rounded local time
+    return timeDateTime.hasSame(roundedLocalDateTime, 'hour') && 
+           timeDateTime.minute === roundedLocalDateTime.minute;
   }, [localTime]);
   const getWeekdayName = useCallback((time: Date, timezone: string) => DateTime.fromJSDate(time).setZone(timezone).toFormat('cccc'), []);
   const isWeekend = useCallback((time: Date, timezone: string) => {
@@ -445,6 +451,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
           <span className={`${isHighlight ? 'text-white font-semibold' : ''} ${isCurrent && !isHighlight ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}`}>{formatted}</span>
           <div className="flex items-center space-x-1">
             {isLocal && !isHighlight && !isCurrent && <span className="absolute left-0 top-0 h-full w-1 bg-primary-500 rounded-l-md" />}
+            {isCurrent && !isHighlight && <span className="absolute left-0 top-0 h-full w-2 bg-blue-500 rounded-l-md animate-pulse" />}
             {isNight && !isHighlight && <span className="text-xs text-indigo-400 dark:text-indigo-300" title="Night time"><Moon className="h-3 w-3" /></span>}
             {isDay && !isHighlight && <span className="text-xs text-amber-500 dark:text-amber-400" title="Day time"><Sun className="h-3 w-3" /></span>}
             {isDST && !isHighlight && <span className="text-xs text-amber-500 ml-1" title="DST transition soon">⚠️</span>}
@@ -708,6 +715,32 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     
     return !firstSlotDate.hasSame(currentDateTime, 'day');
   }, [timeSlots, currentDate]);
+
+  // Add this additional useEffect near other effects to force a refresh of time calculations
+  useEffect(() => {
+    if (!mounted || !localTime) return;
+    
+    // Clear the time calculation cache when local time changes
+    timeCalculationCache.current.clear();
+    
+    // Force list refresh on time changes at the 30-minute boundaries
+    const localDateTime = DateTime.fromJSDate(localTime);
+    const minute = localDateTime.minute;
+    
+    // If we're close to a 30-minute boundary (within 10 seconds), force refresh all lists
+    if ((minute === 0 || minute === 30) && localDateTime.second < 10) {
+      Object.values(listRefs.current).forEach(listRef => {
+        if (listRef) {
+          listRef.forceUpdate();
+        }
+      });
+      
+      // Also scroll to current time if not highlighted
+      if (!highlightedTime) {
+        scrollToIndex(getCurrentTimeIndex(), 'center');
+      }
+    }
+  }, [localTime, mounted, highlightedTime, scrollToIndex, getCurrentTimeIndex]);
 
   return (
     <motion.div
