@@ -48,7 +48,7 @@ const TimeItem = memo(function TimeItem({
     // Use slightly lighter font weights for normal/current states
     isHighlight ? 'bg-blue-600 text-white font-medium' : 'text-gray-100 font-normal', // Highlighted is medium, default is normal
     isCurrent && !isHighlight ? 'bg-blue-900/50 border-l-2 border-blue-400' : '', // Removed font-medium here, rely on default
-    isNight && !isHighlight && !isCurrent ? 'bg-gray-800/40' : '',
+    isNight && !isHighlight && !isCurrent ? 'bg-gray-900/60' : '', // Increased contrast for night
     !isNight && !isHighlight && !isCurrent ? 'bg-gray-800/20' : ''
   );
 
@@ -156,7 +156,11 @@ const MobileTimeList: React.FC<MobileTimeListProps> = ({
   // re-scrolling if localTime or highlightedTime change later.
 
   return (
-    <div className="h-60 bg-gray-900/50 rounded border border-gray-700 overflow-hidden">
+    <div
+      className="h-60 bg-gray-900/50 rounded border border-gray-700 overflow-hidden"
+      role="listbox" // Added ARIA role
+      aria-label={`Time slots for ${timezoneId}`} // Added ARIA label
+    >
       <AutoSizer>
         {({ height, width }) => (
           <FixedSizeList
@@ -164,7 +168,7 @@ const MobileTimeList: React.FC<MobileTimeListProps> = ({
             height={height}
             width={width}
             itemCount={timeSlots.length}
-            itemSize={40} // Slightly smaller item size for mobile
+            itemSize={44} // Increased item size for better touch target
             overscanCount={5}
             itemKey={(index) => `${timezoneId}-${timeSlots[index].getTime()}`}
             className="focus:outline-none"

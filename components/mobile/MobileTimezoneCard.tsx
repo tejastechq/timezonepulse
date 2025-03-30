@@ -12,7 +12,7 @@ interface MobileTimezoneCardProps {
   localTime: Date | null;
   highlightedTime: Date | null;
   timeSlots: Date[];
-  handleTimeSelection: (time: Date) => void; // Changed from onTimeSelect to handleTimeSelection for consistency
+  handleTimeSelection: (time: Date) => void; // Reverted to match parent prop
   roundToNearestIncrement: (date: Date, increment: number) => Date;
 }
 
@@ -21,7 +21,7 @@ const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
   localTime,
   highlightedTime,
   timeSlots,
-  handleTimeSelection, // Changed from onTimeSelect
+  handleTimeSelection, // Reverted to match parent prop
   roundToNearestIncrement,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -30,11 +30,11 @@ const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
     setIsExpanded((prev) => !prev);
   }, []);
 
-  // Renamed from selectTime to match prop name passed down
-  const handleSelectTime = useCallback((time: Date) => {
-    handleTimeSelection(time);
+  // Internal handler name, calls the 'handleTimeSelection' prop
+  const handleInternalTimeSelect = useCallback((time: Date) => {
+    handleTimeSelection(time); // Call the prop passed from parent
     setIsExpanded(false); // Collapse after selection
-  }, [handleTimeSelection]);
+  }, [handleTimeSelection]); // Dependency updated to the prop
 
   // --- Time Formatting Logic (adapted from ListView/page) ---
 
@@ -148,7 +148,7 @@ const listContainerVariants: Variants = {
               timezoneId={timezone.id}
               localTime={localTime}
               highlightedTime={highlightedTime}
-              onTimeSelect={handleSelectTime} // Pass the handleSelectTime callback
+              onTimeSelect={handleInternalTimeSelect} // Pass the internal handler
               roundToNearestIncrement={roundToNearestIncrement}
             />
           </motion.div>
