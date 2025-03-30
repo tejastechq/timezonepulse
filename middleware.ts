@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()'
   );
   responseHeaders.set('Cross-Origin-Opener-Policy', 'same-origin');
-  responseHeaders.set('Cross-Origin-Embedder-Policy', 'credentialless'); // Changed from require-corp
+  // responseHeaders.set('Cross-Origin-Embedder-Policy', 'credentialless'); // Removed COEP to allow vercel.live feedback frame
   responseHeaders.set('Cross-Origin-Resource-Policy', 'same-origin');
   responseHeaders.set('Content-Security-Policy', getCspWithNonce(nonce));
 
