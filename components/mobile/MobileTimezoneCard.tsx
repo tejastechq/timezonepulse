@@ -71,19 +71,19 @@ const cardTapVariants: Variants = {
   initial: { scale: 1, backgroundColor: 'rgba(31, 41, 55, 0.5)' } // Default bg-gray-800/50
 };
 
-// Animation variants for the time list container
+// Animation variants for the time list container (Opacity only)
 const listContainerVariants: Variants = {
   open: {
-    height: 'auto',
     opacity: 1,
-    marginTop: '16px',
-    transition: { duration: 0.25, ease: 'easeOut' } // Faster, easeOut
+    // Removed height: 'auto' - let layout handle size
+    // Removed marginTop: '16px' - handle spacing with padding or margins outside animation if needed, or adjust layout origin
+    transition: { duration: 0.3, ease: "easeInOut" } // Keep synchronized duration/easing for opacity fade
   },
   closed: {
-    height: 0,
     opacity: 0,
-    marginTop: 0,
-    transition: { duration: 0.2, ease: 'easeIn' } // Slightly faster collapse
+    // Removed height: 0 - let layout handle size
+    // Removed marginTop: 0
+    transition: { duration: 0.3, ease: "easeInOut" } // Keep synchronized duration/easing for opacity fade
   }
 };
 
@@ -97,7 +97,7 @@ const listContainerVariants: Variants = {
       variants={cardTapVariants}
       initial="initial"
       animate="initial" // Reset background on release (handled by initial state)
-      transition={{ duration: 0.2, ease: 'easeOut' }} // General layout transition
+      transition={{ duration: 0.3, ease: 'easeInOut' }} // Synchronized layout transition
     >
       {/* Collapsed View */}
       <div className="flex flex-col font-sans"> {/* Apply font-sans to the container */}
@@ -144,7 +144,7 @@ const listContainerVariants: Variants = {
             initial="closed"
             animate="open"
             exit="closed"
-            className="overflow-hidden" // Important for smooth animation
+            className="overflow-hidden mt-4" // Add margin top here instead of animating it
           >
             {/* Integrated MobileTimeList */}
             <MobileTimeList
