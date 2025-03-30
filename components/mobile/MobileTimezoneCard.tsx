@@ -14,6 +14,8 @@ interface MobileTimezoneCardProps {
   timeSlots: Date[];
   handleTimeSelection: (time: Date) => void; // Reverted to match parent prop
   roundToNearestIncrement: (date: Date, increment: number) => Date;
+  isExpanded: boolean; // Added prop from parent
+  onToggleExpand: (timezoneId: string) => void; // Added prop from parent
 }
 
 const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
@@ -23,17 +25,16 @@ const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
   timeSlots,
   handleTimeSelection, // Reverted to match parent prop
   roundToNearestIncrement,
+  isExpanded, // Use prop from parent
+  onToggleExpand, // Use prop from parent
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const toggleExpand = useCallback(() => {
-    setIsExpanded((prev) => !prev);
-  }, []);
+  // Removed internal state: const [isExpanded, setIsExpanded] = useState(false);
+  // Removed internal handler: const toggleExpand = useCallback(...);
 
   // Internal handler name, calls the 'handleTimeSelection' prop
   const handleInternalTimeSelect = useCallback((time: Date) => {
     handleTimeSelection(time); // Call the prop passed from parent
-    setIsExpanded(false); // Collapse after selection
+    // Removed: setIsExpanded(false); // Collapse is now handled by parent via handleTimeSelection
   }, [handleTimeSelection]); // Dependency updated to the prop
 
   // --- Time Formatting Logic (adapted from ListView/page) ---
@@ -91,7 +92,7 @@ const listContainerVariants: Variants = {
     <motion.div
       layout // Animate layout changes (like expansion)
       className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 shadow-md cursor-pointer overflow-hidden"
-      onClick={toggleExpand} // Allow clicking anywhere on the card to toggle
+      onClick={() => onToggleExpand(timezone.id)} // Use parent handler
       whileTap={!isExpanded ? "tap" : ""} // Apply tap animation only when clicking to expand
       variants={cardTapVariants}
       initial="initial"
@@ -111,7 +112,10 @@ const listContainerVariants: Variants = {
           </div>
           {/* Expand/Collapse Chevron */}
           <motion.div
-             onClick={toggleExpand} // Allow chevron click to toggle anytime
+             onClick={(e) => {
+               e.stopPropagation(); // Prevent card's main onClick from firing
+               onToggleExpand(timezone.id); // Use parent handler
+             }}
              whileTap={{ scale: 0.9 }}
              className="p-1"
           >

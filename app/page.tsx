@@ -43,6 +43,7 @@ export default function Home() {
   // --- State and Logic (Moved from app/mobile/page.tsx) ---
   const [localTime, setLocalTime] = useState<Date | null>(null); // Initialize null to avoid hydration mismatch
   const [highlightedTime, setHighlightedTime] = useState<Date | null>(null);
+  const [expandedTimezoneId, setExpandedTimezoneId] = useState<string | null>(null); // State for accordion
   const [isMounted, setIsMounted] = useState(false);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
   const { timezones, addTimezone } = useTimezoneStore();
@@ -75,6 +76,12 @@ export default function Home() {
 
   const handleTimeSelection = useCallback((time: Date | null) => {
     setHighlightedTime(time);
+    setExpandedTimezoneId(null); // Collapse accordion on selection
+  }, []);
+
+  // Handler for toggling card expansion
+  const handleToggleExpand = useCallback((timezoneId: string) => {
+    setExpandedTimezoneId(prevId => (prevId === timezoneId ? null : timezoneId));
   }, []);
 
   const roundToNearestIncrement = useCallback((date: Date, increment: number): Date => {
@@ -165,6 +172,8 @@ export default function Home() {
                timeSlots={timeSlots}
                handleTimeSelection={handleTimeSelection}
                roundToNearestIncrement={roundToNearestIncrement}
+               isExpanded={expandedTimezoneId === tz.id} // Pass expanded state
+               onToggleExpand={handleToggleExpand} // Pass toggle handler
              />
            ))}
            {timezones.length === 0 && (
