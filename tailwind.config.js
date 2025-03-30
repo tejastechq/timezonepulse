@@ -54,10 +54,17 @@ module.exports = {
         'lg': 'blur(16px)',
         'xl': 'blur(24px)',
         '2xl': 'blur(40px)',
-        '3xl': 'blur(64px)',
+         '3xl': 'blur(64px)',
+       },
+       fontFamily: { // Added fontFamily extension
+          sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+          mono: ['var(--font-roboto-mono)', 'monospace'],
+          poppins: ['var(--font-poppins)', 'sans-serif'],
+          montserrat: ['var(--font-montserrat)', 'sans-serif'],
+          oswald: ['var(--font-oswald)', 'sans-serif'], // Added Oswald
+        },
       },
-    },
-  },
+   },
   plugins: [
     function ({ addUtilities }) {
       const newUtilities = {

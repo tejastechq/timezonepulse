@@ -13,7 +13,7 @@ if (!envValidation.success) {
 
 import './globals.css';
 import { baseMetadata, viewport } from './metadata';
-import { inter, robotoMono } from './font';
+import { inter, robotoMono, poppins, montserrat, oswald } from './font'; // Import oswald
 import { Providers } from './providers';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -37,9 +37,10 @@ export default function RootLayout({
   fonts: React.ReactNode;
 }>) {
   return (
-    <html 
-      lang="en" 
-      className={`${inter.variable} ${robotoMono.variable}`}
+    <html
+      lang="en"
+      // Add the oswald variable here
+      className={`${inter.variable} ${robotoMono.variable} ${poppins.variable} ${montserrat.variable} ${oswald.variable}`}
       suppressHydrationWarning
     >
       <body className={`min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${inter.className}`}>

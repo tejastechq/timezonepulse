@@ -32,11 +32,12 @@ export default function Home() {
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
-    name: 'World Clock',
+    name: 'TimezonePulse', // Updated name
     applicationCategory: 'UtilityApplication',
-    description: 'Track and manage time across multiple timezones with our intuitive World Clock app. Perfect for remote teams and international scheduling.',
-    operatingSystem: 'Any',
-    url: 'https://worldclock.app',
+    // Updated description to match metadata.ts
+    description: 'Effortlessly track, compare, and convert time across multiple timezones with TimezonePulse. Stay synchronized with the world, whether for work or travel.',
+    operatingSystem: 'Any', // Generally applicable
+    url: 'https://www.timezonepulse.com', // Updated URL
     offers: {
       '@type': 'Offer',
       price: '0',
@@ -62,4 +63,4 @@ export default function Home() {
       <WorldClockWrapper />
     </main>
   );
-} 
+}

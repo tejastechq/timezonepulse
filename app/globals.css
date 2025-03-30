@@ -21,6 +21,7 @@
 }
 
 body {
+  font-family: var(--font-inter); /* Explicitly set base font */
   color: var(--foreground);
   background-color: var(--background);
   overflow-x: hidden;
@@ -394,4 +395,4 @@ html[data-fonts-loaded="true"] {
 /* BFCache restoration handling */
 html[data-bfcache-restored="true"] {
   /* Styles for restored pages if needed */
-} 
+}
