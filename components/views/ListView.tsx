@@ -367,15 +367,14 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
   }, []);
   const timeCalculationCache = useRef(new Map<string, boolean>());
   useEffect(() => { timeCalculationCache.current.clear(); }, [localTime, highlightedTime]);
-  const isCurrentTime = useCallback((time: Date, timezone: string) => {
+  const isCurrentTime = useCallback((time: Date): boolean => {
     if (!localTime) return false;
-    const cacheKey = `current-${time.getTime()}-${timezone}`;
-    if (timeCalculationCache.current.has(cacheKey)) return timeCalculationCache.current.get(cacheKey) as boolean;
-    const now = DateTime.fromJSDate(localTime);
-    const timeToCheck = DateTime.fromJSDate(time).setZone(timezone);
-    const result = now.hasSame(timeToCheck, 'minute');
-    timeCalculationCache.current.set(cacheKey, result);
-    return result;
+    
+    const timeDateTime = DateTime.fromJSDate(time);
+    const localDateTime = DateTime.fromJSDate(localTime);
+    
+    const diffInMinutes = Math.abs(timeDateTime.diff(localDateTime, 'minutes').minutes);
+    return diffInMinutes <= 5;  // Within 5 minutes
   }, [localTime]);
   const getWeekdayName = useCallback((time: Date, timezone: string) => DateTime.fromJSDate(time).setZone(timezone).toFormat('cccc'), []);
   const isWeekend = useCallback((time: Date, timezone: string) => {
@@ -385,20 +384,6 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
   const getTimezoneOffset = useCallback((timezone: string) => DateTime.now().setZone(timezone).toFormat('ZZ'), []);
   const hasMeetingAt = useCallback((time: Date, timezone: string): boolean => false, []);
   const getMeetingTitle = useCallback((time: Date, timezone: string): string => "", []);
-
-  const jumpToTime = useCallback((timePeriod: 'morning' | 'afternoon' | 'evening' | 'night' | 'now', timezone: string) => {
-    if (!listRefs.current[timezone]) return;
-    let targetIndex = 0;
-    switch (timePeriod) {
-      case 'morning': targetIndex = timeSlots.findIndex(t => DateTime.fromJSDate(t).setZone(timezone).hour === 8 && DateTime.fromJSDate(t).setZone(timezone).minute === 0); break;
-      case 'afternoon': targetIndex = timeSlots.findIndex(t => DateTime.fromJSDate(t).setZone(timezone).hour === 12 && DateTime.fromJSDate(t).setZone(timezone).minute === 0); break;
-      case 'evening': targetIndex = timeSlots.findIndex(t => DateTime.fromJSDate(t).setZone(timezone).hour === 18 && DateTime.fromJSDate(t).setZone(timezone).minute === 0); break;
-      case 'night': targetIndex = timeSlots.findIndex(t => DateTime.fromJSDate(t).setZone(timezone).hour === 21 && DateTime.fromJSDate(t).setZone(timezone).minute === 0); break;
-      case 'now': targetIndex = getCurrentTimeIndex(); break;
-    }
-    if (targetIndex === -1) targetIndex = 0;
-    listRefs.current[timezone]?.scrollToItem(targetIndex, 'center');
-  }, [timeSlots, getCurrentTimeIndex]);
 
   const handleAddTimezone = useCallback((timezone: Timezone) => { addTimezone(timezone); setSelectorOpen(false); }, [addTimezone]);
   const handleReplaceTimezone = useCallback((timezone: Timezone) => {
@@ -420,7 +405,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     const isDay = !isNight;
     const isBoundary = isDateBoundaryFn(time, timezone);
     const isDST = isDSTTransitionFn(time, timezone);
-    const isCurrent = isCurrentTimeFn(time, timezone);
+    const isCurrent = isCurrentTimeFn(time);
     const isWknd = isWeekendFn(time, timezone);
     const formatted = formatTimeFn(time, timezone);
     const animClass = getHighlightAnimationClassFn(isHighlight);
@@ -453,7 +438,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         </div>
       </div>
     );
-  }, (prevProps, nextProps) => prevProps.time.getTime() === nextProps.time.getTime() && prevProps.timezone === nextProps.timezone && prevProps.isHighlightedFn(prevProps.time) === nextProps.isHighlightedFn(nextProps.time) && prevProps.isLocalTimeFn(prevProps.time, prevProps.timezone) === nextProps.isLocalTimeFn(nextProps.time, nextProps.timezone) && prevProps.isCurrentTimeFn(prevProps.time, prevProps.timezone) === nextProps.isCurrentTimeFn(nextProps.time, nextProps.timezone));
+  }, (prevProps, nextProps) => prevProps.time.getTime() === nextProps.time.getTime() && prevProps.timezone === nextProps.timezone && prevProps.isHighlightedFn(prevProps.time) === nextProps.isHighlightedFn(nextProps.time) && prevProps.isLocalTimeFn(prevProps.time, prevProps.timezone) === nextProps.isLocalTimeFn(nextProps.time, nextProps.timezone) && prevProps.isCurrentTimeFn(prevProps.time) === nextProps.isCurrentTimeFn(nextProps.time));
 
   useEffect(() => { if (searchTerm) handleSearch(searchTerm); else setFilteredTimeSlots([]); }, [timeSlots]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -579,13 +564,6 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
                       {timezone.id !== userLocalTimezone && <DropdownMenu.Item onSelect={() => { setEditingTimezoneId(timezone.id); setTimeout(() => setSelectorOpen(true), 100); }} className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"><Edit2 className="h-4 w-4 mr-2" />Change Timezone</DropdownMenu.Item>}
                       {timezone.id !== userLocalTimezone && <DropdownMenu.Item onSelect={() => handleRemoveTimezone(timezone.id)} className="flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"><X className="h-4 w-4 mr-2" />Remove</DropdownMenu.Item>}
                     </DropdownMenu.Content></DropdownMenu.Portal></DropdownMenu.Root>
-                    <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-full p-1">
-                      <button onClick={() => jumpToTime('morning', timezone.id)} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500" title="Jump to morning (8 AM)" aria-label="Jump to morning"><Sun className="h-3.5 w-3.5 text-amber-500" /></button>
-                      <button onClick={() => jumpToTime('afternoon', timezone.id)} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500" title="Jump to afternoon (12 PM)" aria-label="Jump to afternoon"><ChevronUp className="h-3.5 w-3.5 text-blue-500" /></button>
-                      <button onClick={() => jumpToTime('evening', timezone.id)} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500" title="Jump to evening (6 PM)" aria-label="Jump to evening"><ChevronDown className="h-3.5 w-3.5 text-orange-500" /></button>
-                      <button onClick={() => jumpToTime('night', timezone.id)} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500" title="Jump to night (9 PM)" aria-label="Jump to night"><Moon className="h-3.5 w-3.5 text-indigo-500" /></button>
-                      <button onClick={() => jumpToTime('now', timezone.id)} className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500" title="Jump to current time" aria-label="Jump to current time"><Clock className="h-3.5 w-3.5 text-green-500" /></button>
-                    </div>
                   </div>
                 </div>
                 <div className="h-72 md:h-80 lg:h-96 rounded-md border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-[2px] overflow-hidden mt-4 md:mt-5 min-w-[300px] w-full" style={{ backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.1)' : 'rgba(255, 255, 255, 0.1)' }} role="listbox" aria-label={`Time selection list for ${timezone.name}`}>
@@ -610,7 +588,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         </div>
       </>
     );
-  }, [mounted, userLocalTimezone, selectedTimezones, timeSlots, isLocalTime, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, jumpToTime, handleRemoveTimezone, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate]);
+  }, [mounted, userLocalTimezone, selectedTimezones, timeSlots, isLocalTime, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate]);
 
   // Optimize synchronization of scrolling across timezone columns when highlightedTime changes
   useEffect(() => {
@@ -787,7 +765,8 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
       <AnimatePresence>
         {selectorOpen && (
           <TimezoneSelector
-            isOpen={selectorOpen}
+            key="timezone-selector"
+            isOpen={true}
             onClose={() => {
               setSelectorOpen(false);
               setEditingTimezoneId(null);
