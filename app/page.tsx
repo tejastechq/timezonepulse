@@ -1,23 +1,31 @@
+'use client'; // Convert to Client Component
+
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import HeadingMCP from './HeadingMCP';
-import { Metadata } from 'next';
+import { Metadata } from 'next'; // Keep for potential future use, though metadata is usually static
 import { JsonLd } from '@/components/seo/JsonLd';
+import HeadingMCP from './HeadingMCP'; // Keep for desktop view
 
-// Define page metadata including resource prioritization
-export const metadata: Metadata = {
-  other: {
-    'bfcache-eligible': 'true',
-  },
-};
+// --- Mobile View Imports ---
+import { DateTime } from 'luxon';
+import { useTimezoneStore, Timezone } from '@/store/timezoneStore';
+import { getLocalTimezone } from '@/lib/utils/timezone';
+import { useMediaQuery } from '@/lib/hooks/useMediaQuery'; // Import the hook
+import MobileTimezoneCard from '@/components/mobile/MobileTimezoneCard';
+import TimezoneSelector from '@/components/clock/TimezoneSelector';
+import { AnimatePresence } from 'framer-motion';
+import { Plus } from 'lucide-react';
 
-// Load WorldClockWrapper dynamically to avoid blocking paint
+// Define mobile breakpoint (adjust as needed, e.g., Tailwind's 'md' breakpoint)
+const MOBILE_BREAKPOINT = '(max-width: 768px)';
+
+// Load WorldClockWrapper dynamically (for desktop view)
 const WorldClockWrapper = dynamic(
   () => import('@/components/clock/WorldClockWrapper'),
   {
-    ssr: true,
+    ssr: true, // Keep SSR for desktop initial load if possible
     loading: () => (
       <div className="min-h-screen p-8">
-        {/* MCP-optimized static heading rendered immediately */}
         <HeadingMCP />
         <div className="flex items-center justify-center pt-8">
           <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
@@ -27,40 +35,175 @@ const WorldClockWrapper = dynamic(
   }
 );
 
+// Note: Static metadata export might not work as expected in Client Components.
+// Consider moving metadata to layout.tsx or using dynamic metadata generation if needed.
+// export const metadata: Metadata = { ... };
+
 export default function Home() {
-  // Define JSON-LD schema for the World Clock application
+  // --- State and Logic (Moved from app/mobile/page.tsx) ---
+  const [localTime, setLocalTime] = useState<Date | null>(null); // Initialize null to avoid hydration mismatch
+  const [highlightedTime, setHighlightedTime] = useState<Date | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false);
+  const { timezones, addTimezone } = useTimezoneStore();
+  const userLocalTimezone = useMemo(() => getLocalTimezone(), []);
+
+  // Media Query Hook
+  const isMobile = useMediaQuery(MOBILE_BREAKPOINT);
+
+  useEffect(() => {
+    setIsMounted(true);
+    setLocalTime(new Date()); // Set initial time on mount
+    // Update local time every second
+    const interval = setInterval(() => {
+      setLocalTime(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const timeSlots = useMemo(() => {
+    const slots: Date[] = [];
+    const now = localTime || new Date(); // Use current time or fallback
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    for (let i = 0; i < 48; i++) {
+      const slotTime = new Date(startOfDay);
+      slotTime.setMinutes(i * 30);
+      slots.push(slotTime);
+    }
+    return slots;
+  }, [localTime]);
+
+  const handleTimeSelection = useCallback((time: Date | null) => {
+    setHighlightedTime(time);
+  }, []);
+
+  const roundToNearestIncrement = useCallback((date: Date, increment: number): Date => {
+    if (!date) return new Date(); // Should not happen with isMounted check, but safety first
+    const minutes = date.getMinutes();
+    const remainder = minutes % increment;
+    let roundedMinutes;
+    if (remainder < increment / 2) {
+      roundedMinutes = minutes - remainder;
+    } else {
+      roundedMinutes = minutes + (increment - remainder);
+    }
+    const rounded = new Date(date);
+    if (roundedMinutes >= 60) {
+        rounded.setHours(rounded.getHours() + 1);
+        rounded.setMinutes(roundedMinutes - 60);
+    } else {
+        rounded.setMinutes(roundedMinutes);
+    }
+    rounded.setSeconds(0);
+    rounded.setMilliseconds(0);
+    return rounded;
+  }, []);
+
+  const handleAddTimezone = useCallback((timezone: Timezone) => {
+    addTimezone(timezone);
+    setIsSelectorOpen(false);
+  }, [addTimezone]);
+  // --- End of Moved Logic ---
+
+  // JSON-LD for SEO (remains the same)
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
-    name: 'TimezonePulse', // Updated name
+    name: 'TimezonePulse',
     applicationCategory: 'UtilityApplication',
-    // Updated description to match metadata.ts
     description: 'Effortlessly track, compare, and convert time across multiple timezones with TimezonePulse. Stay synchronized with the world, whether for work or travel.',
-    operatingSystem: 'Any', // Generally applicable
-    url: 'https://www.timezonepulse.com', // Updated URL
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD',
-      availability: 'https://schema.org/InStock',
-    },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      ratingCount: '1256',
-      bestRating: '5',
-      worstRating: '1',
-    },
+    operatingSystem: 'Any',
+    url: 'https://www.timezonepulse.com',
+    offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD', availability: 'https://schema.org/InStock' },
+    aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', ratingCount: '1256', bestRating: '5', worstRating: '1' },
   };
 
-  return (
-    <main className="min-h-screen">
-      {/* Add JSON-LD schema for better SEO */}
-      <JsonLd data={jsonLd} />
-      
-      {/* Render the MCP heading at the top level for immediate painting */}
-      <HeadingMCP />
-      <WorldClockWrapper />
-    </main>
-  );
+  // Render loading state or null until mounted to prevent hydration mismatch
+  if (!isMounted) {
+     // Render a basic loading state consistent with dynamic import loading
+     return (
+       <div className="min-h-screen p-8">
+         <HeadingMCP />
+         <div className="flex items-center justify-center pt-8">
+           <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+         </div>
+       </div>
+     );
+  }
+
+  // --- Conditional Rendering ---
+  if (isMobile) {
+    // Render Mobile View
+    return (
+      <div className="flex flex-col min-h-screen bg-gradient-to-b from-navy-start to-black-end text-white p-4 font-sans">
+         <JsonLd data={jsonLd} /> {/* Keep SEO */}
+         {/* Mobile Header */}
+         <header className="flex items-center justify-between mb-4">
+           <button className="p-2 bg-blue-600 rounded-md" aria-label="Menu">
+             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+               <path d="M4 6H20M4 12H20M4 18H20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+             </svg>
+           </button>
+           <h1 className="text-xl font-bold uppercase">World Clock</h1>
+           <button
+             onClick={() => setIsSelectorOpen(true)}
+             className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors"
+             aria-label="Add Timezone"
+           >
+             <Plus size={20} />
+           </button>
+         </header>
+
+         {/* Mobile Timezone Cards */}
+         <main className="flex-grow space-y-4">
+           {timezones.map((tz: Timezone) => (
+             <MobileTimezoneCard
+               key={tz.id}
+               timezone={tz}
+               localTime={localTime}
+               highlightedTime={highlightedTime}
+               timeSlots={timeSlots}
+               handleTimeSelection={handleTimeSelection}
+               roundToNearestIncrement={roundToNearestIncrement}
+             />
+           ))}
+           {timezones.length === 0 && (
+             <div className="text-center text-gray-400 mt-10">
+               <p>No timezones added yet.</p>
+               <button
+                 onClick={() => setIsSelectorOpen(true)}
+                 className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+               >
+                 <Plus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                 Add Timezone
+               </button>
+             </div>
+           )}
+         </main>
+
+         {/* Timezone Selection Modal */}
+         <AnimatePresence>
+           {isSelectorOpen && (
+             <TimezoneSelector
+               key="mobile-timezone-selector"
+               isOpen={true}
+               onClose={() => setIsSelectorOpen(false)}
+               onSelect={handleAddTimezone}
+               excludeTimezones={[userLocalTimezone, ...timezones.map(tz => tz.id)]}
+               data-timezone-selector
+             />
+           )}
+         </AnimatePresence>
+       </div>
+    );
+  } else {
+    // Render Desktop View
+    return (
+      <main className="min-h-screen">
+        <JsonLd data={jsonLd} />
+        <HeadingMCP />
+        <WorldClockWrapper />
+      </main>
+    );
+  }
 }
