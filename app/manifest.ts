@@ -2,35 +2,35 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "World Clock",
-    short_name: "World Clock",
-    description: "Track and manage time across multiple timezones with our intuitive World Clock app.",
+    name: "TimezonePulse",
+    short_name: "TimezonePulse",
+    description: "Effortlessly track, compare, and convert time across multiple timezones with TimezonePulse. Stay synchronized with the world, whether for work or travel.",
     start_url: "/",
     display: "standalone",
     background_color: "#ffffff",
     theme_color: "#3b82f6",
     orientation: "portrait",
     scope: "/",
-    id: "worldclock-app",
+    id: "timezonepulse-app", // Updated ID
     categories: ["productivity", "utility"],
     lang: "en",
     dir: "ltr",
-    icons: [
+    icons: [ // Using the single logo for all sizes as discussed
       {
-        src: "/icons/icon-192x192.png",
-        sizes: "192x192",
+        src: "/timezonepulse.png",
+        sizes: "192x192", // Keeping size definition
         type: "image/png",
         purpose: "any"
       },
       {
-        src: "/icons/icon-384x384.png",
-        sizes: "384x384",
+        src: "/timezonepulse.png",
+        sizes: "384x384", // Keeping size definition
         type: "image/png",
         purpose: "any"
       },
       {
-        src: "/icons/icon-512x512.png",
-        sizes: "512x512",
+        src: "/timezonepulse.png",
+        sizes: "512x512", // Keeping size definition
         type: "image/png",
         purpose: "any"
       }
@@ -43,8 +43,8 @@ export default function manifest(): MetadataRoute.Manifest {
         url: "/?action=add",
         icons: [
           {
-            src: "/shortcuts/add-timezone.png",
-            sizes: "96x96",
+            src: "/timezonepulse.png", // Updated shortcut icon
+            sizes: "96x96", // Keeping size definition
             type: "image/png"
           }
         ]
@@ -67,4 +67,4 @@ export default function manifest(): MetadataRoute.Manifest {
       }
     ]
   };
-} 
+}

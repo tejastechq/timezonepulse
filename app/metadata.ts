@@ -1,28 +1,28 @@
 import { Metadata, Viewport } from 'next';
 
-const APP_NAME = 'World Clock';
-const APP_DEFAULT_TITLE = 'World Clock - Track Time Across Multiple Timezones';
-const APP_TITLE_TEMPLATE = '%s - World Clock';
-const APP_DESCRIPTION = 'Track and manage time across multiple timezones with our intuitive World Clock app. Perfect for remote teams and international scheduling.';
+const APP_NAME = 'TimezonePulse';
+const APP_DEFAULT_TITLE = 'TimezonePulse: Your Global Time Companion';
+const APP_TITLE_TEMPLATE = '%s - TimezonePulse';
+const APP_DESCRIPTION = 'Effortlessly track, compare, and convert time across multiple timezones with TimezonePulse. Stay synchronized with the world, whether for work or travel.';
 
 /**
- * Default metadata configuration for the World Clock application
+ * Default metadata configuration for the TimezonePulse application
  * This can be overridden in individual pages
  */
 export const baseMetadata: Metadata = {
-  metadataBase: new URL('https://worldclock.app'),
+  metadataBase: new URL('https://www.timezonepulse.com'),
   title: {
     default: APP_DEFAULT_TITLE,
     template: APP_TITLE_TEMPLATE,
   },
   description: APP_DESCRIPTION,
   applicationName: APP_NAME,
-  authors: [{ name: 'World Clock Team' }],
+  authors: [{ name: 'TimezonePulse Team' }],
   generator: 'Next.js',
-  keywords: ['world clock', 'timezone converter', 'time management', 'international time', 'time zones'],
+  keywords: ['timezone', 'world clock', 'time converter', 'global time', 'international clock', 'time management', 'meeting planner', 'travel time', 'timezonepulse'],
   referrer: 'origin-when-cross-origin',
-  creator: 'World Clock Team',
-  publisher: 'World Clock',
+  creator: 'TimezonePulse Team',
+  publisher: 'TimezonePulse Team',
   formatDetection: {
     email: false,
     address: false,
@@ -36,10 +36,10 @@ export const baseMetadata: Metadata = {
     title: APP_DEFAULT_TITLE,
     description: APP_DESCRIPTION,
     images: [{
-      url: '/og-image.png',
-      width: 1200,
+      url: '/timezonepulse.png', // Updated path
+      width: 1200, // Keep original dimensions or adjust if known
       height: 630,
-      alt: 'World Clock App',
+      alt: 'TimezonePulse App Logo', // Updated alt text
     }],
   },
   
@@ -47,33 +47,25 @@ export const baseMetadata: Metadata = {
     card: 'summary_large_image',
     title: APP_DEFAULT_TITLE,
     description: APP_DESCRIPTION,
-    images: ['/og-image.png'],
-    creator: '@worldclockapp',
+    images: ['/timezonepulse.png'], // Updated path
+    creator: '@timezonepulse', // Updated handle
   },
-  
   // Now using app route /manifest.ts instead of static file
   // manifest: '/manifest.json',
   
   icons: {
-    icon: [
-      { url: '/favicon.ico' },
-      { url: '/icon.png', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/apple-icon.png' },
-      { url: '/apple-icon-72x72.png', sizes: '72x72', type: 'image/png' },
-      { url: '/apple-icon-114x114.png', sizes: '114x114', type: 'image/png' },
-    ],
+    icon: '/timezonepulse.png', // Simplified icon reference
+    apple: '/timezonepulse.png', // Simplified apple icon reference
   },
   
-  verification: {
-    google: 'google-site-verification-code',
-  },
+  // verification: { // Removed Google verification for now
+  //   google: 'google-site-verification-code',
+  // },
   
   alternates: {
-    canonical: 'https://worldclock.app',
+    canonical: 'https://www.timezonepulse.com', // Updated canonical URL
     languages: {
-      'en-US': 'https://worldclock.app',
+      'en-US': 'https://www.timezonepulse.com', // Updated language alternate URL
     },
   },
   
@@ -101,4 +93,4 @@ export const viewport: Viewport = {
   colorScheme: 'dark light',
   width: 'device-width',
   initialScale: 1,
-}; 
+};
