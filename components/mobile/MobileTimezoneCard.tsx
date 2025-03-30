@@ -91,7 +91,7 @@ const listContainerVariants: Variants = {
     <motion.div
       layout // Animate layout changes (like expansion)
       className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 shadow-md cursor-pointer overflow-hidden"
-      onClick={!isExpanded ? toggleExpand : undefined} // Only allow opening via card click
+      onClick={toggleExpand} // Allow clicking anywhere on the card to toggle
       whileTap={!isExpanded ? "tap" : ""} // Apply tap animation only when clicking to expand
       variants={cardTapVariants}
       initial="initial"
