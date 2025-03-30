@@ -37,11 +37,14 @@ module.exports = {
         },
         foreground: {
           DEFAULT: '#333333',
-          dark: '#f8f8f8',
-        },
-      },
-      backgroundColor: {
-        background: 'var(--background)',
+           dark: '#f8f8f8',
+         },
+         // Added for mobile gradient
+         'navy-start': '#0a192f',
+         'black-end': '#000000',
+       },
+       backgroundColor: {
+         background: 'var(--background)',
       },
       textColor: {
         foreground: 'var(--foreground)',
