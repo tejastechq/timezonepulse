@@ -22,15 +22,15 @@ export function generateNonce(): string {
 export function getCspWithNonce(nonce: string): string {
   const isDevelopment = process.env.NODE_ENV === 'development';
   
-  // Allow unsafe-eval and unsafe-inline in development for React DevTools and HMR
+  // Allow unsafe-eval and unsafe-inline in both development and production
   const scriptSrcDirective = isDevelopment
     ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic' https:`
-    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https:`;
+    : `script-src 'self' 'unsafe-eval' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic' https:`;
 
   // In development, we need to be more permissive with trusted types
   const trustedTypesDirective = isDevelopment
     ? `trusted-types 'allow-duplicates' default dompurify nextjs#bundler webpack#bundler`
-    : `trusted-types 'allow-duplicates' default dompurify`;
+    : `trusted-types 'allow-duplicates' default dompurify webpack#bundler nextjs#bundler`;
 
   // Base URI restriction
   const baseUri = `base-uri 'self'`;
@@ -38,9 +38,9 @@ export function getCspWithNonce(nonce: string): string {
   // Object security
   const objectSrc = `object-src 'none'`;
 
-  // Frame security
-  const frameSrc = `frame-src 'none'`;
-  const frameAncestors = `frame-ancestors 'none'`;
+  // Frame security - allow frames for embedded content
+  const frameSrc = `frame-src 'self' https:`;
+  const frameAncestors = `frame-ancestors 'self'`;
   const formAction = `form-action 'self'`;
 
   // Media and font security
