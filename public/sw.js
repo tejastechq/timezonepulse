@@ -1,5 +1,5 @@
 /**
- * World Clock Service Worker
+ * TimeZonePulse Service Worker
  * Enables offline functionality and faster page loads
  */
 
@@ -104,4 +104,4 @@ self.addEventListener('fetch', (event) => {
           });
       })
   );
-}); 
+});

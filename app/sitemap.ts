@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 /**
- * Sitemap generation for the World Clock application
+ * Sitemap generation for the TimeZonePulse application
  * This helps search engines discover and index all pages of the site
  */
 export default function sitemap(): MetadataRoute.Sitemap {

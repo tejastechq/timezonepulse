@@ -2,7 +2,7 @@
 // Run this in browser console to completely reset the app state
 
 /**
- * World Clock Total Reset (Enhanced)
+ * TimeZonePulse Total Reset (Enhanced)
  * 
  * This script will completely reset all persisted state in the application:
  * 1. Unregisters service worker
@@ -18,7 +18,7 @@
  */
 
 (async function() {
-  console.log('🧹 WORLD CLOCK ENHANCED TOTAL RESET');
+  console.log('🧹 TimeZonePulse ENHANCED TOTAL RESET');
   console.log('==================================');
   
   // Track completion of async operations
@@ -187,4 +187,4 @@
     console.log('Please hard-reload the page manually to complete the reset.');
     console.log('You can do this by pressing Ctrl+Shift+R (Windows/Linux) or Cmd+Shift+R (Mac).');
   }
-})(); 
+})();

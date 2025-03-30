@@ -7,7 +7,7 @@ export default function HeadingMCP() {
       id="main-heading"
       style={{ minHeight: '32px' }}
     >
-      World Clock
+      TimeZonePulse
     </h2>
   );
-} 
+}

@@ -1,5 +1,5 @@
 /**
- * Timezone utilities for the World Clock application
+ * Timezone utilities for the TimeZonePulse application
  * 
  * This file provides helper functions for working with timezones,
  * including calculations for business hours, UTC offsets, and
@@ -177,4 +177,4 @@ export const formatDateForTimezone = (
   format: string = 'HH:mm:ss'
 ): string => {
   return DateTime.fromJSDate(date).setZone(timezone).toFormat(format);
-}; 
+};

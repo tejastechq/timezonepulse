@@ -1,28 +1,28 @@
 import { Metadata, Viewport } from 'next';
 
-const APP_NAME = 'TimezonePulse';
-const APP_DEFAULT_TITLE = 'TimezonePulse: Your Global Time Companion';
-const APP_TITLE_TEMPLATE = '%s - TimezonePulse';
-const APP_DESCRIPTION = 'Effortlessly track, compare, and convert time across multiple timezones with TimezonePulse. Stay synchronized with the world, whether for work or travel.';
+const APP_NAME = 'TimeZonePulse'; // Corrected casing
+const APP_DEFAULT_TITLE = 'TimeZonePulse: Your Global Time Companion';
+const APP_TITLE_TEMPLATE = '%s - TimeZonePulse';
+const APP_DESCRIPTION = 'Effortlessly track, compare, and convert time across multiple timezones with TimeZonePulse. Stay synchronized with the world, whether for work or travel.';
 
 /**
- * Default metadata configuration for the TimezonePulse application
+ * Default metadata configuration for the TimeZonePulse application
  * This can be overridden in individual pages
  */
 export const baseMetadata: Metadata = {
-  metadataBase: new URL('https://www.timezonepulse.com'),
+  metadataBase: new URL('https://www.timezonepulse.com'), // Assuming this URL is correct for TimeZonePulse
   title: {
     default: APP_DEFAULT_TITLE,
     template: APP_TITLE_TEMPLATE,
   },
   description: APP_DESCRIPTION,
-  applicationName: APP_NAME,
-  authors: [{ name: 'TimezonePulse Team' }],
+  applicationName: APP_NAME, // Uses the updated constant
+  authors: [{ name: 'TimeZonePulse Team' }],
   generator: 'Next.js',
-  keywords: ['timezone', 'world clock', 'time converter', 'global time', 'international clock', 'time management', 'meeting planner', 'travel time', 'timezonepulse'],
+  keywords: ['timezone', 'time converter', 'global time', 'international clock', 'time management', 'meeting planner', 'travel time', 'timezonepulse'], // Removed 'world clock'
   referrer: 'origin-when-cross-origin',
-  creator: 'TimezonePulse Team',
-  publisher: 'TimezonePulse Team',
+  creator: 'TimeZonePulse Team',
+  publisher: 'TimeZonePulse Team',
   formatDetection: {
     email: false,
     address: false,
@@ -32,14 +32,14 @@ export const baseMetadata: Metadata = {
   
   openGraph: {
     type: 'website',
-    siteName: APP_NAME,
+    siteName: APP_NAME, // Uses the updated constant
     title: APP_DEFAULT_TITLE,
     description: APP_DESCRIPTION,
     images: [{
-      url: '/timezonepulse.png', // Updated path
-      width: 1200, // Keep original dimensions or adjust if known
+      url: '/timezonepulse.png', // Path seems correct
+      width: 1200,
       height: 630,
-      alt: 'TimezonePulse App Logo', // Updated alt text
+      alt: 'TimeZonePulse App Logo', // Alt text already correct
     }],
   },
   
@@ -47,8 +47,8 @@ export const baseMetadata: Metadata = {
     card: 'summary_large_image',
     title: APP_DEFAULT_TITLE,
     description: APP_DESCRIPTION,
-    images: ['/timezonepulse.png'], // Updated path
-    creator: '@timezonepulse', // Updated handle
+    images: ['/timezonepulse.png'], // Path seems correct
+    creator: '@timezonepulse', // Handle seems correct
   },
   // Now using app route /manifest.ts instead of static file
   // manifest: '/manifest.json',
@@ -63,9 +63,9 @@ export const baseMetadata: Metadata = {
   },
   
   alternates: {
-    canonical: 'https://www.timezonepulse.com', // Updated canonical URL
+    canonical: 'https://www.timezonepulse.com', // URL seems correct
     languages: {
-      'en-US': 'https://www.timezonepulse.com', // Updated language alternate URL
+      'en-US': 'https://www.timezonepulse.com', // URL seems correct
     },
   },
   

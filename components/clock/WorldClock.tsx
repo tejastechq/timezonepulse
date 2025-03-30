@@ -67,12 +67,12 @@ const ViewPlaceholder = () => (
   </div>
 );
 
-// Define the props interface for WorldClock
-interface WorldClockProps {
+// Define the props interface for TimeZonePulse
+interface TimeZonePulseProps {
   skipHeading?: boolean;
 }
 
-export default function WorldClock({ skipHeading = false }: WorldClockProps) {
+export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProps) {
   // Hydration safe rendering
   const [isClient, setIsClient] = useState(false);
   
@@ -230,7 +230,8 @@ export default function WorldClock({ skipHeading = false }: WorldClockProps) {
   const roundToNearestIncrement = useCallback((date: Date, increment: number) => {
     const dt = DateTime.fromJSDate(date);
     const minutes = dt.minute;
-    const roundedMinutes = Math.round(minutes / increment) * increment;
+    // Use Math.floor to always round down to the start of the interval
+    const roundedMinutes = Math.floor(minutes / increment) * increment; 
     return dt.set({ minute: roundedMinutes, second: 0, millisecond: 0 }).toJSDate();
   }, []);
 

@@ -118,7 +118,7 @@ export default function MobileMenu() {
                 
                 <div className="mt-auto">
                   <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
-                    World Clock - A global time management application
+                    TimeZonePulse - A global time management application
                   </div>
                 </div>
               </div>
@@ -128,4 +128,4 @@ export default function MobileMenu() {
       </AnimatePresence>
     </div>
   );
-} 
+}

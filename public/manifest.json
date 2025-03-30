@@ -1,14 +1,14 @@
 {
-  "name": "World Clock",
-  "short_name": "World Clock",
-  "description": "Track and manage time across multiple timezones with our intuitive World Clock app.",
+  "name": "TimeZonePulse",
+  "short_name": "TimeZonePulse",
+  "description": "Track and manage time across multiple timezones with our intuitive TimeZonePulse app.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3b82f6",
   "orientation": "portrait",
   "scope": "/",
-  "id": "worldclock-app",
+  "id": "timezonepulse-app",
   "categories": ["productivity", "utility"],
   "lang": "en",
   "dir": "ltr",
@@ -63,4 +63,4 @@
       "label": "Analog Clock View"
     }
   ]
-} 
+}

@@ -67,7 +67,7 @@ export default function ListViewPage() {
 
   return (
     <div className="w-full min-h-screen flex flex-col p-4 md:p-6 bg-[#1a1d24]">
-      <h1 className="text-2xl font-bold mb-4 text-gray-100">World Clock - List View</h1>
+      <h1 className="text-2xl font-bold mb-4 text-gray-100">TimeZonePulse - List View</h1>
       
       <div className="flex-1 border rounded-md overflow-hidden w-full">
         <ListView

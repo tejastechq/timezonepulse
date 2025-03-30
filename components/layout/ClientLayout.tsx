@@ -45,7 +45,7 @@ export default function ClientLayout({
             >
               <Settings size={20} />
             </Link>
-            <Link href="/" className="text-xl font-bold">World Clock</Link>
+            <Link href="/" className="text-xl font-bold">TimeZonePulse</Link>
             <nav className="hidden md:flex space-x-6">
               <Link href="/" className="hover:text-primary-500 transition-colors">Home</Link>
               <Link href="/about" className="hover:text-primary-500 transition-colors">About</Link>
@@ -66,7 +66,7 @@ export default function ClientLayout({
       
       <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>World Clock - A global time management application</p>
+          <p>TimeZonePulse - A global time management application</p>
           <div className="mt-2 flex justify-center space-x-4">
             <Link href="/" className="hover:text-primary-500 transition-colors">Home</Link>
             <Link href="/about" className="hover:text-primary-500 transition-colors">About</Link>
@@ -76,4 +76,4 @@ export default function ClientLayout({
       </footer>
     </>
   );
-} 
+}

@@ -151,7 +151,7 @@ export default function Home() {
                <path d="M4 6H20M4 12H20M4 18H20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
              </svg>
            </button>
-           <h1 className="text-xl font-bold uppercase">World Clock</h1>
+           <h1 className="text-xl font-bold uppercase">TimeZonePulse</h1>
            <button
              onClick={() => setIsSelectorOpen(true)}
              className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors"

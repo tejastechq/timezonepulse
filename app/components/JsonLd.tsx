@@ -2,10 +2,10 @@ export default function JsonLd() {
   const schema = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
-    name: 'World Clock',
+    name: 'TimeZonePulse',
     applicationCategory: 'UtilityApplication',
     operatingSystem: 'Any',
-    description: 'Track and manage time across multiple timezones with our intuitive World Clock app. Perfect for remote teams and international scheduling.',
+    description: 'Track and manage time across multiple timezones with our intuitive TimeZonePulse app. Perfect for remote teams and international scheduling.',
     offers: {
       '@type': 'Offer',
       price: '0',
@@ -13,7 +13,7 @@ export default function JsonLd() {
     },
     author: {
       '@type': 'Organization',
-      name: 'World Clock Team',
+      name: 'TimeZonePulse Team',
     },
     browserRequirements: 'Requires JavaScript. Requires HTML5.',
     softwareVersion: '1.0.0',
@@ -30,4 +30,4 @@ export default function JsonLd() {
       dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
     />
   );
-} 
+}

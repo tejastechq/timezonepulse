@@ -136,7 +136,7 @@ export default function SettingsPage() {
         </div>
         
         <p className="text-gray-600 dark:text-gray-400">
-          Customize your World Clock experience with these settings.
+          Customize your TimeZonePulse experience with these settings.
         </p>
         
         {feedbackMsg && (
@@ -480,7 +480,7 @@ export default function SettingsPage() {
         <section className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">About</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-2">
-            World Clock - A global time management application
+            TimeZonePulse - A global time management application
           </p>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             Version 1.0.0

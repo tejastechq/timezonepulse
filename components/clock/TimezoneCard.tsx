@@ -61,7 +61,7 @@ export default function TimezoneCard({
       exit={{ opacity: 0, y: -20 }}
       whileHover={{ scale: 1.02 }}
       className={`
-        relative p-4 rounded-lg ${glassClasses}
+        relative p-4 rounded-lg ${glassClasses} max-w-md
         ${isBusinessHours ? 'border-l-4 border-green-500' : ''}
         ${isNightTime ? 'text-white' : 'text-gray-900 dark:text-white'}
       `}
