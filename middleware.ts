@@ -80,8 +80,8 @@ export async function middleware(request: NextRequest) {
   response.headers.set('Content-Security-Policy', getCspWithNonce(nonce));
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-RateLimit-Limit', endpoint === 'time' ? '120' : endpoint === 'cleanup' ? '10' : '60');
-  response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
-  response.headers.set('X-RateLimit-Reset', rateLimitResult.resetTime.toISOString());
+  response.headers.set('X-RateLimit-Remaining', (rateLimitResult.remaining ?? 0).toString());
+  response.headers.set('X-RateLimit-Reset', rateLimitResult.resetTime?.toISOString() || new Date().toISOString());
   
   return response;
 }
