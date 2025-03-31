@@ -26,14 +26,20 @@ const WorldClockWrapper = dynamic(
   () => import('@/components/clock/WorldClockWrapper'),
   {
     ssr: true, // Keep SSR for desktop initial load if possible
-    loading: () => (
-      <div className="min-h-screen p-8">
-        <HeadingMCP />
-        <div className="flex items-center justify-center pt-8">
-          <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+    loading: () => {
+      // Need to check for landscape mode here since we're outside the component
+      const isMobileLandscapeCheck = typeof window !== 'undefined' ? 
+        window.matchMedia('(max-width: 932px) and (max-height: 430px)').matches : false;
+      
+      return (
+        <div className="min-h-screen p-8">
+          {!isMobileLandscapeCheck && <HeadingMCP />}
+          <div className="flex items-center justify-center pt-8">
+            <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+          </div>
         </div>
-      </div>
-    ),
+      );
+    }
   }
 );
 
@@ -53,6 +59,8 @@ export default function Home() {
 
   // Media Query Hook
   const isMobile = useMediaQuery(MOBILE_BREAKPOINT);
+  // Add media query for horizontal mobile view
+  const isMobileLandscape = useMediaQuery('(max-width: 932px) and (max-height: 430px)');
 
   useEffect(() => {
     setIsMounted(true);
@@ -153,7 +161,7 @@ export default function Home() {
      // Render a basic loading state consistent with dynamic import loading
      return (
        <div className="min-h-screen p-8">
-         <HeadingMCP />
+         {!isMobileLandscape && <HeadingMCP />}
          <div className="flex items-center justify-center pt-8">
            <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
          </div>
@@ -239,7 +247,7 @@ export default function Home() {
     return (
       <main className="min-h-screen">
         <JsonLd data={jsonLd} />
-        <HeadingMCP />
+        {!isMobileLandscape && <HeadingMCP />}
         <WorldClockWrapper />
       </main>
     );

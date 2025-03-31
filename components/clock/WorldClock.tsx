@@ -331,7 +331,7 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
               <Menu size={20} />
             </button>
 
-            <h1 className="text-xl font-medium">World Clock</h1>
+            <h1 className="text-xl font-medium">TimeZonePulse</h1>
             
             <div className="flex items-center gap-2">
               {/* Add Timezone Button for landscape mode */}
