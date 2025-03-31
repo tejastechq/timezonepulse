@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from 'framer-motion';
+import { motion, useMotionValue, useTransform, PanInfo } from 'framer-motion'; // Removed AnimatePresence as it's not used here
 import { Trash2 } from 'lucide-react';
 import { Timezone } from '@/store/timezoneStore';
 import MobileTimezoneCard from './MobileTimezoneCard'; // The actual card content
@@ -28,8 +28,10 @@ const DraggableTimezoneCard: React.FC<DraggableTimezoneCardProps> = ({
 }) => {
   // Hooks are now correctly at the top level of this component
   const dragX = useMotionValue(0);
-  // Map dragX (-100 to 0) to opacity (1 to 0) for the background
+  // Map dragX (-100 to -20) to opacity (1 to 0) for the background
   const backgroundOpacity = useTransform(dragX, [-100, -20], [1, 0]); // Fade out quicker
+  // Map dragX (-100 to -50) to scale (1 to 0.8) for the icon
+  const iconScale = useTransform(dragX, [-100, -50], [1, 0.8], { clamp: true }); // Clamp ensures scale doesn't go below 0.8
 
   const handleDragEnd = (
     event: MouseEvent | TouchEvent | PointerEvent,
@@ -45,7 +47,7 @@ const DraggableTimezoneCard: React.FC<DraggableTimezoneCardProps> = ({
 
   return (
     <motion.div
-      key={timezone.id} // Key for AnimatePresence
+      key={timezone.id} // Key for AnimatePresence in parent
       layout // Animate layout changes
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -53,12 +55,15 @@ const DraggableTimezoneCard: React.FC<DraggableTimezoneCardProps> = ({
       className="relative" // Needed for absolute positioning
     >
       {/* Background Remove Button - Conditionally Rendered & Opacity Controlled */}
-      {!isLocal && (
-        <motion.div
-          className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-600 text-white w-20 rounded-r-lg pointer-events-none z-0" // Ensure background is behind card
-          style={{ opacity: backgroundOpacity }} // Control opacity via motion value
-        >
-          <Trash2 size={24} />
+       {!isLocal && (
+         <motion.div
+           className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-600 text-white w-24 pointer-events-none z-0" // Increased width, removed rounded-r-lg
+           style={{ opacity: backgroundOpacity }} // Control opacity via motion value
+         >
+           {/* Wrap icon in motion.div to apply scale */}
+           <motion.div style={{ scale: iconScale }}>
+             <Trash2 size={24} />
+           </motion.div>
         </motion.div>
       )}
 
