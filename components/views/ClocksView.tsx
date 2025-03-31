@@ -9,7 +9,7 @@ import { useTheme } from 'next-themes';
 interface ClocksViewProps {
   selectedTimezones: Timezone[];
   userLocalTimezone: string;
-  setSelectedTimezones: (timezones: Timezone[]) => void;
+  // Removed setSelectedTimezones from interface
 }
 
 /**
@@ -47,4 +47,4 @@ function ClocksView(props: ClocksViewProps) {
 }
 
 // Export a memoized version of the component
-export default memo(ClocksView); 
+export default memo(ClocksView);

@@ -8,7 +8,7 @@ import DigitalClock from '../clock/DigitalClock';
 interface DigitalViewProps {
   selectedTimezones: Timezone[];
   userLocalTimezone: string;
-  setSelectedTimezones: (timezones: Timezone[]) => void;
+  // Removed setSelectedTimezones from interface
 }
 
 /**
@@ -36,4 +36,4 @@ function DigitalView(props: DigitalViewProps) {
 }
 
 // Export a memoized version of the component
-export default memo(DigitalView); 
+export default memo(DigitalView);

@@ -28,13 +28,13 @@ interface ListViewProps {
 interface ClocksViewProps {
   selectedTimezones: Timezone[];
   userLocalTimezone: string;
-  setSelectedTimezones: (timezones: Timezone[]) => void;
+  // Removed setSelectedTimezones from interface
 }
 
 interface DigitalViewProps {
   selectedTimezones: Timezone[];
   userLocalTimezone: string;
-  setSelectedTimezones: (timezones: Timezone[]) => void;
+  // Removed setSelectedTimezones from interface
 }
 
 /**
@@ -220,13 +220,12 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
   const handleTimeSelection = useCallback((time: Date | null) => {
     // Set the highlighted time
     setHighlightedTime(time);
-    
-    // If the view is set to something other than list, switch to list view
-    // to show the highlighted time
+
+    // Restore view switching logic
     if (currentView !== 'list') {
       setCurrentView('list');
     }
-  }, [currentView, setCurrentView, setHighlightedTime]); // Added setHighlightedTime dependency
+  }, [currentView, setCurrentView, setHighlightedTime]); // Restored dependencies
 
   // Round a date to the nearest increment (in minutes)
   const roundToNearestIncrement = useCallback((date: Date, increment: number) => {
@@ -336,74 +335,20 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
 
           {currentView === 'analog' && (
             <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
+              {/* Removed the setSelectedTimezones prop */}
               <OptimizedClocksView
                 selectedTimezones={timezones}
                 userLocalTimezone={localTimezone}
-                setSelectedTimezones={(newTimezones) => {
-                  // Check if we're removing a timezone (new list is shorter than current list)
-                  if (newTimezones.length < timezones.length) {
-                    // Find the timezone(s) that were removed
-                    const currentIds = new Set(timezones.map(tz => tz.id));
-                    const newIds = new Set(newTimezones.map(tz => tz.id));
-                    
-                    // Get IDs that are in current but not in new (these were removed)
-                    currentIds.forEach(id => {
-                      if (!newIds.has(id) && id !== localTimezone) {
-                        removeTimezone(id);
-                      }
-                    });
-                  } else {
-                    // Adding new timezones (original implementation)
-                    // Filter out the local timezone
-                    const nonLocalTimezones = newTimezones.filter(tz => tz.id !== localTimezone);
-                    
-                    // Get only new timezones that aren't already in the store
-                    const existingIds = new Set(timezones.map(tz => tz.id));
-                    const newTimezoneItems = nonLocalTimezones.filter(tz => !existingIds.has(tz.id));
-                    
-                    // Add each new timezone
-                    newTimezoneItems.forEach(tz => {
-                      addTimezone(tz);
-                    });
-                  }
-                }}
               />
             </div>
           )}
 
           {currentView === 'digital' && (
             <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
+              {/* Removed the setSelectedTimezones prop */}
               <OptimizedDigitalView
                 selectedTimezones={timezones}
                 userLocalTimezone={localTimezone}
-                setSelectedTimezones={(newTimezones) => {
-                  // Check if we're removing a timezone (new list is shorter than current list)
-                  if (newTimezones.length < timezones.length) {
-                    // Find the timezone(s) that were removed
-                    const currentIds = new Set(timezones.map(tz => tz.id));
-                    const newIds = new Set(newTimezones.map(tz => tz.id));
-                    
-                    // Get IDs that are in current but not in new (these were removed)
-                    currentIds.forEach(id => {
-                      if (!newIds.has(id) && id !== localTimezone) {
-                        removeTimezone(id);
-                      }
-                    });
-                  } else {
-                    // Adding new timezones (original implementation)
-                    // Filter out the local timezone
-                    const nonLocalTimezones = newTimezones.filter(tz => tz.id !== localTimezone);
-                    
-                    // Get only new timezones that aren't already in the store
-                    const existingIds = new Set(timezones.map(tz => tz.id));
-                    const newTimezoneItems = nonLocalTimezones.filter(tz => !existingIds.has(tz.id));
-                    
-                    // Add each new timezone
-                    newTimezoneItems.forEach(tz => {
-                      addTimezone(tz);
-                    });
-                  }
-                }}
               />
             </div>
           )}

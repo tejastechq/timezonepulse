@@ -450,11 +450,31 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
       animClass
     );
     return (
-      <div style={style} role="option" aria-selected={isHighlight} data-key={time.getTime()} data-current-time={isCurrent ? 'true' : 'false'} data-time-item="true" onClick={() => handleTimeSelectionFn(time)} className={cellClasses} tabIndex={0}> {/* Removed data-local-time */}
+      <div
+        style={style}
+        role="option"
+        aria-selected={isHighlight}
+        data-key={time.getTime()}
+        data-current-time={isCurrent ? 'true' : 'false'}
+        data-time-item="true"
+        onClick={(e) => { // Added event parameter
+          e.stopPropagation(); // Prevent event bubbling
+          // Removed onClick handler from outer div
+        }}
+        className={cellClasses}
+        tabIndex={0} // Keep tabIndex for accessibility if needed, though click is moved
+      > {/* Removed data-local-time */}
         {isBoundary && <div className="absolute top-0 left-0 w-full text-xs text-gray-500 dark:text-gray-400 pt-0.5 px-3 font-medium">{DateTime.fromJSDate(time).setZone(timezone).toFormat('EEE, MMM d')}</div>}
-        <div className="flex justify-between items-center">
+        {/* Added onClick handler to this inner div */}
+        <div
+          className="flex justify-between items-center cursor-pointer" // Added cursor-pointer
+          onClick={(e) => {
+            e.stopPropagation(); // Keep stopping propagation
+            handleTimeSelectionFn(time);
+          }}
+        >
           <span className={`${isHighlight ? 'text-white font-semibold' : ''} ${isCurrent && !isHighlight ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}`}>{formatted}</span>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1 pointer-events-none"> {/* Added pointer-events-none to icon container */}
             {/* Removed: isLocal && !isHighlight && !isCurrent && <span className="absolute left-0 top-0 h-full w-1 bg-primary-500 rounded-l-md" /> */}
             {isCurrent && !isHighlight && <span className="absolute left-0 top-0 h-full w-2 bg-blue-500 rounded-l-md animate-pulse" />}
             {isNight && !isHighlight && <span className="text-xs text-indigo-400 dark:text-indigo-300" title="Night time"><Moon className="h-3 w-3" /></span>}
