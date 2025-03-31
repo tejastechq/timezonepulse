@@ -395,7 +395,17 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
       setSelectorOpen(false);
     }
   }, [addTimezone, removeTimezone, editingTimezoneId]);
-  const handleRemoveTimezone = useCallback((id: string) => { if (id !== userLocalTimezone) removeTimezone(id); }, [removeTimezone, userLocalTimezone]);
+
+  // Updated handleRemoveTimezone to include confirmation
+  const handleRemoveTimezone = useCallback((id: string) => {
+    if (id !== userLocalTimezone) {
+      const timezoneToRemove = selectedTimezones.find(tz => tz.id === id);
+      const name = timezoneToRemove?.name.split('/').pop()?.replace('_', ' ') || id;
+      if (window.confirm(`Are you sure you want to remove the timezone "${name}"?`)) {
+        removeTimezone(id);
+      }
+    }
+  }, [removeTimezone, userLocalTimezone, selectedTimezones]); // Added selectedTimezones dependency
 
   const getHighlightClass = useCallback((isWeekend: boolean) => isWeekend ? getWeekendHighlightClass(weekendHighlightColor) : '', [weekendHighlightColor]);
 
@@ -619,11 +629,41 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
                     <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center space-x-2"><span>{DateTime.now().setZone(timezone.id).toFormat('ZZZZ')}</span><span>({getTimezoneOffset(timezone.id)})</span>{isDST && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100">DST</span>}</div>
                     <div className="text-sm font-medium text-primary-600 dark:text-primary-400 mt-1">{localTime && DateTime.fromJSDate(localTime).setZone(timezone.id).toFormat('h:mm a')}</div>
                   </div>
-                  <div className="flex items-center space-x-2 relative z-[2]">
-                    <DropdownMenu.Root><DropdownMenu.Trigger asChild><button className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500" aria-label="Timezone options"><Settings className="h-4 w-4 text-gray-500 dark:text-gray-400" /></button></DropdownMenu.Trigger><DropdownMenu.Portal><DropdownMenu.Content className="min-w-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1.5 border border-gray-200 dark:border-gray-700" sideOffset={5} align="end">
-                      {timezone.id !== userLocalTimezone && <DropdownMenu.Item onSelect={() => { setEditingTimezoneId(timezone.id); setTimeout(() => setSelectorOpen(true), 100); }} className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"><Edit2 className="h-4 w-4 mr-2" />Change Timezone</DropdownMenu.Item>}
-                      {timezone.id !== userLocalTimezone && <DropdownMenu.Item onSelect={() => handleRemoveTimezone(timezone.id)} className="flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"><X className="h-4 w-4 mr-2" />Remove</DropdownMenu.Item>}
-                    </DropdownMenu.Content></DropdownMenu.Portal></DropdownMenu.Root>
+                  <div className="flex items-center space-x-1 relative z-[2]"> {/* Reduced space */}
+                    {/* Remove Button */}
+                    {timezone.id !== userLocalTimezone && (
+                      <button
+                        onClick={() => handleRemoveTimezone(timezone.id)}
+                        className="p-1.5 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        aria-label={`Remove timezone ${timezone.name}`}
+                        title="Remove Timezone"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    )}
+                    {/* Settings Dropdown */}
+                    <DropdownMenu.Root>
+                      <DropdownMenu.Trigger asChild>
+                        <button className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500" aria-label="Timezone options">
+                          <Settings className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                        </button>
+                      </DropdownMenu.Trigger>
+                      <DropdownMenu.Portal>
+                        <DropdownMenu.Content className="min-w-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1.5 border border-gray-200 dark:border-gray-700" sideOffset={5} align="end">
+                          {/* Simplified: Only show Change Timezone if not local */}
+                          {timezone.id !== userLocalTimezone && (
+                            <DropdownMenu.Item
+                              onSelect={() => { setEditingTimezoneId(timezone.id); setTimeout(() => setSelectorOpen(true), 100); }}
+                              className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                            >
+                              <Edit2 className="h-4 w-4 mr-2" />Change Timezone
+                            </DropdownMenu.Item>
+                          )}
+                          {/* Remove option is now handled by the direct X button, could be removed here later */}
+                          {/* {timezone.id !== userLocalTimezone && <DropdownMenu.Item onSelect={() => handleRemoveTimezone(timezone.id)} className="flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"><X className="h-4 w-4 mr-2" />Remove</DropdownMenu.Item>} */}
+                        </DropdownMenu.Content>
+                      </DropdownMenu.Portal>
+                    </DropdownMenu.Root>
                   </div>
                 </div>
                 <div className="h-72 md:h-80 lg:h-96 rounded-md border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-[2px] overflow-hidden mt-4 md:mt-5 min-w-[300px]" style={{ backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.1)' : 'rgba(255, 255, 255, 0.1)' }} role="listbox" aria-label={`Time selection list for ${timezone.name}`}>
@@ -680,7 +720,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         </div>
       </>
     );
-  }, [mounted, userLocalTimezone, selectedTimezones, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, isSearching, filteredTimeSlots]); // Added isSearching and filteredTimeSlots
+  }, [mounted, userLocalTimezone, selectedTimezones, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, handleReplaceTimezone, editingTimezoneId, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, isSearching, filteredTimeSlots]); // Added handleReplaceTimezone, editingTimezoneId
 
   // Optimize synchronization of scrolling across timezone columns when highlightedTime changes
   useEffect(() => {

@@ -2,9 +2,9 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { DateTime } from 'luxon';
-import { Timezone } from '@/store/timezoneStore';
+import { Timezone, useTimezoneStore } from '@/store/timezoneStore'; // Import useTimezoneStore
 import { motion, AnimatePresence, Variants } from 'framer-motion'; // Import Variants
-import { ChevronDown, ChevronUp } from 'lucide-react'; // Icons for expand/collapse
+import { ChevronDown, ChevronUp, X } from 'lucide-react'; // Icons for expand/collapse, Added X icon
 import MobileTimeList from './MobileTimeList'; // Integrated
 
 interface MobileTimezoneCardProps {
@@ -16,6 +16,7 @@ interface MobileTimezoneCardProps {
   roundToNearestIncrement: (date: Date, increment: number) => Date;
   isExpanded: boolean; // Added prop from parent
   onToggleExpand: (timezoneId: string) => void; // Added prop from parent
+  // Note: We don't need removeTimezone prop here, we'll get it from the store
 }
 
 const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
@@ -31,11 +32,25 @@ const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
   // Removed internal state: const [isExpanded, setIsExpanded] = useState(false);
   // Removed internal handler: const toggleExpand = useCallback(...);
 
+  // Get removeTimezone and localTimezone from the store
+  const { removeTimezone, localTimezone } = useTimezoneStore();
+
   // Internal handler name, calls the 'handleTimeSelection' prop
   const handleInternalTimeSelect = useCallback((time: Date) => {
     handleTimeSelection(time); // Call the prop passed from parent
-    // Removed: setIsExpanded(false); // Collapse is now handled by parent via handleTimeSelection
+    // Collapse is now handled by parent via handleTimeSelection
   }, [handleTimeSelection]); // Dependency updated to the prop
+
+  // Handler for removing the timezone
+  const handleRemove = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click/toggle
+    if (timezone.id !== localTimezone) {
+      const name = timezone.city || timezone.name.split('/').pop()?.replace('_', ' ') || timezone.id;
+      if (window.confirm(`Are you sure you want to remove the timezone "${name}"?`)) {
+        removeTimezone(timezone.id);
+      }
+    }
+  }, [timezone, localTimezone, removeTimezone]);
 
   // --- Time Formatting Logic (adapted from ListView/page) ---
 
@@ -110,17 +125,32 @@ const listContainerVariants: Variants = {
               {timezoneAbbreviation} {timezoneOffset}
             </p>
           </div>
-          {/* Expand/Collapse Chevron */}
-          <motion.div
-             onClick={(e) => {
-               e.stopPropagation(); // Prevent card's main onClick from firing
-               onToggleExpand(timezone.id); // Use parent handler
-             }}
-             whileTap={{ scale: 0.9 }}
-             className="p-1"
-          >
-            {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-          </motion.div>
+          {/* Action Buttons (Remove, Expand/Collapse) */}
+          <div className="flex items-center space-x-1">
+            {/* Remove Button */}
+            {timezone.id !== localTimezone && (
+              <motion.button
+                onClick={handleRemove}
+                whileTap={{ scale: 0.9 }}
+                className="p-1.5 rounded-full text-red-500 hover:bg-red-100/20 focus:outline-none focus:ring-2 focus:ring-red-500"
+                aria-label={`Remove timezone ${timezone.name}`}
+                title="Remove Timezone"
+              >
+                <X size={18} /> {/* Slightly smaller icon */}
+              </motion.button>
+            )}
+            {/* Expand/Collapse Chevron */}
+            <motion.div
+               onClick={(e) => {
+                 e.stopPropagation(); // Prevent card's main onClick from firing
+                 onToggleExpand(timezone.id); // Use parent handler
+               }}
+               whileTap={{ scale: 0.9 }}
+               className="p-1"
+            >
+              {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+            </motion.div>
+          </div>
         </div>
 
         <div className="flex justify-between items-baseline mt-3"> {/* Align baselines */}

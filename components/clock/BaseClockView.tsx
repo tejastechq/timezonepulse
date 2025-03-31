@@ -14,17 +14,17 @@ import useTimeUpdate from '@/lib/hooks/useTimeUpdate';
 
 // Define props interface
 interface BaseClockViewProps {
-  selectedTimezones: Timezone[];
+  selectedTimezones: Timezone[]; // Keep this to know which timezones to display
   userLocalTimezone: string;
-  setSelectedTimezones: (timezones: Timezone[]) => void;
+  // Removed setSelectedTimezones prop
   renderClock: (time: Date, timezone: string, size?: number) => React.ReactNode;
   minHeight?: string;
 }
 
 function BaseClockView({
-  selectedTimezones,
+  selectedTimezones, // Keep this
   userLocalTimezone,
-  setSelectedTimezones,
+  // Removed setSelectedTimezones parameter
   renderClock,
   minHeight = '310px'
 }: BaseClockViewProps) {
@@ -63,34 +63,23 @@ function BaseClockView({
     setEditingTimezoneId(null);
   }, []);
 
-  // Handle adding a new timezone
-  const handleAddTimezone = useCallback((timezone: Timezone) => {
-    if (!selectedTimezones.some(tz => tz.id === timezone.id)) {
-      setSelectedTimezones([...selectedTimezones, timezone]);
+  // Combined handler for TimezoneSelector selection (Add or Replace)
+  const handleSelectTimezone = useCallback((newTimezone: Timezone) => {
+    if (editingTimezoneId) {
+      // Replace: Remove old, add new
+      if (editingTimezoneId !== userLocalTimezone) { // Ensure we don't remove local
+        removeTimezone(editingTimezoneId);
+      }
+      addTimezone(newTimezone);
+      setEditingTimezoneId(null);
+    } else {
+      // Add: Just add the new one
+      addTimezone(newTimezone);
     }
     setSelectorOpen(false);
-  }, [selectedTimezones, setSelectedTimezones]);
+  }, [editingTimezoneId, addTimezone, removeTimezone, userLocalTimezone]);
 
-  // Handle replacing a timezone
-  const handleReplaceTimezone = useCallback((timezone: Timezone) => {
-    if (editingTimezoneId) {
-      setSelectedTimezones(selectedTimezones.map(tz => 
-        tz.id === editingTimezoneId ? timezone : tz
-      ));
-      setEditingTimezoneId(null);
-      setSelectorOpen(false);
-    }
-  }, [editingTimezoneId, selectedTimezones, setSelectedTimezones]);
-
-  // Handle removing a timezone
-  const handleRemoveTimezone = useCallback((id: string) => {
-    // Don't allow removing the local timezone
-    if (id !== userLocalTimezone) {
-      setSelectedTimezones(selectedTimezones.filter(tz => tz.id !== id));
-    }
-  }, [selectedTimezones, setSelectedTimezones, userLocalTimezone]);
-
-  // Memoize the unique timezones calculation
+  // Memoize the unique timezones calculation (using the prop)
   const uniqueTimezones = useMemo(() => {
     const uniqueTimezoneIds = new Set<string>();
     const result: Timezone[] = [];
@@ -135,7 +124,8 @@ function BaseClockView({
               userLocalTimezone={userLocalTimezone}
               renderClock={renderClock}
               onEdit={handleEditTimezone}
-              onRemove={handleRemoveTimezone}
+              // Pass removeTimezone from store directly (will add confirmation in ClockCard)
+              removeTimezone={removeTimezone} 
             />
           ))}
         </AnimatePresence>
@@ -179,8 +169,9 @@ function BaseClockView({
           <TimezoneSelector
             isOpen={selectorOpen}
             onClose={handleCloseSelector}
-            onSelect={editingTimezoneId ? handleReplaceTimezone : handleAddTimezone}
-            excludeTimezones={[userLocalTimezone, ...selectedTimezones.map(tz => tz.id)]}
+            onSelect={handleSelectTimezone} // Use the combined handler
+            // Exclude currently displayed timezones (including local)
+            excludeTimezones={uniqueTimezones.map(tz => tz.id)} 
           />
         )}
       </AnimatePresence>
@@ -189,4 +180,4 @@ function BaseClockView({
 }
 
 // Export a memoized version of the component
-export default memo(BaseClockView); 
+export default memo(BaseClockView);

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { useTimezoneStore, ViewMode, useSelectedDate } from '@/store/timezoneStore';
+import { useTimezoneStore, ViewMode, useSelectedDate, Timezone } from '@/store/timezoneStore'; // Added Timezone type
 import { DateTime } from 'luxon';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useView } from '@/app/contexts/ViewContext';
@@ -10,8 +10,8 @@ import { ListView, ClocksView, DigitalView } from '../views';
 import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
-import type { Timezone } from '@/store/timezoneStore';
-import { CalendarDays, ArrowLeftCircle } from 'lucide-react';
+// Removed duplicate Timezone import
+import { CalendarDays, ArrowLeftCircle, Plus } from 'lucide-react'; // Added Plus icon
 
 // Define interfaces for the view components based on their implementations
 interface ListViewProps {
@@ -49,10 +49,11 @@ const OptimizedDigitalView = DigitalView;
 
 // Dynamically import less critical components to reduce initial load
 const ViewSwitcher = dynamic(() => import('./ViewSwitcher'), { ssr: true });
+const TimezoneSelector = dynamic(() => import('./TimezoneSelector'), { ssr: false }); // Added TimezoneSelector import
 
 // Import the DatePicker
-const DatePicker = dynamic(() => import('../ui/date-picker').then(mod => mod.DatePicker), { 
-  ssr: false 
+const DatePicker = dynamic(() => import('../ui/date-picker').then(mod => mod.DatePicker), {
+  ssr: false
 });
 
 /**
@@ -99,8 +100,9 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   
   // State for showing the add timezone form
-  const [showAddForm, setShowAddForm] = useState(false);
-  
+  const [showAddForm, setShowAddForm] = useState(false); // Keep for now, might be removable later
+  const [isSelectorOpen, setIsSelectorOpen] = useState(false); // State for the modal
+
   // State for tracking if the component has mounted
   const [mounted, setMounted] = useState(false);
   
@@ -224,7 +226,7 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
     if (currentView !== 'list') {
       setCurrentView('list');
     }
-  }, [currentView, setCurrentView]);
+  }, [currentView, setCurrentView, setHighlightedTime]); // Added setHighlightedTime dependency
 
   // Round a date to the nearest increment (in minutes)
   const roundToNearestIncrement = useCallback((date: Date, increment: number) => {
@@ -234,6 +236,12 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
     const roundedMinutes = Math.floor(minutes / increment) * increment; 
     return dt.set({ minute: roundedMinutes, second: 0, millisecond: 0 }).toJSDate();
   }, []);
+
+  // Callback to handle adding a timezone from the selector
+  const handleAddTimezone = useCallback((timezone: Timezone) => {
+    addTimezone(timezone);
+    setIsSelectorOpen(false);
+  }, [addTimezone]);
 
   // Handle view transition animation - respect user's reduced motion setting
   useEffect(() => {
@@ -272,7 +280,17 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
       <div className="flex justify-between items-center mb-4 h-12">
         <ViewSwitcher />
         <div className="flex items-center space-x-2">
-          {/* Add the date picker */}
+          {/* Add Timezone Button */}
+          <button
+            onClick={() => setIsSelectorOpen(true)}
+            className="p-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            aria-label="Add Timezone"
+            title="Add Timezone" // Tooltip for clarity
+          >
+            <Plus size={20} />
+          </button>
+
+          {/* Date Picker */}
           <DatePicker
             selectedDate={selectedDate}
             onDateChange={setSelectedDate}
@@ -391,6 +409,20 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
           )}
         </Suspense>
       </div>
+
+      {/* Timezone Selection Modal */}
+      <AnimatePresence>
+        {isSelectorOpen && (
+          <TimezoneSelector
+            key="desktop-timezone-selector"
+            isOpen={true}
+            onClose={() => setIsSelectorOpen(false)}
+            onSelect={handleAddTimezone}
+            excludeTimezones={[localTimezone, ...timezones.map(tz => tz.id)]}
+            data-timezone-selector
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
