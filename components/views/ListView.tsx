@@ -649,19 +649,8 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
                     <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center space-x-2"><span>{DateTime.now().setZone(timezone.id).toFormat('ZZZZ')}</span><span>({getTimezoneOffset(timezone.id)})</span>{isDST && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100">DST</span>}</div>
                     <div className="text-sm font-medium text-primary-600 dark:text-primary-400 mt-1">{localTime && DateTime.fromJSDate(localTime).setZone(timezone.id).toFormat('h:mm a')}</div>
                   </div>
-                  <div className="flex items-center space-x-1 relative z-[2]"> {/* Reduced space */}
-                    {/* Remove Button */}
-                    {timezone.id !== userLocalTimezone && (
-                      <button
-                        onClick={() => handleRemoveTimezone(timezone.id)}
-                        className="p-1.5 rounded-full text-red-500 hover:bg-red-100 dark:hover:bg-red-900/20 focus:outline-none focus:ring-2 focus:ring-red-500"
-                        aria-label={`Remove timezone ${timezone.name}`}
-                        title="Remove Timezone"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    )}
-                    {/* Settings Dropdown */}
+                  <div className="flex items-center space-x-1 relative z-[2]">
+                    {/* Settings Dropdown - Remove button moved inside */}
                     <DropdownMenu.Root>
                       <DropdownMenu.Trigger asChild>
                         <button className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500" aria-label="Timezone options">
@@ -679,8 +668,18 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
                               <Edit2 className="h-4 w-4 mr-2" />Change Timezone
                             </DropdownMenu.Item>
                           )}
-                          {/* Remove option is now handled by the direct X button, could be removed here later */}
-                          {/* {timezone.id !== userLocalTimezone && <DropdownMenu.Item onSelect={() => handleRemoveTimezone(timezone.id)} className="flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer"><X className="h-4 w-4 mr-2" />Remove</DropdownMenu.Item>} */}
+                          {/* Add Remove option inside the dropdown */}
+                          {timezone.id !== userLocalTimezone && (
+                            <>
+                              <DropdownMenu.Separator className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+                              <DropdownMenu.Item
+                                onSelect={() => handleRemoveTimezone(timezone.id)}
+                                className="flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-300 focus:outline-none"
+                              >
+                                <X className="h-4 w-4 mr-2" />Remove
+                              </DropdownMenu.Item>
+                            </>
+                          )}
                         </DropdownMenu.Content>
                       </DropdownMenu.Portal>
                     </DropdownMenu.Root>
