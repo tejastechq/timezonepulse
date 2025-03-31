@@ -241,6 +241,63 @@ export default function SettingsPage() {
                 Choose which view mode to show by default when opening the application.
               </p>
             </div>
+
+            {/* Highlight Auto-Clear (ListView) */}
+            <div className="flex items-center justify-between">
+              <div>
+                <label htmlFor="highlightAutoClear" className="text-sm font-medium">
+                  Auto-Clear List Highlight
+                </label>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Automatically clear the highlighted time slot after a duration.
+                </p>
+              </div>
+              <div className="flex items-center">
+                <input
+                  id="highlightAutoClear"
+                  type="checkbox"
+                  checked={settings.highlightAutoClear}
+                  onChange={(e) => {
+                    settings.setHighlightAutoClear(e.target.checked);
+                    showFeedback('Highlight auto-clear setting updated');
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+
+            {/* Highlight Duration (ListView) - Conditional */}
+            {settings.highlightAutoClear && (
+              <div>
+                <label htmlFor="highlightDuration" className="block text-sm font-medium mb-2">
+                  Highlight Duration (seconds)
+                </label>
+                <div className="flex items-center space-x-3">
+                  <input
+                    id="highlightDuration"
+                    type="number"
+                    value={settings.highlightDuration}
+                    onChange={(e) => {
+                      const duration = parseInt(e.target.value, 10);
+                      if (!isNaN(duration)) {
+                        settings.setHighlightDuration(duration);
+                        showFeedback('Highlight duration updated');
+                      }
+                    }}
+                    min="10" // Minimum duration
+                    max="600" // Example max (10 minutes)
+                    step="10"
+                    className="w-24 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    ({Math.floor(settings.highlightDuration / 60)}m {settings.highlightDuration % 60}s)
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  How long a time slot stays highlighted before automatically clearing (min 10s).
+                </p>
+              </div>
+            )}
           </div>
         </section>
       )}

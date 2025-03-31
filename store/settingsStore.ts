@@ -20,6 +20,10 @@ interface SettingsState {
   // Notification preferences
   enableNotifications: boolean;
   meetingReminders: boolean;
+
+  // Highlight preferences (ListView)
+  highlightAutoClear: boolean;
+  highlightDuration: number; // in seconds
   
   // Actions
   setWeekendHighlightColor: (color: string) => void;
@@ -30,6 +34,8 @@ interface SettingsState {
   setNightHours: (start: number, end: number) => void;
   setEnableNotifications: (enable: boolean) => void;
   setMeetingReminders: (enable: boolean) => void;
+  setHighlightAutoClear: (autoClear: boolean) => void;
+  setHighlightDuration: (duration: number) => void;
   resetSettings: () => void;
 }
 
@@ -44,6 +50,8 @@ const DEFAULT_SETTINGS = {
   nightHoursEnd: 6,
   enableNotifications: false,
   meetingReminders: false,
+  highlightAutoClear: true,
+  highlightDuration: 120, // Default 120 seconds (2 minutes)
 };
 
 /**
@@ -65,6 +73,8 @@ export const useSettingsStore = create<SettingsState>()(
       setNightHours: (start, end) => set({ nightHoursStart: start, nightHoursEnd: end }),
       setEnableNotifications: (enable) => set({ enableNotifications: enable }),
       setMeetingReminders: (enable) => set({ meetingReminders: enable }),
+      setHighlightAutoClear: (autoClear) => set({ highlightAutoClear: autoClear }),
+      setHighlightDuration: (duration) => set({ highlightDuration: Math.max(10, duration) }), // Ensure minimum duration
       resetSettings: () => set(DEFAULT_SETTINGS),
     }),
     {
