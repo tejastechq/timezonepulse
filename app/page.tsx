@@ -11,11 +11,12 @@ import { DateTime } from 'luxon';
 import { useTimezoneStore, Timezone } from '@/store/timezoneStore'; // Remove direct import of removeTimezone
 import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery'; // Import the hook
-import MobileTimezoneCard from '@/components/mobile/MobileTimezoneCard';
+// MobileTimezoneCard is now used within DraggableTimezoneCard
 import TimezoneSelector from '@/components/clock/TimezoneSelector';
 import { MobileMenu } from '@/components/MobileMenu'; // Import the MobileMenu component
-import { motion, AnimatePresence, PanInfo } from 'framer-motion'; // Import motion and PanInfo
-import { Plus, Trash2 } from 'lucide-react'; // Import Trash2 icon
+import { motion, AnimatePresence } from 'framer-motion'; // Remove unused hooks PanInfo, useMotionValue, useTransform
+import DraggableTimezoneCard from '@/components/mobile/DraggableTimezoneCard'; // Import the new component
+import { Plus } from 'lucide-react'; // Remove unused Trash2 icon import
 
 // Define mobile breakpoint (adjust as needed, e.g., Tailwind's 'md' breakpoint)
 const MOBILE_BREAKPOINT = '(max-width: 768px)';
@@ -163,53 +164,24 @@ export default function Home() {
      <main className="flex-grow space-y-4 overflow-hidden"> {/* Add overflow-hidden */}
        <AnimatePresence initial={false}> {/* Wrap list for exit animations */}
          {timezones.map((tz: Timezone) => {
-           const handleDragEnd = (
-             event: MouseEvent | TouchEvent | PointerEvent,
-              info: PanInfo
-            ) => {
-              const threshold = -100; // Drag distance threshold to trigger remove
-              // Prevent removing the user's local timezone
-              if (info.offset.x < threshold && tz.id !== userLocalTimezone) {
-                removeTimezone(tz.id);
-              }
-            };
+           const isLocal = tz.id === userLocalTimezone;
+           // Removed hooks and handleDragEnd from here
 
            return (
-             <motion.div
-               key={tz.id} // Key must be on the motion component for AnimatePresence
-               layout // Animate layout changes
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               exit={{ opacity: 0, x: -300, transition: { duration: 0.2 } }} // Slide out on removal
-               className="relative" // Needed for absolute positioning of the remove button
-             >
-               {/* Background Remove Button */}
-               <div className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-600 text-white w-20 rounded-r-lg pointer-events-none">
-                 <Trash2 size={24} />
-               </div>
-
-                {/* Draggable Card */}
-                <motion.div
-                 drag={tz.id !== userLocalTimezone ? "x" : false} // Disable drag for local timezone
-                 dragConstraints={tz.id !== userLocalTimezone ? { left: -100, right: 0 } : undefined} // Only apply constraints if draggable
-                 dragSnapToOrigin // Snap back if not dragged past threshold (handled by onDragEnd)
-                  onDragEnd={handleDragEnd}
-                  // Removed bg-gradient-to-b from-navy-start to-black-end to allow card's own background/transparency
-                  className="relative z-10 rounded-lg shadow-md" // Ensure card is above button
-                >
-                  <MobileTimezoneCard
-                    // key={tz.id} // Key moved to parent motion.div
-                   timezone={tz}
-                   localTime={localTime}
-                   highlightedTime={highlightedTime}
-                   timeSlots={timeSlots}
-                   handleTimeSelection={handleTimeSelection}
-                   roundToNearestIncrement={roundToNearestIncrement}
-                   isExpanded={expandedTimezoneId === tz.id} // Pass expanded state
-                   onToggleExpand={handleToggleExpand} // Pass toggle handler
-                 />
-               </motion.div>
-             </motion.div>
+             <DraggableTimezoneCard
+               key={tz.id} // Key remains for AnimatePresence
+               timezone={tz}
+               isLocal={isLocal}
+               onRemove={removeTimezone} // Pass the remove function from the store
+               // Pass down all props needed by MobileTimezoneCard
+               localTime={localTime}
+               highlightedTime={highlightedTime}
+               timeSlots={timeSlots}
+               handleTimeSelection={handleTimeSelection}
+               roundToNearestIncrement={roundToNearestIncrement}
+               isExpanded={expandedTimezoneId === tz.id}
+               onToggleExpand={handleToggleExpand}
+             />
            );
          })}
        </AnimatePresence>
