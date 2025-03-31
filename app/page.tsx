@@ -167,13 +167,14 @@ export default function Home() {
          {timezones.map((tz: Timezone) => {
            const handleDragEnd = (
              event: MouseEvent | TouchEvent | PointerEvent,
-             info: PanInfo
-           ) => {
-             const threshold = -100; // Drag distance threshold to trigger remove
-             if (info.offset.x < threshold) {
-               removeTimezone(tz.id);
-             }
-           };
+              info: PanInfo
+            ) => {
+              const threshold = -100; // Drag distance threshold to trigger remove
+              // Prevent removing the user's local timezone
+              if (info.offset.x < threshold && tz.id !== userLocalTimezone) {
+                removeTimezone(tz.id);
+              }
+            };
 
            return (
              <motion.div
@@ -191,9 +192,9 @@ export default function Home() {
 
                {/* Draggable Card */}
                <motion.div
-                 drag="x"
-                 dragConstraints={{ left: -100, right: 0 }} // Allow dragging left up to reveal width
-                 dragSnapToOrigin // Snap back if not dragged past threshold (handled by onDragEnd)
+                drag={tz.id !== userLocalTimezone ? "x" : false} // Disable drag for local timezone
+                dragConstraints={tz.id !== userLocalTimezone ? { left: -100, right: 0 } : undefined} // Only apply constraints if draggable
+                dragSnapToOrigin // Snap back if not dragged past threshold (handled by onDragEnd)
                  onDragEnd={handleDragEnd}
                  className="relative z-10 bg-gradient-to-b from-navy-start to-black-end rounded-lg shadow-md" // Ensure card is above button
                >
