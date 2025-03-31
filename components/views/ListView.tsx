@@ -649,35 +649,33 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      setItems((currentItems) => {
-        const oldIndex = currentItems.findIndex((item) => item.id === active.id);
-        const newIndex = currentItems.findIndex((item) => item.id === over.id);
-        
-        // Calculate indices based on the original store array (including local timezone if present)
-        // This is crucial because the store action needs indices relative to the full list.
-        // Find the index of the *first* non-local timezone in the store array.
-        const firstDraggableIndexInStore = storeTimezones.findIndex(tz => tz.id !== userLocalTimezone);
-        
-        // Adjust the dnd indices (which are relative to the `items` array) 
-        // to be relative to the `storeTimezones` array.
-        // Ensure we handle the case where there might be no draggable items (firstDraggableIndexInStore === -1)
-        const storeOldIndex = firstDraggableIndexInStore !== -1 ? firstDraggableIndexInStore + oldIndex : -1;
-        const storeNewIndex = firstDraggableIndexInStore !== -1 ? firstDraggableIndexInStore + newIndex : -1;
+      const oldIndex = items.findIndex((item) => item.id === active.id);
+      const newIndex = items.findIndex((item) => item.id === over.id);
+      
+      // Calculate indices based on the original store array (including local timezone if present)
+      // This is crucial because the store action needs indices relative to the full list.
+      // Find the index of the *first* non-local timezone in the store array.
+      const firstDraggableIndexInStore = storeTimezones.findIndex(tz => tz.id !== userLocalTimezone);
+      
+      // Adjust the dnd indices (which are relative to the `items` array) 
+      // to be relative to the `storeTimezones` array.
+      // Ensure we handle the case where there might be no draggable items (firstDraggableIndexInStore === -1)
+      const storeOldIndex = firstDraggableIndexInStore !== -1 ? firstDraggableIndexInStore + oldIndex : -1;
+      const storeNewIndex = firstDraggableIndexInStore !== -1 ? firstDraggableIndexInStore + newIndex : -1;
 
-        if (storeOldIndex !== -1 && storeNewIndex !== -1) {
-           // Wrap the store update in startTransition
-           startTransition(() => {
-             reorderTimezones(storeOldIndex, storeNewIndex);
-           });
-        } else {
-          console.error("Could not calculate valid store indices for reordering.", { storeOldIndex, storeNewIndex, firstDraggableIndexInStore });
-        }
+      // Update local state for immediate UI feedback
+      setItems(currentItems => arrayMove(currentItems, oldIndex, newIndex));
 
-        // Return the locally moved array for immediate UI feedback
-        return arrayMove(currentItems, oldIndex, newIndex);
-      });
+      // Then update the store state in a separate operation wrapped in startTransition
+      if (storeOldIndex !== -1 && storeNewIndex !== -1) {
+        startTransition(() => {
+          reorderTimezones(storeOldIndex, storeNewIndex);
+        });
+      } else {
+        console.error("Could not calculate valid store indices for reordering.", { storeOldIndex, storeNewIndex, firstDraggableIndexInStore });
+      }
     }
-  }, [reorderTimezones, storeTimezones, userLocalTimezone]); // Added storeTimezones and userLocalTimezone dependency
+  }, [items, reorderTimezones, storeTimezones, userLocalTimezone]);
 
 
   const renderTimeColumns = useCallback(() => {
