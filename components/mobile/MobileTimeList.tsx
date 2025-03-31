@@ -45,12 +45,12 @@ const TimeItem = memo(function TimeItem({
   const cellClasses = clsx(
     'flex justify-between items-center px-4 py-2 border-b border-border/50 cursor-pointer font-sans', // Use border-border
     'transition-colors duration-200 ease-out',
-    'hover:bg-accent', // Use hover:bg-accent
-    // Use theme-aware classes
-    isHighlight ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground font-normal', // Use primary, primary-foreground, foreground
-    isCurrent && !isHighlight ? 'bg-primary/20 border-l-2 border-primary' : '', // Use primary
-    isNight && !isHighlight && !isCurrent ? 'bg-muted/60' : '', // Use muted
-    !isNight && !isHighlight && !isCurrent ? 'bg-card/20' : '' // Use card
+    'hover:bg-accent', // Keep theme-aware hover
+    // Restore specific colors for highlight and current time, keep text-foreground for default
+    isHighlight ? 'bg-blue-500 dark:bg-blue-600 text-white font-medium' : 'text-foreground font-normal', // Desktop highlight colors
+    isCurrent && !isHighlight ? 'bg-blue-900/50 border-l-2 border-blue-400' : '', // Desktop-like current time bg/border
+    isNight && !isHighlight && !isCurrent ? 'bg-muted/60' : '', // Keep theme-aware night bg
+    !isNight && !isHighlight && !isCurrent ? 'bg-card/20' : '' // Keep theme-aware default bg
   );
 
   return (
@@ -72,16 +72,16 @@ const TimeItem = memo(function TimeItem({
       }}
     >
       {/* Apply consistent text size and color adjustments */}
-      {/* Use primary-foreground, primary, foreground */}
-      <span className={clsx('text-sm', isHighlight ? 'text-primary-foreground' : isCurrent ? 'text-primary' : 'text-foreground')}>
+      {/* Restore specific colors for text based on state */}
+      <span className={clsx('text-sm', isHighlight ? 'text-white' : isCurrent ? 'text-primary-700 dark:text-primary-300' : 'text-foreground')}>
         {formatted}
       </span>
       <div className="flex items-center space-x-1.5">
-         {/* Use text-muted-foreground for icons */}
-         {isNight && !isHighlight && <Moon className="h-3.5 w-3.5 text-muted-foreground" />}
-         {!isNight && !isHighlight && <Sun className="h-3.5 w-3.5 text-muted-foreground" />}
-         {/* Use text-primary for (Now) */}
-         {isCurrent && !isHighlight && <span className="text-xs font-medium text-primary">(Now)</span>}
+         {/* Restore specific icon colors */}
+         {isNight && !isHighlight && <Moon className="h-3.5 w-3.5 text-indigo-400 dark:text-indigo-300" />}
+         {!isNight && !isHighlight && <Sun className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />}
+         {/* Restore specific color for (Now) */}
+         {isCurrent && !isHighlight && <span className="text-xs font-medium text-blue-500">(Now)</span>}
       </div>
     </div>
   );
