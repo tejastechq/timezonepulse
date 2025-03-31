@@ -3,12 +3,15 @@
 import React, { useEffect, useRef } from 'react';
 import { Drawer } from 'vaul';
 import { Button } from '@/components/ui/button';
-import { Menu } from 'lucide-react'; // Assuming lucide-react is used for icons
+import { Menu, Settings, Info, X, Home, ChevronRight, Clock } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 
 export function MobileMenu() {
   const navRef = useRef<HTMLDivElement>(null);
   const firstLinkRef = useRef<HTMLAnchorElement>(null);
   const [isOpen, setIsOpen] = React.useState(false);
+  const pathname = usePathname();
 
   // Handle focus when drawer opens
   useEffect(() => {
@@ -26,6 +29,12 @@ export function MobileMenu() {
     document.body.style.background = '';
     setIsOpen(false);
   };
+
+  const menuItems = [
+    { href: '/', label: 'Home', icon: <Home size={20} /> },
+    { href: '/settings', label: 'Settings', icon: <Settings size={20} /> },
+    { href: '/about', label: 'About', icon: <Info size={20} /> },
+  ];
 
   return (
     <Drawer.Root 
@@ -50,7 +59,7 @@ export function MobileMenu() {
       <Drawer.Portal>
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
         <Drawer.Content 
-          className="fixed bottom-0 left-0 top-0 mt-24 flex h-full w-[80%] flex-col rounded-t-[10px] bg-background text-foreground z-50"
+          className="fixed bottom-0 left-0 top-0 flex h-full w-[80%] flex-col rounded-r-lg bg-background text-foreground z-50 shadow-xl"
           role="dialog"
           aria-modal="true"
           id="mobile-navigation"
@@ -62,31 +71,59 @@ export function MobileMenu() {
         >
           {/* Add a proper visible title for accessibility */}
           <Drawer.Title className="sr-only">Mobile Navigation Menu</Drawer.Title>
-          <div className="mx-auto mb-8 h-1.5 w-12 flex-shrink-0 rounded-full bg-muted" />
-          <div className="flex-1 overflow-y-auto p-4">
-            <nav className="flex flex-col space-y-4" ref={navRef}>
-              {/* Use ref for focus management, remove autoFocus which can cause issues */}
-              <a 
-                href="/settings" 
-                className="text-lg font-medium text-foreground hover:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                ref={firstLinkRef}
-              >
-                Settings
-              </a>
-              <a 
-                href="/about" 
-                className="text-lg font-medium text-foreground hover:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                About
-              </a>
-              {/* Close button for keyboard users */}
-              <button
-                className="mt-4 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-foreground hover:bg-muted transition-colors"
-                onClick={handleDrawerClose}
-              >
-                Close Menu
-              </button>
+          
+          {/* Header with logo and close button */}
+          <div className="border-b border-border/40 p-4 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-bold">TimeZonePulse</h2>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleDrawerClose} 
+              aria-label="Close menu"
+              className="h-8 w-8 rounded-full hover:bg-muted"
+            >
+              <X size={18} />
+            </Button>
+          </div>
+          
+          {/* Main navigation */}
+          <div className="flex-1 overflow-y-auto p-2">
+            <nav className="flex flex-col space-y-1" ref={navRef}>
+              {menuItems.map((item, index) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center justify-between p-3 rounded-md transition-colors ${
+                      isActive 
+                        ? 'bg-primary/10 text-primary font-medium' 
+                        : 'hover:bg-muted/60 text-foreground'
+                    }`}
+                    onClick={handleDrawerClose}
+                    ref={index === 0 ? firstLinkRef : undefined}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className={`${isActive ? 'text-primary' : 'text-muted-foreground'}`}>
+                        {item.icon}
+                      </span>
+                      <span>{item.label}</span>
+                    </div>
+                    {isActive && <ChevronRight size={16} className="text-primary" />}
+                  </Link>
+                );
+              })}
             </nav>
+          </div>
+          
+          {/* Footer section */}
+          <div className="border-t border-border/40 p-4">
+            <div className="text-xs text-muted-foreground text-center">
+              &copy; {new Date().getFullYear()} TimeZonePulse
+            </div>
           </div>
         </Drawer.Content>
       </Drawer.Portal>
