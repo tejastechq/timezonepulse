@@ -108,9 +108,6 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
   // State for tracking if the component has mounted
   const [mounted, setMounted] = useState(false);
   
-  // State for tracking if the view is transitioning
-  const [isViewTransitioning, setIsViewTransitioning] = useState(false);
-
   // State for managing expanded mobile card
   const [expandedTimezoneId, setExpandedTimezoneId] = useState<string | null>(null);
 
@@ -266,24 +263,6 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
     setIsSelectorOpen(false);
   }, [addTimezone]);
 
-  // Handle view transition animation - respect user's reduced motion setting
-  useEffect(() => {
-    // Use our data attribute approach to check if reduced motion is preferred
-    const prefersReducedMotionCSS = document.documentElement.dataset.prefersReducedMotion === 'true' || 
-                                    (prefersReducedMotion === true);
-    
-    if (!prefersReducedMotionCSS) {
-      setIsViewTransitioning(true);
-      const timer = setTimeout(() => {
-        setIsViewTransitioning(false);
-      }, 300); // Match this with your CSS transition duration
-      return () => clearTimeout(timer);
-    } else {
-      // Skip animation for users who prefer reduced motion
-      setIsViewTransitioning(false);
-    }
-  }, [currentView, prefersReducedMotion]);
-
   // Handle hydration mismatch by rendering placeholder until client-side render
   if (!isClient || !currentTime) {
     return (
@@ -396,12 +375,17 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
               ))}
             </div>
           ) : (
-            // Desktop View: Switch between List, Analog, Digital
-            <>
+            // Desktop View: Switch between List, Analog, Digital with Framer Motion
+            <AnimatePresence mode="wait">
               {currentView === 'list' && (
-                <div
-                  ref={timeColumnsContainerRef}
-                  className={`time-columns-container w-full transition-opacity ${isViewTransitioning ? 'opacity-0' : 'opacity-100'}`}
+                <motion.div
+                  key="list"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  ref={timeColumnsContainerRef} // Keep ref if needed, though maybe better on the view itself?
+                  className="time-columns-container w-full" // Removed transition classes
                 >
                   <OptimizedListView
                     selectedTimezones={timezones}
@@ -414,27 +398,39 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
                     removeTimezone={removeTimezone}
                     currentDate={currentDate}
                   />
-                </div>
+                </motion.div>
               )}
               {currentView === 'analog' && (
-                  <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
-                    {/* Removed the setSelectedTimezones prop */}
+                  <motion.div
+                    key="analog"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full" // Removed transition classes
+                  >
                     <OptimizedClocksView
                       selectedTimezones={timezones}
                       userLocalTimezone={localTimezone}
                     />
-                  </div>
+                  </motion.div>
               )}
               {currentView === 'digital' && (
-                  <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
-                    {/* Removed the setSelectedTimezones prop */}
+                  <motion.div
+                    key="digital"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full" // Removed transition classes
+                  >
                     <OptimizedDigitalView
                       selectedTimezones={timezones}
                       userLocalTimezone={localTimezone}
                     />
-                  </div>
+                  </motion.div>
               )}
-            </>
+            </AnimatePresence>
           )}
         </Suspense>
       </div>
