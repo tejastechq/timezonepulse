@@ -13,7 +13,7 @@ import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
 // Removed duplicate Timezone import
-import { CalendarDays, ArrowLeftCircle, Plus } from 'lucide-react'; // Added Plus icon
+import { CalendarDays, ArrowLeftCircle, Plus, Calendar, X } from 'lucide-react'; // Added Calendar and X icons
 
 // Define interfaces for the view components based on their implementations
 interface ListViewProps {
@@ -133,6 +133,9 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
   // Near the top of the component, after the local time state
   // Make sure we track the real-time current date
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
+
+  // New state for mobile DatePicker modal
+  const [showDatePickerModal, setShowDatePickerModal] = useState(false);
 
   // Hydration safe initialization
   useEffect(() => {
@@ -297,39 +300,78 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
 
   return (
     <div className="clock-container w-full max-w-screen-xl mx-auto px-4 py-6">
+      {/* Top Controls - Only show on desktop or conditionally on mobile */}
       <div className="flex justify-between items-center mb-4 h-12">
-        <ViewSwitcher />
-        <div className="flex items-center space-x-2">
-          {/* Add Timezone Button */}
-          <button
-            onClick={() => setIsSelectorOpen(true)}
-            className="p-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            aria-label="Add Timezone"
-            title="Add Timezone" // Tooltip for clarity
-          >
-            <Plus size={20} />
-          </button>
-
-          {/* Date Picker */}
-          <DatePicker
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-            minDate={new Date()} // Prevent selecting dates in the past
-          />
-          
-          {/* Show reset to today button if viewing a future date */}
-          {isViewingFutureDate && (
+        {/* Only show ViewSwitcher when not on mobile */}
+        {!isConsideredMobile && <ViewSwitcher />}
+        
+        {/* Desktop Controls */}
+        {!isConsideredMobile && (
+          <div className="flex items-center space-x-2">
+            {/* Add Timezone Button */}
             <button
-              type="button"
-              onClick={resetToToday}
-              className="flex items-center gap-1 px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-              aria-label="Return to today"
+              onClick={() => setIsSelectorOpen(true)}
+              className="p-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+              aria-label="Add Timezone"
+              title="Add Timezone" // Tooltip for clarity
             >
-              <ArrowLeftCircle className="h-4 w-4" />
-              <span className="text-sm">Today</span>
+              <Plus size={20} />
             </button>
-          )}
-        </div>
+
+            {/* Date Picker */}
+            <DatePicker
+              selectedDate={selectedDate}
+              onDateChange={setSelectedDate}
+              minDate={new Date()} // Prevent selecting dates in the past
+            />
+            
+            {/* Show reset to today button if viewing a future date */}
+            {isViewingFutureDate && (
+              <button
+                type="button"
+                onClick={resetToToday}
+                className="flex items-center gap-1 px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+                aria-label="Return to today"
+              >
+                <ArrowLeftCircle className="h-4 w-4" />
+                <span className="text-sm">Today</span>
+              </button>
+            )}
+          </div>
+        )}
+        
+        {/* Mobile Date Controls - Only show on mobile */}
+        {isConsideredMobile && (
+          <div className="flex justify-between items-center w-full">
+            <h1 className="text-xl font-medium">World Clock</h1>
+            
+            <div className="flex items-center gap-2">
+              {/* Add Timezone Button for landscape mode */}
+              {isMobileLandscapeOrSmaller && !isMobilePortraitOrSmaller && (
+                <button
+                  onClick={() => setIsSelectorOpen(true)}
+                  className="p-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  aria-label="Add Timezone"
+                  title="Add Timezone"
+                >
+                  <Plus size={20} />
+                </button>
+              )}
+              
+              {/* Date indicator that opens modal when clicked */}
+              <button
+                onClick={() => setShowDatePickerModal(true)}
+                className="flex items-center gap-1 text-foreground hover:text-primary transition-colors"
+                aria-label="Select Date"
+              >
+                <span className="text-sm font-medium">
+                  {selectedDate ? DateTime.fromJSDate(selectedDate).toFormat('LLL dd, yyyy') : 'Today'}
+                </span>
+                <Calendar className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Dynamic View Rendering - Using Suspense for better loading experience */}
@@ -337,8 +379,8 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
         <Suspense fallback={<ViewPlaceholder />}>
           {/* Render mobile view or desktop view based on detection */}
           {isConsideredMobile ? (
-            // Mobile View: List of MobileTimezoneCards
-            <div className="w-full space-y-3">
+            // Mobile View: List of MobileTimezoneCards with improved spacing
+            <div className="w-full space-y-4 pb-20"> {/* Increased spacing and added bottom padding for FAB */}
               {timezones.map((tz) => (
                 <MobileTimezoneCard
                   key={tz.id}
@@ -352,7 +394,6 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
                   onToggleExpand={handleToggleExpand}
                 />
               ))}
-              {/* Optionally add a button/way to add more timezones for mobile */}
             </div>
           ) : (
             // Desktop View: Switch between List, Analog, Digital
@@ -398,11 +439,89 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
         </Suspense>
       </div>
 
+      {/* Mobile Floating Action Button (FAB) for adding timezone - only in portrait mode */}
+      {isConsideredMobile && isMobilePortraitOrSmaller && (
+        <button
+          onClick={() => setIsSelectorOpen(true)}
+          className="fixed right-4 bottom-4 p-4 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
+          aria-label="Add Timezone"
+          title="Add Timezone"
+        >
+          <Plus size={24} />
+        </button>
+      )}
+
+      {/* Mobile DatePicker Modal */}
+      <AnimatePresence>
+        {isConsideredMobile && showDatePickerModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
+            style={{ 
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-card rounded-lg shadow-lg p-4 w-full max-w-sm border border-border m-auto"
+              style={{ maxHeight: '90vh' }}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Select Date</h3>
+                <button 
+                  onClick={() => setShowDatePickerModal(false)}
+                  className="p-1 rounded-full hover:bg-muted transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <DatePicker
+                  selectedDate={selectedDate}
+                  onDateChange={(date) => {
+                    setSelectedDate(date);
+                    setShowDatePickerModal(false);
+                  }}
+                  minDate={new Date()} // Prevent selecting dates in the past
+                />
+              </div>
+              
+              {isViewingFutureDate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetToToday();
+                    setShowDatePickerModal(false);
+                  }}
+                  className="w-full flex items-center justify-center gap-1 px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
+                  aria-label="Return to today"
+                >
+                  <ArrowLeftCircle className="h-4 w-4" />
+                  <span>Today</span>
+                </button>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Timezone Selection Modal */}
       <AnimatePresence>
         {isSelectorOpen && (
           <TimezoneSelector
-            key="desktop-timezone-selector"
+            key="timezone-selector"
             isOpen={true}
             onClose={() => setIsSelectorOpen(false)}
             onSelect={handleAddTimezone}
