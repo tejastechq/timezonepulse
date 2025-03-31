@@ -142,8 +142,9 @@ export default function Home() {
   // --- Conditional Rendering ---
   if (isMobile) {
     // Render Mobile View
+    // Removed bg-gradient-to-b from-navy-start to-black-end to allow layout background to show
     return (
-      <div className="flex flex-col min-h-screen bg-gradient-to-b from-navy-start to-black-end text-white p-4 font-sans">
+      <div className="flex flex-col min-h-screen text-white p-4 font-sans">
          <JsonLd data={jsonLd} /> {/* Keep SEO */}
          {/* Mobile Header */}
          <header className="flex items-center justify-between mb-4">
@@ -187,16 +188,17 @@ export default function Home() {
                  <Trash2 size={24} />
                </div>
 
-               {/* Draggable Card */}
-               <motion.div
-                drag={tz.id !== userLocalTimezone ? "x" : false} // Disable drag for local timezone
-                dragConstraints={tz.id !== userLocalTimezone ? { left: -100, right: 0 } : undefined} // Only apply constraints if draggable
-                dragSnapToOrigin // Snap back if not dragged past threshold (handled by onDragEnd)
-                 onDragEnd={handleDragEnd}
-                 className="relative z-10 bg-gradient-to-b from-navy-start to-black-end rounded-lg shadow-md" // Ensure card is above button
-               >
-                 <MobileTimezoneCard
-                   // key={tz.id} // Key moved to parent motion.div
+                {/* Draggable Card */}
+                <motion.div
+                 drag={tz.id !== userLocalTimezone ? "x" : false} // Disable drag for local timezone
+                 dragConstraints={tz.id !== userLocalTimezone ? { left: -100, right: 0 } : undefined} // Only apply constraints if draggable
+                 dragSnapToOrigin // Snap back if not dragged past threshold (handled by onDragEnd)
+                  onDragEnd={handleDragEnd}
+                  // Removed bg-gradient-to-b from-navy-start to-black-end to allow card's own background/transparency
+                  className="relative z-10 rounded-lg shadow-md" // Ensure card is above button
+                >
+                  <MobileTimezoneCard
+                    // key={tz.id} // Key moved to parent motion.div
                    timezone={tz}
                    localTime={localTime}
                    highlightedTime={highlightedTime}
