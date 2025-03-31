@@ -43,14 +43,14 @@ const TimeItem = memo(function TimeItem({
   const formatted = formatTimeFn(time, timezoneId);
 
   const cellClasses = clsx(
-    'flex justify-between items-center px-4 py-2 border-b border-gray-700/50 cursor-pointer font-sans', // Added font-sans, increased padding
-    'transition-colors duration-200 ease-out', // Apply transition to all color changes (hover, highlight, etc.)
-    'hover:bg-gray-700/60', // Hover state
-    // Use slightly lighter font weights for normal/current states
-    isHighlight ? 'bg-blue-600 text-white font-medium' : 'text-gray-100 font-normal', // Highlighted is medium, default is normal
-    isCurrent && !isHighlight ? 'bg-blue-900/50 border-l-2 border-blue-400' : '', // Removed font-medium here, rely on default
-    isNight && !isHighlight && !isCurrent ? 'bg-gray-900/60' : '', // Increased contrast for night
-    !isNight && !isHighlight && !isCurrent ? 'bg-gray-800/20' : ''
+    'flex justify-between items-center px-4 py-2 border-b border-border/50 cursor-pointer font-sans', // Use border-border
+    'transition-colors duration-200 ease-out',
+    'hover:bg-accent', // Use hover:bg-accent
+    // Use theme-aware classes
+    isHighlight ? 'bg-primary text-primary-foreground font-medium' : 'text-foreground font-normal', // Use primary, primary-foreground, foreground
+    isCurrent && !isHighlight ? 'bg-primary/20 border-l-2 border-primary' : '', // Use primary
+    isNight && !isHighlight && !isCurrent ? 'bg-muted/60' : '', // Use muted
+    !isNight && !isHighlight && !isCurrent ? 'bg-card/20' : '' // Use card
   );
 
   return (
@@ -72,13 +72,16 @@ const TimeItem = memo(function TimeItem({
       }}
     >
       {/* Apply consistent text size and color adjustments */}
-      <span className={clsx('text-sm', isHighlight ? 'text-white' : isCurrent ? 'text-blue-300' : 'text-gray-100')}>
+      {/* Use primary-foreground, primary, foreground */}
+      <span className={clsx('text-sm', isHighlight ? 'text-primary-foreground' : isCurrent ? 'text-primary' : 'text-foreground')}>
         {formatted}
       </span>
-      <div className="flex items-center space-x-1.5"> {/* Slightly increased spacing */}
-         {isNight && !isHighlight && <Moon className="h-3.5 w-3.5 text-indigo-300" />} {/* Slightly larger icons */}
-         {!isNight && !isHighlight && <Sun className="h-3.5 w-3.5 text-amber-300" />} {/* Slightly larger icons */}
-         {isCurrent && !isHighlight && <span className="text-xs font-medium text-blue-400">(Now)</span>} {/* Added font-medium to (Now) */}
+      <div className="flex items-center space-x-1.5">
+         {/* Use text-muted-foreground for icons */}
+         {isNight && !isHighlight && <Moon className="h-3.5 w-3.5 text-muted-foreground" />}
+         {!isNight && !isHighlight && <Sun className="h-3.5 w-3.5 text-muted-foreground" />}
+         {/* Use text-primary for (Now) */}
+         {isCurrent && !isHighlight && <span className="text-xs font-medium text-primary">(Now)</span>}
       </div>
     </div>
   );
@@ -166,9 +169,10 @@ const MobileTimeList: React.FC<MobileTimeListProps> = ({
 
   return (
     <div
-      className="h-60 bg-gray-900/50 rounded border border-gray-700 overflow-hidden"
-      role="listbox" // Added ARIA role
-      aria-label={`Time slots for ${timezoneId}`} // Added ARIA label
+      // Use bg-muted and border-border
+      className="h-60 bg-muted/50 rounded border border-border overflow-hidden"
+      role="listbox"
+      aria-label={`Time slots for ${timezoneId}`}
     >
       <AutoSizer>
         {({ height, width }) => (

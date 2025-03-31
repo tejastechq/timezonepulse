@@ -80,10 +80,10 @@ const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
 
   // --- Render Logic ---
 
-// Animation variants for the card tap
+// Animation variants for the card tap - Removed backgroundColor to rely on Tailwind classes
 const cardTapVariants: Variants = {
-  tap: { scale: 0.98, backgroundColor: 'rgba(55, 65, 81, 0.7)', transition: { duration: 0.1 } }, // Slightly darker gray-700
-  initial: { scale: 1, backgroundColor: 'rgba(31, 41, 55, 0.5)' } // Default bg-gray-800/50
+  tap: { scale: 0.98, transition: { duration: 0.1 } },
+  initial: { scale: 1 }
 };
 
 // Animation variants for the time list container (Opacity only)
@@ -106,10 +106,11 @@ const listContainerVariants: Variants = {
   return (
     <motion.div
       layout // Animate layout changes (like expansion)
-      className="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50 shadow-md cursor-pointer overflow-hidden"
+      // Use theme-aware classes: bg-card, border-border. Added opacity for slight transparency.
+      className="bg-card/90 dark:bg-card/70 p-4 rounded-lg border border-border/50 shadow-md cursor-pointer overflow-hidden backdrop-blur-sm"
       onClick={() => onToggleExpand(timezone.id)} // Use parent handler
       whileTap={!isExpanded ? "tap" : ""} // Apply tap animation only when clicking to expand
-      variants={cardTapVariants}
+      variants={cardTapVariants} // Background color removed from variants
       initial="initial"
       animate="initial" // Reset background on release (handled by initial state)
       transition={{ duration: 0.3, ease: 'easeInOut' }} // Synchronized layout transition
@@ -118,10 +119,10 @@ const listContainerVariants: Variants = {
       <div className="flex flex-col font-sans"> {/* Apply font-sans to the container */}
         <div className="flex justify-between items-center">
           <div>
-            {/* Slightly larger, less bold city name */}
-            <h2 className="text-xl font-medium">{timezone.city || timezone.name.split('/').pop()?.replace('_', ' ')}</h2>
-            {/* Slightly larger, lighter offset */}
-            <p className="text-sm text-gray-400 mt-0.5">
+            {/* Use text-foreground for main heading */}
+            <h2 className="text-xl font-medium text-foreground">{timezone.city || timezone.name.split('/').pop()?.replace('_', ' ')}</h2>
+            {/* Use text-muted-foreground for secondary text */}
+            <p className="text-sm text-muted-foreground mt-0.5">
               {timezoneAbbreviation} {timezoneOffset}
             </p>
           </div>
@@ -132,21 +133,22 @@ const listContainerVariants: Variants = {
               <motion.button
                 onClick={handleRemove}
                 whileTap={{ scale: 0.9 }}
-                className="p-1.5 rounded-full text-red-500 hover:bg-red-100/20 focus:outline-none focus:ring-2 focus:ring-red-500"
+                // Use text-destructive and theme-aware hover background
+                className="p-1.5 rounded-full text-destructive hover:bg-destructive/10 focus:outline-none focus:ring-2 focus:ring-destructive"
                 aria-label={`Remove timezone ${timezone.name}`}
                 title="Remove Timezone"
               >
-                <X size={18} /> {/* Slightly smaller icon */}
+                <X size={18} />
               </motion.button>
             )}
-            {/* Expand/Collapse Chevron */}
+            {/* Expand/Collapse Chevron - Use text-muted-foreground */}
             <motion.div
                onClick={(e) => {
                  e.stopPropagation(); // Prevent card's main onClick from firing
                  onToggleExpand(timezone.id); // Use parent handler
                }}
                whileTap={{ scale: 0.9 }}
-               className="p-1"
+               className="p-1 text-muted-foreground" // Apply muted color
             >
               {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             </motion.div>
@@ -158,8 +160,8 @@ const listContainerVariants: Variants = {
           <p className="text-2xl font-normal tabular-nums tracking-tight">
             {currentTimeFormatted}
           </p>
-          {/* Selected Time - Slightly smaller, lighter weight */}
-          <p className="text-2xl font-normal text-blue-400 tabular-nums tracking-tight">
+          {/* Selected Time - Use text-primary */}
+          <p className="text-2xl font-normal text-primary tabular-nums tracking-tight">
             {selectedTimeFormatted}
           </p>
         </div>

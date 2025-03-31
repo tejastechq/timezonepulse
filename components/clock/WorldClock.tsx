@@ -5,8 +5,10 @@ import { useTimezoneStore, ViewMode, useSelectedDate, Timezone } from '@/store/t
 import { DateTime } from 'luxon';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useView } from '@/app/contexts/ViewContext';
+import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import dynamic from 'next/dynamic';
 import { ListView, ClocksView, DigitalView } from '../views';
+import MobileTimezoneCard from '../mobile/MobileTimezoneCard'; // Import MobileTimezoneCard
 import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
@@ -109,11 +111,19 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
   // State for tracking if the view is transitioning
   const [isViewTransitioning, setIsViewTransitioning] = useState(false);
 
+  // State for managing expanded mobile card
+  const [expandedTimezoneId, setExpandedTimezoneId] = useState<string | null>(null);
+
   // Track when the LCP (Largest Contentful Paint) container is ready
   const [lcpReady, setLcpReady] = useState(false);
   
   // Use reduced motion setting for accessibility
   const prefersReducedMotion = useReducedMotion();
+
+  // Detect mobile dimensions based on user feedback (iPhone-like or smaller)
+  const isMobilePortraitOrSmaller = useMediaQuery('(max-width: 430px) and (max-height: 932px)');
+  const isMobileLandscapeOrSmaller = useMediaQuery('(max-width: 932px) and (max-height: 430px)');
+  const isConsideredMobile = isMobilePortraitOrSmaller || isMobileLandscapeOrSmaller;
   
   // Refs for animation and layout stability
   const clockContainerRef = useRef<HTMLDivElement>(null);
@@ -225,7 +235,18 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
     if (currentView !== 'list') {
       setCurrentView('list');
     }
-  }, [currentView, setCurrentView, setHighlightedTime]); // Restored dependencies
+  }, [currentView, setCurrentView, setHighlightedTime]);
+
+  // Mobile-specific time selection handler that also collapses the card
+  const handleMobileTimeSelection = useCallback((time: Date | null) => {
+    setHighlightedTime(time);
+    setExpandedTimezoneId(null); // Collapse card on selection
+  }, [setHighlightedTime]);
+
+  // Handler to toggle expanded state for mobile cards
+  const handleToggleExpand = useCallback((timezoneId: string) => {
+    setExpandedTimezoneId(prevId => (prevId === timezoneId ? null : timezoneId));
+  }, []);
 
   // Round a date to the nearest increment (in minutes)
   const roundToNearestIncrement = useCallback((date: Date, increment: number) => {
@@ -314,43 +335,65 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
       {/* Dynamic View Rendering - Using Suspense for better loading experience */}
       <div className="flex justify-center w-full">
         <Suspense fallback={<ViewPlaceholder />}>
-          {currentView === 'list' && (
-            <div
-              ref={timeColumnsContainerRef}
-              className={`time-columns-container w-full transition-opacity ${isViewTransitioning ? 'opacity-0' : 'opacity-100'}`}
-            >
-              <OptimizedListView
-                selectedTimezones={timezones}
-                userLocalTimezone={localTimezone}
-                timeSlots={timeSlots}
-                localTime={currentTime}
-                highlightedTime={highlightedTime}
-                handleTimeSelection={handleTimeSelection}
-                roundToNearestIncrement={roundToNearestIncrement}
-                removeTimezone={removeTimezone}
-                currentDate={currentDate}
-              />
+          {/* Render mobile view or desktop view based on detection */}
+          {isConsideredMobile ? (
+            // Mobile View: List of MobileTimezoneCards
+            <div className="w-full space-y-3">
+              {timezones.map((tz) => (
+                <MobileTimezoneCard
+                  key={tz.id}
+                  timezone={tz}
+                  localTime={currentTime}
+                  highlightedTime={highlightedTime}
+                  timeSlots={timeSlots}
+                  handleTimeSelection={handleMobileTimeSelection} // Use mobile handler
+                  roundToNearestIncrement={roundToNearestIncrement}
+                  isExpanded={expandedTimezoneId === tz.id}
+                  onToggleExpand={handleToggleExpand}
+                />
+              ))}
+              {/* Optionally add a button/way to add more timezones for mobile */}
             </div>
-          )}
-
-          {currentView === 'analog' && (
-            <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
-              {/* Removed the setSelectedTimezones prop */}
-              <OptimizedClocksView
-                selectedTimezones={timezones}
-                userLocalTimezone={localTimezone}
-              />
-            </div>
-          )}
-
-          {currentView === 'digital' && (
-            <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
-              {/* Removed the setSelectedTimezones prop */}
-              <OptimizedDigitalView
-                selectedTimezones={timezones}
-                userLocalTimezone={localTimezone}
-              />
-            </div>
+          ) : (
+            // Desktop View: Switch between List, Analog, Digital
+            <>
+              {currentView === 'list' && (
+                <div
+                  ref={timeColumnsContainerRef}
+                  className={`time-columns-container w-full transition-opacity ${isViewTransitioning ? 'opacity-0' : 'opacity-100'}`}
+                >
+                  <OptimizedListView
+                    selectedTimezones={timezones}
+                    userLocalTimezone={localTimezone}
+                    timeSlots={timeSlots}
+                    localTime={currentTime}
+                    highlightedTime={highlightedTime}
+                    handleTimeSelection={handleTimeSelection} // Use original handler
+                    roundToNearestIncrement={roundToNearestIncrement}
+                    removeTimezone={removeTimezone}
+                    currentDate={currentDate}
+                  />
+                </div>
+              )}
+              {currentView === 'analog' && (
+                  <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
+                    {/* Removed the setSelectedTimezones prop */}
+                    <OptimizedClocksView
+                      selectedTimezones={timezones}
+                      userLocalTimezone={localTimezone}
+                    />
+                  </div>
+              )}
+              {currentView === 'digital' && (
+                  <div className={`w-full ${isViewTransitioning ? 'view-transition-exit-active' : 'view-transition-enter-active'}`}>
+                    {/* Removed the setSelectedTimezones prop */}
+                    <OptimizedDigitalView
+                      selectedTimezones={timezones}
+                      userLocalTimezone={localTimezone}
+                    />
+                  </div>
+              )}
+            </>
           )}
         </Suspense>
       </div>
