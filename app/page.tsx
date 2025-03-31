@@ -145,7 +145,7 @@ export default function Home() {
     // Render Mobile View
     // Removed bg-gradient-to-b from-navy-start to-black-end to allow layout background to show
     return (
-      <div className="flex flex-col min-h-screen text-white p-4 font-sans">
+      <div className="flex flex-col min-h-screen text-white p-4 font-sans" id="main-content">
          <JsonLd data={jsonLd} /> {/* Keep SEO */}
          {/* Mobile Header */}
          <header className="flex items-center justify-between mb-4">
@@ -208,7 +208,6 @@ export default function Home() {
                onClose={() => setIsSelectorOpen(false)}
                onSelect={handleAddTimezone}
                excludeTimezones={[userLocalTimezone, ...timezones.map(tz => tz.id)]}
-               data-timezone-selector
              />
            )}
          </AnimatePresence>

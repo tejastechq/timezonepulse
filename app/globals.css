@@ -396,3 +396,60 @@ html[data-fonts-loaded="true"] {
 html[data-bfcache-restored="true"] {
   /* Styles for restored pages if needed */
 }
+
+/* Override vaul drawer background blur/scale effect */
+[data-vaul-drawer-visible="true"] > :not([vaul-drawer]) {
+  filter: none !important;
+  transform: none !important;
+}
+
+/* Fix the accessibility issue with aria-hidden */
+[data-vaul-drawer-visible="true"] #main-content {
+  pointer-events: none; /* Prevent interaction with main content when drawer is open */
+}
+
+/* Instead of using aria-hidden which can cause focus issues, use inert when supported */
+@supports (inert: auto) {
+  [data-vaul-drawer-visible="true"] #main-content {
+    inert: auto; /* Use inert instead of aria-hidden which properly prevents focus */
+  }
+}
+
+/* Ensure focus indicators are visible for keyboard navigation */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Fix blurry text in Vaul drawer by removing any blur effects */
+[vaul-drawer-content],
+[vaul-drawer-content] *,
+[data-drawer-content],
+[data-drawer-content] * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Target the specific drawer element to ensure no blur is applied */
+[vaul-drawer] {
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Ensure transformations don't affect text rendering */
+[vaul-drawer-content] {
+  transform-style: flat !important;
+  will-change: auto !important;
+}
+
+/* Target the drawer wrapper to prevent background blurring */
+[data-vaul-drawer-wrapper] {
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
