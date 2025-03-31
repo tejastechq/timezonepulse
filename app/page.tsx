@@ -64,6 +64,27 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  // --- Manage inert attribute for main content when modal is open on mobile ---
+  useEffect(() => {
+    const mainContent = document.getElementById('main-content');
+    // Only apply inert if we are on mobile and the main content element exists
+    if (isMobile && mainContent) {
+      if (isSelectorOpen) {
+        mainContent.inert = true;
+      } else {
+        mainContent.inert = false;
+      }
+      // Cleanup function to ensure inert is removed if component unmounts while modal is open
+      return () => {
+        // Check if mainContent still exists in the DOM before trying to modify it
+        if (document.body.contains(mainContent)) {
+          mainContent.inert = false;
+        }
+      };
+    }
+  }, [isSelectorOpen, isMobile]); // Rerun effect when modal state or mobile status changes
+  // --- End of inert management ---
+
   const timeSlots = useMemo(() => {
     const slots: Date[] = [];
     const now = localTime || new Date(); // Use current time or fallback

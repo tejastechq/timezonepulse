@@ -13,7 +13,7 @@ import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
 // Removed duplicate Timezone import
-import { CalendarDays, ArrowLeftCircle, Plus, Calendar, X } from 'lucide-react'; // Added Calendar and X icons
+import { CalendarDays, ArrowLeftCircle, Plus, Calendar, X, Menu } from 'lucide-react'; // Added Calendar, X, and Menu icons
 
 // Define interfaces for the view components based on their implementations
 interface ListViewProps {
@@ -322,6 +322,15 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
         {/* Mobile Date Controls - Only show on mobile */}
         {isConsideredMobile && (
           <div className="flex justify-between items-center w-full">
+            {/* Hamburger Menu Icon */}
+            <button
+              className="p-2 rounded-md text-foreground hover:bg-muted transition-colors"
+              aria-label="Open Menu"
+              title="Open Menu" // Tooltip for clarity
+            >
+              <Menu size={20} />
+            </button>
+
             <h1 className="text-xl font-medium">World Clock</h1>
             
             <div className="flex items-center gap-2">
@@ -329,25 +338,40 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
               {isMobileLandscapeOrSmaller && !isMobilePortraitOrSmaller && (
                 <button
                   onClick={() => setIsSelectorOpen(true)}
-                  className="p-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  className="p-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" // Changed to rounded-full
                   aria-label="Add Timezone"
                   title="Add Timezone"
                 >
                   <Plus size={20} />
                 </button>
               )}
+
+              {/* Calendar Icon Button for Portrait Mode */}
+              {isMobilePortraitOrSmaller && (
+                <button
+                  onClick={() => setShowDatePickerModal(true)}
+                  className="p-2 rounded-md text-foreground hover:bg-muted transition-colors"
+                  aria-label="Select Date"
+                  title="Select Date"
+                >
+                  <Calendar size={20} />
+                </button>
+              )}
               
-              {/* Date indicator that opens modal when clicked */}
-              <button
-                onClick={() => setShowDatePickerModal(true)}
-                className="flex items-center gap-1 text-foreground hover:text-primary transition-colors"
-                aria-label="Select Date"
-              >
-                <span className="text-sm font-medium">
-                  {selectedDate ? DateTime.fromJSDate(selectedDate).toFormat('LLL dd, yyyy') : 'Today'}
-                </span>
-                <Calendar className="h-4 w-4" />
-              </button>
+              {/* Date indicator that opens modal when clicked (Landscape Mode) */}
+              {/* Only show text + icon in landscape */}
+              {isMobileLandscapeOrSmaller && !isMobilePortraitOrSmaller && (
+                <button
+                  onClick={() => setShowDatePickerModal(true)}
+                  className="flex items-center gap-1 text-foreground hover:text-primary transition-colors"
+                  aria-label="Select Date"
+                >
+                  <span className="text-sm font-medium">
+                    {selectedDate ? DateTime.fromJSDate(selectedDate).toFormat('LLL dd, yyyy') : 'Today'}
+                  </span>
+                  <Calendar className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
         )}
