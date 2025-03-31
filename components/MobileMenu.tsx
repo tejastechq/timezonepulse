@@ -114,6 +114,13 @@ export default function MobileMenu() {
                   >
                     About
                   </Link>
+                  <Link
+                    href="/settings"
+                    className="px-4 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                    onClick={closeMenu}
+                  >
+                    Settings
+                  </Link>
                 </nav>
                 
                 <div className="mt-auto">

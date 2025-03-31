@@ -8,13 +8,13 @@ import HeadingMCP from './HeadingMCP'; // Keep for desktop view
 
 // --- Mobile View Imports ---
 import { DateTime } from 'luxon';
-import { useTimezoneStore, Timezone } from '@/store/timezoneStore';
+import { useTimezoneStore, Timezone } from '@/store/timezoneStore'; // Remove direct import of removeTimezone
 import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery'; // Import the hook
 import MobileTimezoneCard from '@/components/mobile/MobileTimezoneCard';
 import TimezoneSelector from '@/components/clock/TimezoneSelector';
-import { AnimatePresence } from 'framer-motion';
-import { Plus } from 'lucide-react';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion'; // Import motion and PanInfo
+import { Plus, Trash2 } from 'lucide-react'; // Import Trash2 icon
 
 // Define mobile breakpoint (adjust as needed, e.g., Tailwind's 'md' breakpoint)
 const MOBILE_BREAKPOINT = '(max-width: 768px)';
@@ -46,7 +46,7 @@ export default function Home() {
   const [expandedTimezoneId, setExpandedTimezoneId] = useState<string | null>(null); // State for accordion
   const [isMounted, setIsMounted] = useState(false);
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
-  const { timezones, addTimezone } = useTimezoneStore();
+  const { timezones, addTimezone, removeTimezone } = useTimezoneStore(); // Add removeTimezone from store
   const userLocalTimezone = useMemo(() => getLocalTimezone(), []);
 
   // Media Query Hook
@@ -159,26 +159,63 @@ export default function Home() {
            >
              <Plus size={20} />
            </button>
-         </header>
+     </header>
 
-         {/* Mobile Timezone Cards */}
-         <main className="flex-grow space-y-4">
-           {timezones.map((tz: Timezone) => (
-             <MobileTimezoneCard
-               key={tz.id}
-               timezone={tz}
-               localTime={localTime}
-               highlightedTime={highlightedTime}
-               timeSlots={timeSlots}
-               handleTimeSelection={handleTimeSelection}
-               roundToNearestIncrement={roundToNearestIncrement}
-               isExpanded={expandedTimezoneId === tz.id} // Pass expanded state
-               onToggleExpand={handleToggleExpand} // Pass toggle handler
-             />
-           ))}
-           {timezones.length === 0 && (
-             <div className="text-center text-gray-400 mt-10">
-               <p>No timezones added yet.</p>
+     {/* Mobile Timezone Cards */}
+     <main className="flex-grow space-y-4 overflow-hidden"> {/* Add overflow-hidden */}
+       <AnimatePresence initial={false}> {/* Wrap list for exit animations */}
+         {timezones.map((tz: Timezone) => {
+           const handleDragEnd = (
+             event: MouseEvent | TouchEvent | PointerEvent,
+             info: PanInfo
+           ) => {
+             const threshold = -100; // Drag distance threshold to trigger remove
+             if (info.offset.x < threshold) {
+               removeTimezone(tz.id);
+             }
+           };
+
+           return (
+             <motion.div
+               key={tz.id} // Key must be on the motion component for AnimatePresence
+               layout // Animate layout changes
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               exit={{ opacity: 0, x: -300, transition: { duration: 0.2 } }} // Slide out on removal
+               className="relative" // Needed for absolute positioning of the remove button
+             >
+               {/* Background Remove Button */}
+               <div className="absolute inset-y-0 right-0 flex items-center justify-center bg-red-600 text-white w-20 rounded-r-lg pointer-events-none">
+                 <Trash2 size={24} />
+               </div>
+
+               {/* Draggable Card */}
+               <motion.div
+                 drag="x"
+                 dragConstraints={{ left: -100, right: 0 }} // Allow dragging left up to reveal width
+                 dragSnapToOrigin // Snap back if not dragged past threshold (handled by onDragEnd)
+                 onDragEnd={handleDragEnd}
+                 className="relative z-10 bg-gradient-to-b from-navy-start to-black-end rounded-lg shadow-md" // Ensure card is above button
+               >
+                 <MobileTimezoneCard
+                   // key={tz.id} // Key moved to parent motion.div
+                   timezone={tz}
+                   localTime={localTime}
+                   highlightedTime={highlightedTime}
+                   timeSlots={timeSlots}
+                   handleTimeSelection={handleTimeSelection}
+                   roundToNearestIncrement={roundToNearestIncrement}
+                   isExpanded={expandedTimezoneId === tz.id} // Pass expanded state
+                   onToggleExpand={handleToggleExpand} // Pass toggle handler
+                 />
+               </motion.div>
+             </motion.div>
+           );
+         })}
+       </AnimatePresence>
+       {timezones.length === 0 && (
+         <div className="text-center text-gray-400 mt-10">
+           <p>No timezones added yet.</p>
                <button
                  onClick={() => setIsSelectorOpen(true)}
                  className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
