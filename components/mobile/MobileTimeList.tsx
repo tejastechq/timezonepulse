@@ -39,8 +39,12 @@ const TimeItem = memo(function TimeItem({
 }) {
   const isHighlight = isHighlightedFn(time);
   const isCurrent = isCurrentTimeFn(time);
-  const isNight = isNightTimeFn(time, timezoneId);
+  const isNight = isNightTimeFn(time, timezoneId); // Keep for icon logic
   const formatted = formatTimeFn(time, timezoneId);
+  
+  // Determine daytime based on hour for background styling (e.g., 6 AM to 8 PM)
+  const hour = DateTime.fromJSDate(time).setZone(timezoneId).hour;
+  const isVisuallyDaytime = hour >= 6 && hour < 20; // 6:00 AM to 7:59 PM
 
   const cellClasses = clsx(
     'flex justify-between items-center px-4 py-2 border-b border-border/50 cursor-pointer font-sans', // Use border-border
@@ -48,9 +52,10 @@ const TimeItem = memo(function TimeItem({
     'hover:bg-accent', // Keep theme-aware hover
     // Restore specific colors for highlight and current time, keep text-foreground for default
     isHighlight ? 'bg-blue-500 dark:bg-blue-600 text-white font-medium' : 'text-foreground font-normal', // Desktop highlight colors
-    isCurrent && !isHighlight ? 'bg-blue-900/50 border-l-2 border-blue-400' : '', // Desktop-like current time bg/border
-    isNight && !isHighlight && !isCurrent ? 'bg-muted/60' : '', // Keep theme-aware night bg
-    !isNight && !isHighlight && !isCurrent ? 'bg-card/20' : '' // Keep theme-aware default bg
+    isCurrent && !isHighlight ? 'bg-blue-900/50 border-l-2 border-blue-400' : '', // Keep current time style
+    // Mimic current time highlight style: lighter tint bg + brighter border, using yellow
+    isVisuallyDaytime && !isHighlight && !isCurrent ? 'bg-yellow-400/20 dark:bg-yellow-500/20 border-l-2 border-yellow-500 dark:border-yellow-600' : '', 
+    !isVisuallyDaytime && !isHighlight && !isCurrent ? 'bg-muted/60' : '' // Night background (using muted)
   );
 
   return (
