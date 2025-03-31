@@ -13,6 +13,7 @@ import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery'; // Import the hook
 import MobileTimezoneCard from '@/components/mobile/MobileTimezoneCard';
 import TimezoneSelector from '@/components/clock/TimezoneSelector';
+import { MobileMenu } from '@/components/MobileMenu'; // Import the MobileMenu component
 import { motion, AnimatePresence, PanInfo } from 'framer-motion'; // Import motion and PanInfo
 import { Plus, Trash2 } from 'lucide-react'; // Import Trash2 icon
 
@@ -146,11 +147,7 @@ export default function Home() {
          <JsonLd data={jsonLd} /> {/* Keep SEO */}
          {/* Mobile Header */}
          <header className="flex items-center justify-between mb-4">
-           <button className="p-2 bg-blue-600 rounded-md" aria-label="Menu">
-             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-               <path d="M4 6H20M4 12H20M4 18H20" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-             </svg>
-           </button>
+           <MobileMenu /> {/* Replace the placeholder button with the MobileMenu component */}
            <h1 className="text-xl font-bold uppercase">TimeZonePulse</h1>
            <button
              onClick={() => setIsSelectorOpen(true)}
