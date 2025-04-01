@@ -10,7 +10,7 @@
     "NEXT_PUBLIC_ENABLE_ANALYTICS": "true"
   },
   "functions": {
-    "api/*.js": {
+    "app/api/**/*": {
       "memory": 1024,
       "maxDuration": 10
     }
