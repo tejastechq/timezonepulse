@@ -5,7 +5,14 @@ import { createSecureHash } from './security';
  * Secure session configuration using iron-session
  */
 export const sessionConfig: SessionOptions = {
-  password: process.env.SESSION_SECRET || (process.env.NODE_ENV === 'development' ? 'complex_password_at_least_32_characters_long' : ''),
+  password: process.env.SESSION_SECRET || (() => {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('SESSION_SECRET must be set in production environment');
+    }
+    // In development, warn but don't crash
+    console.warn('WARNING: Using fallback SESSION_SECRET. This is insecure and should not be used in production.');
+    return process.env.NODE_ENV === 'development' ? 'dev_only_password_do_not_use_in_production' : '';
+  })(),
   cookieName: 'world_clock_session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',

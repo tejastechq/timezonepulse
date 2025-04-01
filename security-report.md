@@ -5,7 +5,7 @@
 This security audit identified several vulnerabilities and security considerations in the TimeZonePulse application. The application implements many security best practices but has a few critical issues that need attention. Key findings include:
 
 - **Critical**: Development secrets in version control
-- **High**: Disabled rate limiting in production
+- **High**: 
 - **Medium**: Weak session secret implementation
 - **Medium**: Possible XSS vulnerabilities in API endpoints
 - **Low**: Outdated dependencies with potential security vulnerabilities

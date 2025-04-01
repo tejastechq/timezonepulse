@@ -3,19 +3,9 @@ import fs from 'fs';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { headers } from 'next/headers';
-import { createSecureHash } from '@/lib/utils/security';
+import { authenticateApi, AuthType, secureApiHeaders } from '@/lib/utils/apiAuth';
 
 const execAsync = promisify(exec);
-
-// Additional security check for admin token
-async function validateAdminToken(token: string | null): Promise<boolean> {
-  if (!process.env.ADMIN_API_SECRET) return false;
-  if (!token) return false;
-  
-  const hash = await createSecureHash(process.env.ADMIN_API_SECRET);
-  return hash === token;
-}
 
 // Validate path is within project directory to prevent path traversal
 function isPathWithinProject(targetPath: string): boolean {
@@ -26,27 +16,10 @@ function isPathWithinProject(targetPath: string): boolean {
 
 export async function GET(request: Request) {
   try {
-    // Get headers asynchronously
-    const headersList = await headers();
+    // Authenticate with admin privileges required
+    const authResponse = await authenticateApi({ type: AuthType.ADMIN });
+    if (authResponse) return authResponse; // Return error response if authentication failed
     
-    // Only allow in development mode or with admin token in production
-    if (process.env.NODE_ENV === 'production') {
-      const authToken = headersList.get('x-admin-token');
-      if (!await validateAdminToken(authToken)) {
-        return NextResponse.json({
-          success: false,
-          message: 'Unauthorized access'
-        }, { 
-          status: 401,
-          headers: {
-            'Cache-Control': 'no-store',
-            'Content-Security-Policy': "default-src 'none'",
-            'X-Content-Type-Options': 'nosniff'
-          }
-        });
-      }
-    }
-
     const results: Record<string, string> = {};
     
     // 1. Clean .next directory
@@ -96,16 +69,7 @@ export async function GET(request: Request) {
       results,
       timestamp: new Date().toISOString()
     }, {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-        'Surrogate-Control': 'no-store',
-        'Content-Security-Policy': "default-src 'none'",
-        'X-Content-Type-Options': 'nosniff',
-        'X-Frame-Options': 'DENY',
-        'Referrer-Policy': 'no-referrer'
-      }
+      headers: secureApiHeaders
     });
   } catch (error) {
     console.error('Cleanup API error:', error);
@@ -115,11 +79,7 @@ export async function GET(request: Request) {
       error: 'Internal server error'
     }, { 
       status: 500,
-      headers: {
-        'Cache-Control': 'no-store',
-        'Content-Security-Policy': "default-src 'none'",
-        'X-Content-Type-Options': 'nosniff'
-      }
+      headers: secureApiHeaders
     });
   }
 }

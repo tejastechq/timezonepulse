@@ -36,13 +36,14 @@ export async function middleware(request: NextRequest) {
     responseHeaders.set('Access-Control-Max-Age', '86400');
   }
 
-  // Skip rate limiting for static assets and health check
+  // Skip rate limiting for static assets, health check, and time API
   const pathname = request.nextUrl.pathname;
   if (pathname.startsWith('/_next/') || 
       pathname.startsWith('/static/') || 
       pathname.startsWith('/public/') || 
       pathname.includes('.') || // Assume files with extensions are assets
-      pathname === '/api/health') {
+      pathname === '/api/health' ||
+      pathname === '/api/time') { // Skip rate limiting for time API entirely
     return NextResponse.next({ headers: responseHeaders });
   }
 
@@ -61,13 +62,29 @@ export async function middleware(request: NextRequest) {
   // Using the full pathname might exhaust memory if there are many unique paths
   const rateLimitKey = `${clientIp}-${endpoint}`;
 
-  // --- TEMPORARILY DISABLED RATE LIMITING ---
-  // TODO: Re-enable rate limiting before production deployment
-  /*
   // Check rate limit
   const rateLimitResult = await checkRateLimit(rateLimitKey, endpoint);
 
-  if (!rateLimitResult.success) {
+  // In development mode, log rate limit warnings but don't block requests
+  if (!rateLimitResult.success && process.env.NODE_ENV === 'development') {
+    console.warn(`Rate limit would be exceeded for ${endpoint}: ${rateLimitKey}. Would reset at ${rateLimitResult.resetTime.toISOString()}`);
+    
+    // Add headers but still allow the request to proceed in development
+    responseHeaders.set('X-RateLimit-Limit', (rateLimitResult.limit ?? 0).toString());
+    responseHeaders.set('X-RateLimit-Remaining', '0');
+    responseHeaders.set('X-RateLimit-Reset', rateLimitResult.resetTime.toISOString());
+    responseHeaders.set('X-RateLimit-Warning', 'Would have been rate limited in production');
+    
+    return NextResponse.next({
+      request: {
+        headers: responseHeaders,
+      },
+      headers: responseHeaders,
+    });
+  }
+  
+  // Only actually enforce rate limits in production
+  if (!rateLimitResult.success && process.env.NODE_ENV === 'production') {
     // Apply common headers even to the rate limit response
     responseHeaders.set('Content-Type', 'application/json');
     responseHeaders.set('Retry-After', Math.ceil((rateLimitResult.resetTime.getTime() - Date.now()) / 1000).toString());
@@ -80,17 +97,12 @@ export async function middleware(request: NextRequest) {
       headers: responseHeaders, // Use the headers object
     });
   }
-  */
-  // --- END TEMPORARILY DISABLED RATE LIMITING ---
 
-
-  // Add rate limit status headers to the successful response (commented out as part of disabling)
-  /*
+  // Add rate limit status headers to the successful response
   // Use the limit value returned from checkRateLimit
   responseHeaders.set('X-RateLimit-Limit', (rateLimitResult.limit ?? 0).toString());
   responseHeaders.set('X-RateLimit-Remaining', (rateLimitResult.remaining ?? 0).toString());
   responseHeaders.set('X-RateLimit-Reset', rateLimitResult.resetTime?.toISOString() || new Date().toISOString());
-  */
   
   // Proceed with the request, applying all headers
   return NextResponse.next({
