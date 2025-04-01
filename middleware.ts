@@ -1,61 +1,72 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-import { generateNonce, getCspWithNonce } from './lib/utils/security';
-// Removed rate limiting import
+import { NextRequest, NextResponse } from "next/server";
+import { getCspWithNonce, getDefaultSecurityHeaders, generateNonce } from "./lib/utils/security";
 
+/**
+ * Dummy rate limiter for edge compatibility
+ * This is a placeholder that always allows requests
+ */
+const dummyRateLimiter = {
+  limit: async () => ({ success: true, reset: 0 }),
+};
+
+/**
+ * Middleware function for Next.js
+ */
 export async function middleware(request: NextRequest) {
-  // Generate CSP nonce for this request
+  // Generate a secure nonce value for CSP
   const nonce = generateNonce();
   
-  // Prepare base response and apply common security headers early
-  const responseHeaders = new Headers(request.headers);
-  
-  // Set nonce cookie for Next.js to use
-  responseHeaders.set('Set-Cookie', `nonce=${nonce}; Path=/; Secure; SameSite=Strict; HttpOnly`);
-  
-  responseHeaders.set('X-DNS-Prefetch-Control', 'off');
-  responseHeaders.set('X-Frame-Options', 'DENY');
-  responseHeaders.set('X-Content-Type-Options', 'nosniff');
-  responseHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  responseHeaders.set('X-Permitted-Cross-Domain-Policies', 'none');
-  // responseHeaders.set('X-XSS-Protection', '1; mode=block'); // Removed: Deprecated, rely on CSP
-  responseHeaders.set(
-    'Permissions-Policy',
-    'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()'
-  );
-  responseHeaders.set('Cross-Origin-Opener-Policy', 'same-origin');
-  // responseHeaders.set('Cross-Origin-Embedder-Policy', 'credentialless'); // Removed COEP to allow vercel.live feedback frame
-  responseHeaders.set('Cross-Origin-Resource-Policy', 'same-origin');
-  responseHeaders.set('Content-Security-Policy', getCspWithNonce(nonce));
-
-  // Add production-specific headers
-  if (process.env.NODE_ENV === 'production') {
-    responseHeaders.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
-    responseHeaders.set('Expect-CT', 'enforce, max-age=86400');
-    
-    // Ensure CORS is strict in production (adjust origin if needed)
-    responseHeaders.set('Access-Control-Allow-Origin', process.env.NEXT_PUBLIC_APP_URL || '*'); // Consider making this more specific than '*' if possible
-    responseHeaders.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    responseHeaders.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-    responseHeaders.set('Access-Control-Max-Age', '86400');
-  }
-
-  // Skip for static assets, health check, and time API
-  const pathname = request.nextUrl.pathname;
-  if (pathname.startsWith('/_next/') || 
-      pathname.startsWith('/static/') || 
-      pathname.startsWith('/public/') || 
-      pathname.includes('.') || // Assume files with extensions are assets
-      pathname === '/api/health' ||
-      pathname === '/api/time') { // Skip for time API entirely
-    return NextResponse.next({ headers: responseHeaders });
-  }
-
-  // Proceed with the request, applying all headers (no rate limiting)
-  return NextResponse.next({
+  // Prepare the response with basic headers
+  const response = NextResponse.next({
     request: {
-      headers: responseHeaders,
+      headers: new Headers(request.headers),
     },
-    headers: responseHeaders,
   });
+
+  // Apply standard security headers
+  Object.entries(getDefaultSecurityHeaders()).forEach(([key, value]) => {
+    response.headers.set(key, value);
+  });
+
+  // // Set the CSP header with the generated nonce
+  // response.headers.set(
+  //   "Content-Security-Policy",
+  //   getCspWithNonce(nonce, request.nextUrl.hostname)
+  // );
+
+  // Set the nonce in a cookie for the Document component to use
+  // Extract domain for cookie
+  const domain = request.nextUrl.hostname !== 'localhost' 
+    ? `Domain=${request.nextUrl.hostname}; ` 
+    : '';
+  
+  // Set the cookie with the nonce
+  response.headers.set(
+    "Set-Cookie",
+    `nonce=${nonce}; Path=/; ${domain}${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Lax`
+  );
+
+  // Simple rate limiting - always succeeds in this implementation
+  try {
+    const limiter = dummyRateLimiter;
+    const result = await limiter.limit();
+    
+    if (!result.success) {
+      return new NextResponse("Too Many Requests", {
+        status: 429,
+        headers: {
+          "Retry-After": result.reset.toString(),
+        },
+      });
+    }
+  } catch (error) {
+    console.error("Rate limiting error:", error);
+    // Continue processing even if rate limiting fails
+  }
+
+  return response;
 }
+
+export const config = {
+  matcher: "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+};
