@@ -16,7 +16,7 @@ import TimezoneSelector from '@/components/clock/TimezoneSelector';
 import { MobileMenu } from '@/components/MobileMenu'; // Import the MobileMenu component
 import { motion, AnimatePresence } from 'framer-motion'; // Remove unused hooks PanInfo, useMotionValue, useTransform
 import DraggableTimezoneCard from '@/components/mobile/DraggableTimezoneCard'; // Import the new component
-import { Plus } from 'lucide-react'; // Remove unused Trash2 icon import
+import { Plus, Calendar } from 'lucide-react'; // Add Calendar icon import
 
 // Define mobile breakpoint (adjust as needed, e.g., Tailwind's 'md' breakpoint)
 const MOBILE_BREAKPOINT = '(max-width: 768px)';
@@ -189,14 +189,14 @@ export default function Home() {
              >
                <Plus size={20} /> {/* Consistent icon size */}
              </button>
-             {/* Date Display */}
-             {localTime && (
-               <div className="flex items-center space-x-1 text-sm"> {/* Consistent text size */}
-                 <span>{DateTime.fromJSDate(localTime).toFormat('MMM dd, yyyy')}</span>
-                 {/* Add Calendar icon if needed, requires importing Calendar icon from lucide-react */}
-                 {/* <Calendar size={16} /> */}
-               </div>
-             )}
+             {/* Calendar Button */}
+             <button
+               // onClick={() => { /* TODO: Implement calendar feature link */ }}
+               className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors"
+               aria-label="Open Calendar"
+             >
+               <Calendar size={20} /> {/* Consistent icon size */}
+             </button>
            </div>
      </header>
 
