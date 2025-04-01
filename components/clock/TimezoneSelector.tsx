@@ -224,7 +224,7 @@ export default function TimezoneSelector({
             onClick={() => handleSelect(timezone)}
             className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 
                       transition-colors duration-150 focus:outline-none focus:ring-2 
-                      focus:ring-primary-500 ${timezone.id === 'Mars/Jezero' ? 'bg-red-50 dark:bg-red-900/20 border-l-2 border-red-400 dark:border-red-600' : ''}`}
+                      focus:ring-primary-500`}
             role="option"
             aria-selected="false"
             id={`timezone-option-${timezone.id}`}
@@ -474,8 +474,7 @@ export default function TimezoneSelector({
                                   onClick={() => handleSelect(timezone)}
                                   className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 
                                             transition-colors duration-150 focus:outline-none focus:ring-2 
-                                            focus:ring-primary-500 border-b border-gray-200 dark:border-gray-700
-                                            ${timezone.id === 'Mars/Jezero' ? 'bg-red-50 dark:bg-red-900/20 border-l-2 border-red-400 dark:border-red-600' : ''}`}
+                                            focus:ring-primary-500 border-b border-gray-200 dark:border-gray-700`}
                                   role="option"
                                   aria-selected="false"
                                   id={`timezone-option-${timezone.id}`}
