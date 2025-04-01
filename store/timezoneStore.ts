@@ -74,15 +74,21 @@ export const useTimezoneStore = create<TimezoneState>()(
       const localTz = getLocalTimezone();
       
       // Function to create initial state
-      const getInitialState = () => ({
-        // Initial state
-        timezones: [
+      const getInitialState = () => {
+        const initialTimezones = [
           // Always include local timezone as first option
           {
             id: localTz,
             name: `Local (${localTz})`,
             city: 'Local',
             country: '',
+          },
+          // Add Mars/Jezero by default
+          {
+            id: 'Mars/Jezero',
+            name: '🔴 Jezero Crater (Mars)', // Added emoji
+            city: 'Jezero Crater',
+            country: 'Mars',
           },
           // Add a timezone from a different continent based on user's location
           ...(/^America\//.test(localTz) ? [{
@@ -147,18 +153,28 @@ export const useTimezoneStore = create<TimezoneState>()(
             city: 'New York',
             country: 'United States',
           }] : []),
-        ].slice(0, 3), // Ensure we have exactly 3 timezones
-        viewMode: 'list' as ViewMode,
-        highlightedTime: null,
-        localTimezone: localTz,
+        ];
+
+        // Filter out duplicates just in case localTz somehow matches one of the added ones
+        const uniqueTimezones = initialTimezones.filter((tz, index, self) =>
+          index === self.findIndex((t) => t.id === tz.id)
+        );
+        
+        return {
+          // Initial state
+          timezones: uniqueTimezones.slice(0, 4), // Ensure we have up to 4 timezones
+          viewMode: 'list' as ViewMode,
+          highlightedTime: null,
+          localTimezone: localTz,
         selectedDate: new Date(), // Default to today
         appVersion: { ...APP_VERSION, timestamp: Date.now() },
         // Removed initial state for old tooltip
-        // showMarsExplanation: false, 
-        hasMarsTimezone: false, // Keep this
+        // showMarsExplanation: false,
+        hasMarsTimezone: true, // Set to true as Mars is added by default
         // marsExplanationPosition: 'right' as 'left' | 'right',
         // lastAddedMarsTimezoneId: null,
-      });
+      };
+    };
       
       return {
         ...getInitialState(),

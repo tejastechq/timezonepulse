@@ -110,12 +110,12 @@ const MarsTimeExplanation = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
-            className={`fixed z-50 top-20 w-80 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg shadow-lg border border-red-200 dark:border-red-800/40 text-sm ${position === 'right' ? 'right-8' : 'left-8'}`}
+            className={`fixed z-50 top-20 w-80 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 text-base ${position === 'right' ? 'right-8' : 'left-8'}`} // Changed colors, text-base
             style={{ filter: 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))' }}
           >
             {/* Speech bubble pointer - pointing up */}
             <div 
-              className="absolute w-4 h-4 bg-red-50 dark:bg-red-900/20 border-t border-l border-red-200 dark:border-red-800/40 transform rotate-45"
+              className="absolute w-4 h-4 bg-white dark:bg-gray-800 border-t border-l border-gray-200 dark:border-gray-700 transform rotate-45" // Changed colors
               style={{ top: '-8px', [position === 'right' ? 'right' : 'left']: '30px' }}
             />
             
@@ -143,7 +143,7 @@ const MarsTimeExplanation = ({
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.3 }}
-            className="absolute z-50 w-80 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg shadow-lg border border-red-200 dark:border-red-800/40 text-sm"
+            className="absolute z-50 w-80 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 text-base" // Changed colors, text-base
             style={{ 
               top: '0',
               [position === 'right' ? 'left' : 'right']: 'calc(100% + 20px)',
@@ -152,7 +152,7 @@ const MarsTimeExplanation = ({
           >
             {/* Speech bubble pointer - pointing sideways */}
             <div 
-              className="absolute w-4 h-4 bg-red-50 dark:bg-red-900/20 border-t border-l border-red-200 dark:border-red-800/40"
+              className="absolute w-4 h-4 bg-white dark:bg-gray-800 border-t border-l border-gray-200 dark:border-gray-700" // Changed colors
               style={{ 
                 top: '30px',
                 [position === 'right' ? 'left' : 'right']: '-8px',
@@ -176,7 +176,7 @@ const TooltipContent = ({ onClose }: { onClose: () => void }) => (
     {/* Close button (using div to avoid nesting issues) */}
     <div 
       onClick={onClose} 
-      className="absolute top-2 right-2 p-1 rounded-full hover:bg-red-200/50 dark:hover:bg-red-800/30 text-red-500 dark:text-red-300 cursor-pointer"
+      className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-pointer" // Changed colors
       aria-label="Close explanation"
       role="button" // Add role for accessibility
       tabIndex={0} // Make it focusable
@@ -186,10 +186,10 @@ const TooltipContent = ({ onClose }: { onClose: () => void }) => (
     </div>
     
     {/* Title */}
-    <h3 className="text-red-700 dark:text-red-300 font-medium mb-2 pr-6">About Mars Time</h3>
+    <h3 className="text-gray-800 dark:text-gray-100 font-semibold mb-3 pr-6">About Mars Time</h3> {/* Changed colors, font-semibold, mb-3 */}
     
     {/* Content */}
-    <div className="space-y-2 text-red-600/90 dark:text-red-400/90">
+    <div className="space-y-3 text-gray-700 dark:text-gray-300"> {/* Changed colors, space-y-3 */}
       <p>
         <strong>Mars Sol:</strong> A Martian day (sol) is 24 hours, 39 minutes, and 35 seconds long — about 2.75% longer than an Earth day.
       </p>
@@ -201,16 +201,16 @@ const TooltipContent = ({ onClose }: { onClose: () => void }) => (
       </p>
       
       {/* Time increments explanation */}
-      <div className="mt-3 p-2 bg-red-100/70 dark:bg-red-800/20 rounded border border-red-200/80 dark:border-red-700/30 flex items-start gap-2">
-        <Info size={16} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-        <div className="text-xs text-red-700/90 dark:text-red-300/90">
-          <p className="font-medium">About Time Increments</p>
-          <p className="mt-1">The time slots show the same time because Mars days are longer than Earth days. In this April Fools feature, we've simulated Mars time but kept Earth's 30-minute increments.</p>
+      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-700/40 flex items-start gap-2"> {/* Changed colors, p-3 */}
+        <Info size={18} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" /> {/* Changed color, size */}
+        <div className="text-sm text-blue-800 dark:text-blue-200"> {/* Changed colors, text-sm */}
+          <p className="font-medium">Why Time Slots Match</p> {/* Changed copy */}
+          <p className="mt-1">Mars days (sols) are ~40 mins longer than Earth days. This clock shows simulated Mars time using standard 30-minute Earth increments, so slots might appear the same.</p> {/* Simplified copy */}
         </div>
       </div>
       
-      <p className="text-xs mt-3 text-red-500/80 dark:text-red-400/80 italic">
-        NASA mission teams actually work on "Mars time" during critical mission phases, shifting their Earth schedules by ~40 minutes each day!
+      <p className="text-sm mt-3 text-gray-600 dark:text-gray-400"> {/* Changed colors, text-sm, removed italic */}
+        NASA mission teams work on "Mars time" during critical phases, shifting their Earth schedules by ~40 minutes daily!
       </p>
     </div>
   </>

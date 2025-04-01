@@ -8,42 +8,31 @@ import { useTimezoneStore } from '@/store/timezoneStore';
 // Re-use the content structure from MarsTimeExplanation
 // Removed onClose prop as the X button is removed
 const ExplanationContent = () => (
-  <div className="p-4 pt-0 text-sm"> {/* Added padding */}
+  <div className="p-4 pt-0 text-sm"> {/* Reverted to text-sm for mobile content */}
     {/* Title - Adjusted styling */}
     {/* Removed pr-8 as the X button is gone */}
-    <h3 className="text-lg font-medium text-red-700 dark:text-red-300 mb-3"> 
-      About Mars Time
-    </h3>
+    {/* Removed title from expanded view to save space */}
+    {/* <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-3">About Mars Time</h3> */}
 
     {/* Content */}
-    <div className="space-y-3 text-red-600/90 dark:text-red-400/90"> {/* Increased spacing */}
+    <div className="space-y-2 text-gray-700 dark:text-gray-300"> {/* Reduced spacing */}
       <p>
-        <strong>Mars Sol:</strong> A Martian day (sol) is 24 hours, 39 minutes, and 35 seconds long — about 2.75% longer than an Earth day.
+        <strong>Mars Sol:</strong> A Martian day (sol) is ~2.75% longer than an Earth day (24h 39m 35s).
       </p>
       <p>
-        <strong>Mars Time Zones:</strong> Like Earth, different locations on Mars have different local times based on longitude. 15° of longitude equals 1 Mars hour difference.
+        <strong>Mars Time Zones:</strong> Like Earth, Mars uses time zones based on longitude (15° ≈ 1 Mars hour).
       </p>
-      <p>
-        <strong>Sol Count:</strong> Mission teams count days on Mars as "sols" since landing. Perseverance landed on February 18, 2021 (Sol 0).
-      </p>
-
+      {/* Removed Sol Count and NASA fact for brevity */}
+      
       {/* Time increments explanation */}
-      <div className="mt-4 p-3 bg-red-100/70 dark:bg-red-800/20 rounded border border-red-200/80 dark:border-red-700/30 flex items-start gap-2"> {/* Increased margin-top and padding */}
-        <Info size={18} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-        <div className="text-xs text-red-700/90 dark:text-red-300/90">
-          <p className="font-medium">About Time Increments</p>
-          <p className="mt-1">The time slots show the same time because Mars days are longer than Earth days. In this April Fools feature, we've simulated Mars time but kept Earth's 30-minute increments.</p>
+      <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-700/40 flex items-start gap-2"> {/* Reduced margin/padding */}
+        <Info size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" /> {/* Reduced size */}
+        <div className="text-xs text-blue-800 dark:text-blue-200"> {/* Kept text-xs for this box */}
+          <p className="font-medium">Why Time Slots Match</p>
+          <p className="mt-1">Mars days are longer. This clock simulates Mars time using Earth's 30-min increments, so slots may look the same.</p> {/* Further simplified copy */}
         </div>
       </div>
-
-      <p className="text-xs mt-4 text-red-500/80 dark:text-red-400/80 italic"> {/* Increased margin-top */}
-        NASA mission teams actually work on "Mars time" during critical mission phases, shifting their Earth schedules by ~40 minutes each day!
-      </p>
-
-      {/* Call to action */}
-      <p className="mt-4 font-medium">
-        Want to see it in action? Add a Mars timezone like "Mars/Jezero" (Perseverance Rover) to compare its time with Earth!
-      </p>
+      {/* Removed Call to action */}
     </div>
   </div>
 );
@@ -84,7 +73,7 @@ const MobileMarsExplanationCard: React.FC = () => {
     <motion.div
       layout // Animate layout changes
       // Use specific styling for the explanation card
-      className="bg-red-50/90 dark:bg-red-900/70 p-5 rounded-lg border border-red-200/50 dark:border-red-800/40 shadow-md cursor-pointer overflow-hidden backdrop-blur-sm relative" // Added relative positioning
+      className="bg-white/90 dark:bg-gray-800/80 p-5 rounded-lg border border-gray-200 dark:border-gray-700 shadow-md cursor-pointer overflow-hidden backdrop-blur-sm relative" // Changed colors
       onClick={toggleExpand}
       whileTap={!isExpanded ? "tap" : ""}
       variants={cardTapVariants}
@@ -95,8 +84,8 @@ const MobileMarsExplanationCard: React.FC = () => {
       {/* Collapsed View Header */}
       <div className="flex justify-between items-center font-sans">
         <div className="flex items-center space-x-2">
-          <Info size={20} className="text-red-600 dark:text-red-400" />
-          <h2 className="text-lg font-medium text-red-700 dark:text-red-300">
+          <Info size={20} className="text-gray-600 dark:text-gray-400" /> {/* Changed color */}
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100"> {/* Changed colors, font-semibold */}
             About Mars Time
           </h2>
         </div>
@@ -107,7 +96,7 @@ const MobileMarsExplanationCard: React.FC = () => {
              toggleExpand();
            }}
            whileTap={{ scale: 0.9 }}
-           className="p-2 text-red-500 dark:text-red-300"
+           className="p-2 text-gray-500 dark:text-gray-400" // Changed colors
         >
           {isExpanded ? <ChevronUp size={22} /> : <ChevronDown size={22} />}
         </motion.div>
