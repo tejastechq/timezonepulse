@@ -27,8 +27,8 @@ export function getCspWithNonce(nonce: string): string {
   // Strict CSP for scripts using nonce and strict-dynamic
   // In development, 'unsafe-eval' might be needed for some tooling (e.g., React DevTools). Keep it conditional.
   const scriptSrcDirective = isDevelopment
-    ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval' ${statuspageDomains} ${vercelAnalyticsDomains}`
-    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${statuspageDomains} ${vercelAnalyticsDomains}`;
+    ? `script-src 'self' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval' ${statuspageDomains} ${vercelAnalyticsDomains} 'sha256-OBTN3RiyCV4Bq7dFqZ5a2pAXjnCcCYeTJMO2I/LYKeo=' 'sha256-jtvmQnrAHWmd1jHWy+cly+VqFdS46YJFOH8oAwXT5iM=' 'sha256-zvVpoXGvl1JeT7sZGX5JGm+ali5OPDA0WgVtcj5r7ws='`
+    : `script-src 'self' 'unsafe-inline' 'nonce-${nonce}' 'strict-dynamic' ${statuspageDomains} ${vercelAnalyticsDomains} 'sha256-OBTN3RiyCV4Bq7dFqZ5a2pAXjnCcCYeTJMO2I/LYKeo=' 'sha256-jtvmQnrAHWmd1jHWy+cly+VqFdS46YJFOH8oAwXT5iM=' 'sha256-zvVpoXGvl1JeT7sZGX5JGm+ali5OPDA0WgVtcj5r7ws='`;
 
   // In development, we need to be more permissive with trusted types
   const trustedTypesDirective = isDevelopment

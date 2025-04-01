@@ -9,6 +9,10 @@ export async function middleware(request: NextRequest) {
   
   // Prepare base response and apply common security headers early
   const responseHeaders = new Headers(request.headers);
+  
+  // Set nonce cookie for Next.js to use
+  responseHeaders.set('Set-Cookie', `nonce=${nonce}; Path=/; Secure; SameSite=Strict; HttpOnly`);
+  
   responseHeaders.set('X-DNS-Prefetch-Control', 'off');
   responseHeaders.set('X-Frame-Options', 'DENY');
   responseHeaders.set('X-Content-Type-Options', 'nosniff');
