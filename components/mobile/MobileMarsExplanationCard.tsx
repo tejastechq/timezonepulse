@@ -6,22 +6,12 @@ import { ChevronDown, ChevronUp, X, Info } from 'lucide-react'; // Added Info ic
 import { useTimezoneStore } from '@/store/timezoneStore';
 
 // Re-use the content structure from MarsTimeExplanation
-const ExplanationContent = ({ onClose }: { onClose: () => void }) => (
+// Removed onClose prop as the X button is removed
+const ExplanationContent = () => (
   <div className="p-4 pt-0 text-sm"> {/* Added padding */}
-    {/* Close button (using div to avoid nesting issues) */}
-    <div
-      onClick={(e) => { e.stopPropagation(); onClose(); }} // Stop propagation and close
-      className="absolute top-4 right-4 p-1 rounded-full hover:bg-red-200/50 dark:hover:bg-red-800/30 text-red-500 dark:text-red-300 cursor-pointer z-10" // Ensure button is clickable
-      aria-label="Close explanation"
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }}
-    >
-      <X size={18} />
-    </div>
-
     {/* Title - Adjusted styling */}
-    <h3 className="text-lg font-medium text-red-700 dark:text-red-300 mb-3 pr-8"> {/* Increased margin-bottom */}
+    {/* Removed pr-8 as the X button is gone */}
+    <h3 className="text-lg font-medium text-red-700 dark:text-red-300 mb-3"> 
       About Mars Time
     </h3>
 
@@ -55,16 +45,15 @@ const ExplanationContent = ({ onClose }: { onClose: () => void }) => (
 
 
 const MobileMarsExplanationCard: React.FC = () => {
-  const [isExpanded, setIsExpanded] = useState(true); // Start expanded by default? Or false? Let's start true.
-  const { hideMarsExplanation } = useTimezoneStore(); // Get hide action
+  const [isExpanded, setIsExpanded] = useState(false); // Start collapsed by default
+  // Removed hideMarsExplanation and handleClose as the X button is gone
+  // const { hideMarsExplanation } = useTimezoneStore(); 
 
   const toggleExpand = useCallback(() => {
     setIsExpanded(prev => !prev);
   }, []);
 
-  const handleClose = useCallback(() => {
-    hideMarsExplanation(); // Use the store action to hide
-  }, [hideMarsExplanation]);
+  // Removed handleClose callback
 
 
   // Animation variants (similar to MobileTimezoneCard)
@@ -130,8 +119,8 @@ const MobileMarsExplanationCard: React.FC = () => {
             exit="closed"
             className="overflow-hidden mt-3" // Add margin top for spacing
           >
-            {/* Render the explanation content */}
-            <ExplanationContent onClose={handleClose} />
+            {/* Render the explanation content (no onClose needed) */}
+            <ExplanationContent />
           </motion.div>
         )}
       </AnimatePresence>
