@@ -1,7 +1,6 @@
 'use client';
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Analytics } from '@vercel/analytics/react';
 import ThemeToggle from '@/components/ThemeToggle';
 import MobileMenu from '@/components/MobileMenu';
 import StatusIndicator from '@/components/StatusIndicator';
@@ -33,7 +32,6 @@ export default function ClientLayout({
     <>
       {/* Performance monitoring */}
       <SpeedInsights />
-      <Analytics />
       
       <header className="sticky top-0 z-10 bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">

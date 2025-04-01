@@ -47,7 +47,17 @@ export default function RootLayout({
         <Providers>
           {children}
           {fonts}
-          <Analytics />
+          <Analytics 
+            mode={process.env.NODE_ENV === 'production' ? 'production' : 'development'}
+            debug={process.env.NODE_ENV !== 'production'}
+            beforeSend={(event) => {
+              // Don't track events from development
+              if (process.env.NODE_ENV !== 'production') {
+                return null;
+              }
+              return event;
+            }}
+          />
           <SpeedInsights />
           <GlassmorphismAnimation />
           <DevInfo />

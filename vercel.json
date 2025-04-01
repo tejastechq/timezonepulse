@@ -6,6 +6,8 @@
   "framework": "nextjs",
   "outputDirectory": ".next",
   "env": {
-    "NODE_ENV": "production"
-  }
+    "NODE_ENV": "production",
+    "NEXT_PUBLIC_ENABLE_ANALYTICS": "true"
+  },
+  "analytics": true
 } 
