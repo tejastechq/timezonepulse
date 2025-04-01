@@ -18,13 +18,18 @@ interface DigitalViewProps {
  */
 function DigitalView(props: DigitalViewProps) {
   // Define the digital clock renderer function - memoized to prevent recreation on each render
-  const renderDigitalClock = useCallback((time: Date, timezone: string) => (
-    <DigitalClock
-      time={time}
-      timezone={timezone}
-      highlightedTime={null}
-    />
-  ), []);
+  const renderDigitalClock = useCallback((time: Date, timezone: string) => {
+    // Ensure time is a valid Date object
+    const validTime = time instanceof Date && !isNaN(time.getTime()) ? time : new Date();
+    
+    return (
+      <DigitalClock
+        time={validTime}
+        timezone={timezone}
+        highlightedTime={null}
+      />
+    );
+  }, []);
 
   return (
     <BaseClockView

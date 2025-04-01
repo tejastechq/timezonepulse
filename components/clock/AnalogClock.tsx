@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo, memo } from 'react';
 import { DateTime } from 'luxon';
 import { motion } from 'framer-motion';
+import { convertEarthToMarsTime } from '@/lib/utils/mars-timezone'; // Import Mars time conversion utility
 
 interface AnalogClockProps {
   time: Date;
@@ -42,30 +43,79 @@ function AnalogClock({
   
   // Calculate the rotation angles for the clock hands
   const { hourRotation, minuteRotation, secondRotation, highlightRotation } = useMemo(() => {
-    // Convert time to the specified timezone
-    const dt = DateTime.fromJSDate(time).setZone(timezone);
-    const hours = dt.hour % 12;
-    const minutes = dt.minute;
-    const seconds = dt.second;
-    const milliseconds = dt.millisecond;
-    
-    // Log timezone conversion for debugging
-    console.log(`Timezone ${timezone} - Current time: ${dt.toISO()} - Hour: ${hours}, Min: ${minutes}, Sec: ${seconds}`);
-    
-    // Calculate rotations with additional precision for smoother movement
-    // For SVG rotate transforms, 0 degrees is at 12 o'clock position, and rotation is clockwise
-    const hourRotation = (hours * 30) + (minutes * 0.5); // 30 degrees per hour, plus 0.5 degrees per minute
-    const minuteRotation = (minutes * 6) + (seconds * 0.1); // 6 degrees per minute, plus 0.1 degrees per second
-    const secondRotation = (seconds * 6) + (milliseconds * 0.006); // 6 degrees per second, plus adjustment for milliseconds
-    
-    // Calculate highlight rotation if a highlighted time is provided
+    // Default values to prevent NaN
+    let hourRotation = 0;
+    let minuteRotation = 0;
+    let secondRotation = 0;
     let highlightRotation = null;
-    if (highlightedTime) {
-      // Convert highlighted time to the same timezone
-      const highlightDt = DateTime.fromJSDate(highlightedTime).setZone(timezone);
-      const highlightHours = highlightDt.hour % 12;
-      const highlightMinutes = highlightDt.minute;
-      highlightRotation = (highlightHours * 30) + (highlightMinutes * 0.5);
+    
+    try {
+      // Validate time is a valid Date object
+      if (!(time instanceof Date) || isNaN(time.getTime())) {
+        console.error('Invalid time provided to AnalogClock:', time);
+        return { hourRotation, minuteRotation, secondRotation, highlightRotation };
+      }
+      
+      // Special handling for Mars timezones
+      if (timezone.startsWith('Mars/')) {
+        try {
+          // Use Mars time conversion for the timezone
+          const marsTimeData = convertEarthToMarsTime(DateTime.fromJSDate(time), timezone);
+          
+          // Calculate rotation angles from Mars time components
+          hourRotation = (marsTimeData.hours % 12) * 30 + (marsTimeData.minutes * 0.5);
+          minuteRotation = marsTimeData.minutes * 6 + (marsTimeData.seconds * 0.1);
+          secondRotation = marsTimeData.seconds * 6;
+          
+          // Handle highlight time for Mars if needed
+          if (highlightedTime && highlightedTime instanceof Date && !isNaN(highlightedTime.getTime())) {
+            const marsHighlightData = convertEarthToMarsTime(
+              DateTime.fromJSDate(highlightedTime), 
+              timezone
+            );
+            highlightRotation = (marsHighlightData.hours % 12) * 30 + (marsHighlightData.minutes * 0.5);
+          }
+          
+          return { hourRotation, minuteRotation, secondRotation, highlightRotation };
+        } catch (error) {
+          console.error('Error calculating Mars time:', error);
+          // Fall back to Earth time calculation if Mars conversion fails
+        }
+      }
+      
+      // Regular Earth timezone handling
+      const dt = DateTime.fromJSDate(time).setZone(timezone);
+      
+      // Verify the timezone conversion was successful
+      if (!dt.isValid) {
+        console.error('Invalid timezone conversion in AnalogClock:', timezone, dt.invalidExplanation);
+        return { hourRotation, minuteRotation, secondRotation, highlightRotation };
+      }
+      
+      const hours = dt.hour % 12;
+      const minutes = dt.minute;
+      const seconds = dt.second;
+      const milliseconds = dt.millisecond;
+      
+      // Calculate rotations with additional precision for smoother movement
+      // For SVG rotate transforms, 0 degrees is at 12 o'clock position, and rotation is clockwise
+      hourRotation = (hours * 30) + (minutes * 0.5); // 30 degrees per hour, plus 0.5 degrees per minute
+      minuteRotation = (minutes * 6) + (seconds * 0.1); // 6 degrees per minute, plus 0.1 degrees per second
+      secondRotation = (seconds * 6) + (milliseconds * 0.006); // 6 degrees per second, plus adjustment for milliseconds
+      
+      // Calculate highlight rotation if a highlighted time is provided
+      if (highlightedTime && highlightedTime instanceof Date && !isNaN(highlightedTime.getTime())) {
+        // Convert highlighted time to the same timezone
+        const highlightDt = DateTime.fromJSDate(highlightedTime).setZone(timezone);
+        
+        if (highlightDt.isValid) {
+          const highlightHours = highlightDt.hour % 12;
+          const highlightMinutes = highlightDt.minute;
+          highlightRotation = (highlightHours * 30) + (highlightMinutes * 0.5);
+        }
+      }
+    } catch (error) {
+      console.error('Error in AnalogClock rotation calculations:', error);
     }
     
     return { hourRotation, minuteRotation, secondRotation, highlightRotation };
