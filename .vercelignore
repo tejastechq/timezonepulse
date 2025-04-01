@@ -1,5 +1,26 @@
+# Cache directories
 .next/cache/**
 node_modules/.cache/**
+**/.cache
+
+# Source control
+.git
+.github
+
+# Build artifacts
 .vercel
 dist
-.turbo 
+.turbo
+
+# Development files
+.vscode
+.idea
+*.log
+.env.local
+.env.development
+
+# Test files
+__tests__
+test
+tests
+coverage 

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { generateNonce, getCspWithNonce } from './lib/utils/security';
-import { checkRateLimit, rateLimiters } from './lib/utils/rateLimiter'; // Import rateLimiters
+// Removed rate limiting import
 
 export async function middleware(request: NextRequest) {
   // Generate CSP nonce for this request
@@ -40,79 +40,22 @@ export async function middleware(request: NextRequest) {
     responseHeaders.set('Access-Control-Max-Age', '86400');
   }
 
-  // Skip rate limiting for static assets, health check, and time API
+  // Skip for static assets, health check, and time API
   const pathname = request.nextUrl.pathname;
   if (pathname.startsWith('/_next/') || 
       pathname.startsWith('/static/') || 
       pathname.startsWith('/public/') || 
       pathname.includes('.') || // Assume files with extensions are assets
       pathname === '/api/health' ||
-      pathname === '/api/time') { // Skip rate limiting for time API entirely
+      pathname === '/api/time') { // Skip for time API entirely
     return NextResponse.next({ headers: responseHeaders });
   }
 
-  // Get client IP from various headers
-  const clientIp = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-                  request.headers.get('x-real-ip')?.trim() ||
-                  'anonymous'; // Removed invalid request.ip fallback
-
-  // Determine rate limit endpoint based on path
-  let endpoint: keyof typeof rateLimiters = 'default';
-  if (pathname === '/api/time') endpoint = 'time';
-  if (pathname === '/api/cleanup') endpoint = 'cleanup';
-  // Add more specific endpoints if needed, e.g., for login/auth routes
-
-  // Use a unique key for rate limiting (IP + general path category)
-  // Using the full pathname might exhaust memory if there are many unique paths
-  const rateLimitKey = `${clientIp}-${endpoint}`;
-
-  // Check rate limit
-  const rateLimitResult = await checkRateLimit(rateLimitKey, endpoint);
-
-  // In development mode, log rate limit warnings but don't block requests
-  if (!rateLimitResult.success && process.env.NODE_ENV === 'development') {
-    console.warn(`Rate limit would be exceeded for ${endpoint}: ${rateLimitKey}. Would reset at ${rateLimitResult.resetTime.toISOString()}`);
-    
-    // Add headers but still allow the request to proceed in development
-    responseHeaders.set('X-RateLimit-Limit', (rateLimitResult.limit ?? 0).toString());
-    responseHeaders.set('X-RateLimit-Remaining', '0');
-    responseHeaders.set('X-RateLimit-Reset', rateLimitResult.resetTime.toISOString());
-    responseHeaders.set('X-RateLimit-Warning', 'Would have been rate limited in production');
-    
-    return NextResponse.next({
-      request: {
-        headers: responseHeaders,
-      },
-      headers: responseHeaders,
-    });
-  }
-  
-  // Only actually enforce rate limits in production
-  if (!rateLimitResult.success && process.env.NODE_ENV === 'production') {
-    // Apply common headers even to the rate limit response
-    responseHeaders.set('Content-Type', 'application/json');
-    responseHeaders.set('Retry-After', Math.ceil((rateLimitResult.resetTime.getTime() - Date.now()) / 1000).toString());
-    
-    return new NextResponse(JSON.stringify({
-      error: 'Rate limit exceeded',
-      resetTime: rateLimitResult.resetTime,
-    }), {
-      status: 429,
-      headers: responseHeaders, // Use the headers object
-    });
-  }
-
-  // Add rate limit status headers to the successful response
-  // Use the limit value returned from checkRateLimit
-  responseHeaders.set('X-RateLimit-Limit', (rateLimitResult.limit ?? 0).toString());
-  responseHeaders.set('X-RateLimit-Remaining', (rateLimitResult.remaining ?? 0).toString());
-  responseHeaders.set('X-RateLimit-Reset', rateLimitResult.resetTime?.toISOString() || new Date().toISOString());
-  
-  // Proceed with the request, applying all headers
+  // Proceed with the request, applying all headers (no rate limiting)
   return NextResponse.next({
     request: {
-      headers: responseHeaders, // Pass headers along
+      headers: responseHeaders,
     },
-    headers: responseHeaders, // Apply headers to the response
+    headers: responseHeaders,
   });
 }
