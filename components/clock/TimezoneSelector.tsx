@@ -273,12 +273,18 @@ export default function TimezoneSelector({
                   <div className="flex items-center space-x-1">
                     {context.isMarsDaytime ? (
                       <div className="flex items-center space-x-1 text-amber-500 dark:text-amber-400">
-                        <span className="text-xs">☀️</span>
+                        <span className="flex items-center">
+                          <img src="/mars.png" alt="Mars" className="inline-block w-4 h-4 mr-1 align-middle" />
+                          <span className="text-xs">☀️</span>
+                        </span>
                         <span className="text-xs whitespace-nowrap">Mars Daytime</span>
                       </div>
                     ) : (
                       <div className="flex items-center space-x-1 text-indigo-500 dark:text-indigo-400">
-                        <span className="text-xs">🌙</span>
+                        <span className="flex items-center">
+                          <img src="/mars.png" alt="Mars" className="inline-block w-4 h-4 mr-1 align-middle" />
+                          <span className="text-xs">🌙</span>
+                        </span>
                         <span className="text-xs whitespace-nowrap">Mars Night</span>
                       </div>
                     )}
@@ -336,11 +342,11 @@ export default function TimezoneSelector({
                 {DateTime.now().month === 4 && DateTime.now().day === 1 && (
                   <div className="mt-2 px-3 py-2 bg-red-100 dark:bg-red-900/30 rounded-md border border-red-200 dark:border-red-800/50 text-sm">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-red-600 dark:text-red-400 font-semibold">April Fools!</span>
-                      <span className="text-red-600/90 dark:text-red-400/90">Mars timezones now available! 🚀</span>
+                      
+                      <span className="text-red-600/90 dark:text-red-400/90">Mars timezones now available!</span>
                     </div>
                     <div className="text-xs text-red-600/80 dark:text-red-400/80 font-medium">
-                      Check out the <span className="font-bold">Perseverance Rover</span> timezone at Jezero Crater 🤖
+                      Check out the <span className="font-bold">Perseverance Rover</span> timezone at Jezero Crater
                     </div>
                   </div>
                 )}
@@ -518,12 +524,18 @@ export default function TimezoneSelector({
                                         <div className="flex items-center space-x-1">
                                           {context.isMarsDaytime ? (
                                             <div className="flex items-center space-x-1 text-amber-500 dark:text-amber-400">
-                                              <span className="text-xs">☀️</span>
+                                              <span className="flex items-center">
+                                                <img src="/mars.png" alt="Mars" className="inline-block w-4 h-4 mr-1 align-middle" />
+                                                <span className="text-xs">☀️</span>
+                                              </span>
                                               <span className="text-xs whitespace-nowrap">Mars Daytime</span>
                                             </div>
                                           ) : (
                                             <div className="flex items-center space-x-1 text-indigo-500 dark:text-indigo-400">
-                                              <span className="text-xs">🌙</span>
+                                              <span className="flex items-center">
+                                                <img src="/mars.png" alt="Mars" className="inline-block w-4 h-4 mr-1 align-middle" />
+                                                <span className="text-xs">🌙</span>
+                                              </span>
                                               <span className="text-xs whitespace-nowrap">Mars Night</span>
                                             </div>
                                           )}

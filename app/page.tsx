@@ -50,7 +50,12 @@ export default function Home() {
   const isMobile = useMediaQuery(MOBILE_BREAKPOINT); // Keep for top-level switch
   const isMobileLandscape = useMediaQuery('(max-width: 932px) and (max-height: 430px)'); // Keep for loading state
 
-  const { showMarsExplanation, hideMarsExplanation } = useTimezoneStore();
+  const { 
+    showMarsExplanation, 
+    hideMarsExplanation, 
+    marsExplanationPosition, 
+    lastAddedMarsTimezoneId 
+  } = useTimezoneStore();
 
   useEffect(() => {
     setIsMounted(true); // Set mounted state
@@ -103,6 +108,8 @@ export default function Home() {
       <MarsTimeExplanation 
         isOpen={showMarsExplanation} 
         onClose={hideMarsExplanation} 
+        position={marsExplanationPosition}
+        targetTimezoneId={lastAddedMarsTimezoneId}
       />
     </main>
   );

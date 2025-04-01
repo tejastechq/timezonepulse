@@ -124,7 +124,13 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
           `}
         >
           {timezone.startsWith('Mars/') && !isHighlight && (
-            <span className="mr-1 text-red-600 dark:text-red-400" title="Mars Time">🔴</span>
+            <span className="mr-1 text-red-600 dark:text-red-400" title="Mars Time">
+              {timezone === 'Mars/Jezero' ? (
+                <img src="/perseverance.png" alt="Perseverance Rover" className="inline-block w-4 h-4 align-text-bottom" title="Perseverance Rover" />
+              ) : (
+                <img src="/mars.png" alt="Mars" className="inline-block w-4 h-4 align-text-bottom" />
+              )}
+            </span>
           )}
           {formatted}
         </span>
@@ -1166,23 +1172,27 @@ const TimezoneColumn = memo(({
         <div>
           <h3 className={`text-lg font-semibold ${timezone.id === 'Mars/Jezero' ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
             {timezone.id.startsWith('Mars/') && (
-              <span className="inline-block mr-1" title="Mars Time">🔴</span>
+              <span className="inline-block mr-1" title="Mars Time">
+                <img src="/mars.png" alt="Mars" className="inline-block w-5 h-5 align-text-bottom" />
+              </span>
             )}
             {timezone.id === 'Mars/Jezero' && (
-              <span className="inline-block mr-1" title="Perseverance Rover Location">🤖</span>
+              <span className="inline-block mr-1" title="Perseverance Rover Location">
+                <img src="/perseverance.png" alt="Perseverance Rover" className="inline-block w-5 h-5 align-text-bottom" />
+              </span>
             )}
             {timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}
             {timezone.id === 'Mars/Jezero' && (
               <span className="ml-2 text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded animate-pulse">
-                Perseverance
+                
               </span>
             )}
           </h3>
           <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center space-x-2">
-            <span>{timezone.id.startsWith('Mars/') ? 'MTC' : DateTime.now().setZone(timezone.id).toFormat('ZZZZ')}</span>
-            <span>({getTimezoneOffset(timezone.id)})</span>
+            <span>{timezone.id.startsWith('Mars/') ? timezone.id === 'Mars/Jezero' ? '(MTC+05:10)' : 'MTC' : DateTime.now().setZone(timezone.id).toFormat('ZZZZ')}</span>
+            {!timezone.id.startsWith('Mars/') && <span>({getTimezoneOffset(timezone.id)})</span>}
+            {timezone.id === 'Mars/Jezero' && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-300">Perseverance</span>}
             {isDST && !timezone.id.startsWith('Mars/') && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100">DST</span>}
-            {timezone.id.startsWith('Mars/') && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-300">MARS</span>}
           </div>
           <div className={`text-sm font-medium mt-1 ${timezone.id.startsWith('Mars/') ? 'text-red-600 dark:text-red-400' : 'text-primary-600 dark:text-primary-400'}`}>
             {localTime && formatTime(localTime, timezone.id)}

@@ -42,6 +42,8 @@ interface TimezoneState {
   selectedDate: Date;
   showMarsExplanation: boolean;
   hasMarsTimezone: boolean;
+  marsExplanationPosition: 'left' | 'right';
+  lastAddedMarsTimezoneId: string | null;
   addTimezone: (timezone: Timezone) => void;
   removeTimezone: (id: string) => void;
   setViewMode: (mode: ViewMode) => void;
@@ -151,6 +153,8 @@ export const useTimezoneStore = create<TimezoneState>()(
         appVersion: { ...APP_VERSION, timestamp: Date.now() },
         showMarsExplanation: false,
         hasMarsTimezone: false,
+        marsExplanationPosition: 'right' as 'left' | 'right',
+        lastAddedMarsTimezoneId: null,
       });
       
       return {
@@ -165,14 +169,20 @@ export const useTimezoneStore = create<TimezoneState>()(
           
           const isMarsTimezone = timezone.id.startsWith('Mars/');
           
-          // If it's a Mars timezone and the user hasn't added one before, show the explanation
-          const shouldShowExplanation = isMarsTimezone && !state.hasMarsTimezone;
+          // Determine which side of the screen to show the explanation on
+          // Based on number of timezones - if it's even, show on right, if odd, show on left
+          const position = (state.timezones.length % 2 === 0) ? 'right' : 'left';
+          
+          // Show the explanation for every Mars timezone addition
+          const shouldShowExplanation = isMarsTimezone;
           
           // Return updated state
           return {
             timezones: [...state.timezones, timezone],
             showMarsExplanation: shouldShowExplanation,
-            hasMarsTimezone: state.hasMarsTimezone || isMarsTimezone
+            hasMarsTimezone: true,
+            marsExplanationPosition: position,
+            lastAddedMarsTimezoneId: isMarsTimezone ? timezone.id : state.lastAddedMarsTimezoneId
           };
         }),
         

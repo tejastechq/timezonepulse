@@ -171,7 +171,7 @@ export function getMarsSiteTimezones(): TimezoneInfo[] {
     
     return {
       id: location.id,
-      name: `${location.name} ${location.roverPresent ? '🤖' : ''} (${offset})`,
+      name: `${location.name} ${location.roverPresent ? '' : ''} (${offset})`,
       offset,
       city: location.city,
       country: 'Mars',
