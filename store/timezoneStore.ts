@@ -98,10 +98,10 @@ export const useTimezoneStore = create<TimezoneState>()(
             country: 'United Kingdom',
           }] : []),
           ...(/^Europe\//.test(localTz) ? [{
-            id: 'Asia/Tokyo',
-            name: 'Tokyo (Asia/Tokyo)',
-            city: 'Tokyo',
-            country: 'Japan',
+            id: 'Europe/Paris',
+            name: 'Paris (Europe/Paris)',
+            city: 'Paris',
+            country: 'France',
           }] : []),
           ...(/^Asia\//.test(localTz) ? [{
             id: 'America/New_York',
@@ -124,10 +124,10 @@ export const useTimezoneStore = create<TimezoneState>()(
           
           // Add a second geographically different timezone
           ...(/^America\//.test(localTz) ? [{
-            id: 'Asia/Tokyo',
-            name: 'Tokyo (Asia/Tokyo)',
-            city: 'Tokyo',
-            country: 'Japan',
+            id: 'Europe/London',
+            name: 'London (Europe/London)',
+            city: 'London',
+            country: 'United Kingdom',
           }] : []),
           ...(/^Europe\//.test(localTz) ? [{
             id: 'America/New_York',

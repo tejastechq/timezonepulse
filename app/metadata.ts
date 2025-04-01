@@ -36,7 +36,7 @@ export const baseMetadata: Metadata = {
     title: APP_DEFAULT_TITLE,
     description: APP_DESCRIPTION,
     images: [{
-      url: '/timezonepulse.png', // Path seems correct
+      url: 'https://www.timezonepulse.com/timezonepulse.png', // Updated to full URL
       width: 1200,
       height: 630,
       alt: 'TimeZonePulse App Logo', // Alt text already correct
@@ -47,7 +47,7 @@ export const baseMetadata: Metadata = {
     card: 'summary_large_image',
     title: APP_DEFAULT_TITLE,
     description: APP_DESCRIPTION,
-    images: ['/timezonepulse.png'], // Path seems correct
+    images: ['/twitter.PNG'], // Using twitter.PNG from public folder
     creator: '@timezonepulse', // Handle seems correct
   },
   // Now using app route /manifest.ts instead of static file

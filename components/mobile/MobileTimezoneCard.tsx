@@ -62,8 +62,8 @@ const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
     const earthDateTime = DateTime.fromJSDate(date);
     if (isMarsTimezone) {
       const marsDateTime = convertEarthToMarsTime(earthDateTime, timezone.id);
-      // Use a simplified format for Mars time, as formatMarsTime adds MTC/Sol
-      return marsDateTime.toFormat('h:mm a'); 
+      // Use formatMarsTime instead of toFormat
+      return formatMarsTime(marsDateTime).split(' ')[0]; // Split to get just the time part without MTC/Sol
     } else {
       return earthDateTime.setZone(timezone.id).toFormat(format);
     }
@@ -76,7 +76,7 @@ const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
     const highlightedDateTime = DateTime.fromJSDate(highlightedTime);
     if (isMarsTimezone) {
       const marsDateTime = convertEarthToMarsTime(highlightedDateTime, timezone.id);
-      return marsDateTime.toFormat('h:mm a');
+      return formatMarsTime(marsDateTime).split(' ')[0]; // Split to get just the time part without MTC/Sol
     } else {
       return highlightedDateTime.setZone(timezone.id).toFormat('h:mm a');
     }

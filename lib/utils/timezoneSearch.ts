@@ -1,5 +1,5 @@
 import { Timezone } from '@/store/timezoneStore';
-import { formatMarsTime, getCurrentMarsTime, getMarsTimezoneOffset, getRoverInfo } from './mars-timezone';
+import { formatMarsTime, getMarsTimezoneOffset, getRoverInfo, convertEarthToMarsTime } from './mars-timezone';
 import { DateTime } from 'luxon';
 
 // Scoring weights for different match types
@@ -166,13 +166,13 @@ export function getTimezoneContext(timezone: Timezone, userTimezone: string): {
   try {
     // Special handling for Mars timezones
     if (timezone.id.startsWith('Mars/')) {
-      // Get Mars time using our Mars-specific functions
-      const marsTime = getCurrentMarsTime(timezone.id);
+      // Get Mars-specific data
       const marsOffset = getMarsTimezoneOffset(timezone.id);
       const roverInfo = getRoverInfo(timezone.id);
       
       // Format time in Mars time format
-      const currentTime = formatMarsTime(marsTime);
+      const marsTimeData = convertEarthToMarsTime(DateTime.now(), timezone.id);
+      const currentTime = formatMarsTime(marsTimeData);
       
       // Extract numeric offset from MTC+XX:XX format
       const match = marsOffset.match(/MTC([+-])(\d+):(\d+)/);
@@ -186,7 +186,7 @@ export function getTimezoneContext(timezone: Timezone, userTimezone: string): {
       
       // Determine if it's daytime on Mars (7 AM to 7 PM Mars time)
       // This is simplified as Mars has similar day/night cycles to Earth
-      const marsHour = marsTime.hour;
+      const marsHour = marsTimeData.hours;
       const isMarsDaytime = marsHour >= 7 && marsHour < 19;
       
       // For Mars, we'll use isBusinessHours to indicate daylight hours

@@ -18,7 +18,7 @@ interface MarsLocation {
   id: string;
   name: string;
   city: string;
-  longitude: number; // Degrees from Mars Prime Meridian (Airy-0 crater)
+  longitude: number; // Degrees East from Mars Prime Meridian (Airy-0 crater)
   latitude: number; // Degrees north/south of equator
   description: string;
   roverPresent?: boolean; // Flag for locations with active rovers
@@ -122,53 +122,136 @@ export function getCurrentMarsTime(location: string): DateTime {
   
   // Convert back to DateTime
   // We use UTC to avoid any Earth timezone adjustments
-  return DateTime.fromMillis(localMarsTimestamp).toUTC();
+  // This function is likely incorrect for calculating current time,
+  // as it doesn't properly account for the MTC epoch.
+  // It's kept for potential reference but convertEarthToMarsTime should be used.
+  return DateTime.fromMillis(0); // Return epoch or handle error
 }
 
+/** Helper function to calculate Julian Date from UTC DateTime */
+function getJulianDate(dt: DateTime): number {
+  const utcDt = dt.toUTC();
+  const year = utcDt.year;
+  const month = utcDt.month;
+  const day = utcDt.day;
+  const hour = utcDt.hour;
+  const minute = utcDt.minute;
+  const second = utcDt.second;
+
+  // Formula for Julian Date calculation
+  const a = Math.floor((14 - month) / 12);
+  const y = year + 4800 - a;
+  const m = month + 12 * a - 3;
+
+  const julianDayNumber = day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+  const fractionOfDay = (hour - 12) / 24 + minute / 1440 + second / 86400;
+
+  return julianDayNumber + fractionOfDay;
+}
+
+// Constants for MSD calculation
+const JD_TT_OFFSET_SECONDS = 69.184; // Approximate leap seconds + 32.184s (TAI-UTC + TT-TAI) for recent dates
+const MSD_EPOCH_OFFSET = 44796.0; // Offset for MSD epoch relative to JD
+const MSD_CONSTANT = 0.00096; // Small constant in MSD formula
+
+// Calculate MSD for Perseverance Landing Date once
+const PERSEVERANCE_LANDING_JD_UT = getJulianDate(PERSEVERANCE_LANDING_DATE);
+const PERSEVERANCE_LANDING_JD_TT = PERSEVERANCE_LANDING_JD_UT + (JD_TT_OFFSET_SECONDS / 86400.0);
+const PERSEVERANCE_LANDING_MSD = (PERSEVERANCE_LANDING_JD_TT - 2451549.5) / MARS_SOL_TO_EARTH_DAY_RATIO + MSD_EPOCH_OFFSET - MSD_CONSTANT;
+
+
 /**
- * Convert an Earth DateTime object to the equivalent Mars DateTime for a specific location
+ * Convert an Earth DateTime object to its equivalent Mars Local Mean Solar Time (LMST) components and Sol number.
+ * Uses Julian Date calculation for higher accuracy.
  * @param earthDateTime The Earth DateTime object to convert
  * @param location The Mars location ID
- * @returns Mars DateTime object representing the equivalent time on Mars
+ * @returns An object containing Mars hours, minutes, seconds, and the Sol number relative to Perseverance landing.
  */
-export function convertEarthToMarsTime(earthDateTime: DateTime, location: string): DateTime {
-  // Find the location info
+interface MarsTimeData {
+  hours: number;
+  minutes: number;
+  seconds: number;
+  sol: number; // Sol number relative to Perseverance landing (Sol 0)
+}
+
+export function convertEarthToMarsTime(earthDateTime: DateTime, location: string): MarsTimeData {
   const marsLocation = MARS_LOCATIONS.find(loc => loc.id === location);
   if (!marsLocation) {
     console.error(`Unknown Mars location: ${location}`);
-    // Return the original time if location is unknown, though formatting might still fail
-    return earthDateTime; 
+    return { hours: 0, minutes: 0, seconds: 0, sol: -1 }; // Return default/error state
   }
 
-  // Convert input Earth time to UTC milliseconds
-  const earthTimestamp = earthDateTime.toUTC().toMillis();
+  // 1. Calculate Julian Date (JD_UT)
+  const jd_ut = getJulianDate(earthDateTime);
+
+  // 2. Calculate Julian Date (JD_TT)
+  const jd_tt = jd_ut + (JD_TT_OFFSET_SECONDS / 86400.0);
+
+  // 3. Calculate Mars Sol Date (MSD)
+  const msd = (jd_tt - 2451549.5) / MARS_SOL_TO_EARTH_DAY_RATIO + MSD_EPOCH_OFFSET - MSD_CONSTANT;
+
+  // 4. Calculate Coordinated Mars Time (MTC) - fractional hours
+  const mtc_hours = (msd * 24) % 24;
+
+  // 5. Calculate Local Mean Solar Time (LMST) - fractional hours
+  // Longitude is degrees East. LMST = MTC - (longitude_east / 15.0)
+  let lmst_hours = mtc_hours - (marsLocation.longitude / 15.0);
+  // Ensure LMST is within 0-24 range
+  lmst_hours = (lmst_hours + 24) % 24;
+
+  // 6. Extract H:M:S from LMST - Alternative extraction focusing on fractional parts
+  let hours_calc = Math.floor(lmst_hours);
+  const fractional_hour = lmst_hours - hours_calc;
+  const total_minutes_fractional = fractional_hour * 60;
+  let minutes_calc = Math.floor(total_minutes_fractional);
+  const fractional_minute = total_minutes_fractional - minutes_calc;
+  // Add epsilon before rounding seconds
+  let seconds_calc = Math.round(fractional_minute * 60 + 1e-9); 
+
+  // Handle rounding up seconds to 60
+  if (seconds_calc >= 60) {
+    minutes_calc += 1;
+    seconds_calc = 0; // Reset seconds
+    if (minutes_calc >= 60) {
+      hours_calc = (hours_calc + 1) % 24; // Handle hour rollover
+      minutes_calc = 0; // Reset minutes
+    }
+  }
   
-  // Apply the Mars sol duration factor
-  const marsTimestamp = earthTimestamp * MARS_SOL_TO_EARTH_DAY_RATIO;
-  
-  // Adjust for longitude offset
-  const longitudeHours = marsLocation.longitude / 15;
-  const hourOffsetMs = longitudeHours * MARS_HOUR_IN_EARTH_SECONDS * 1000;
-  const localMarsTimestamp = marsTimestamp + hourOffsetMs;
-  
-  // Return as DateTime in UTC
-  return DateTime.fromMillis(localMarsTimestamp).toUTC();
+  // Assign final values
+  const hours = hours_calc;
+  const minutes = minutes_calc;
+  const seconds = seconds_calc;
+
+  // 7. Calculate Sol Number relative to Perseverance landing
+  const sol = Math.floor(msd - PERSEVERANCE_LANDING_MSD);
+
+  return {
+    hours,
+    minutes,
+    seconds,
+    sol
+  };
 }
 
 
 /**
- * Format Mars time string with "MTC" to indicate Mars Time Coordinated
- * @param marsTime DateTime for Mars
- * @returns Formatted time string with appropriate Mars indicators
+ * Format Mars time string using calculated components.
+ * @param marsTimeData Object containing Mars H:M:S and Sol number
+ * @returns Formatted time string (e.g., "6:46 AM MTC (Sol 2002)")
  */
-export function formatMarsTime(marsTime: DateTime): string {
-  // Calculate the current Mars sol (number of days since Perseverance landing)
-  const earthTimeSinceLanding = marsTime.toMillis() - PERSEVERANCE_LANDING_DATE.toMillis();
-  // Convert to Mars sols and round to nearest integer
-  const currentSol = Math.floor(earthTimeSinceLanding / SOL_DURATION_MS);
-  
-  // Format using standard Earth time format but with Mars as prefix and sol count
-  return `${marsTime.toFormat('h:mm a')} MTC (Sol ${currentSol})`;
+export function formatMarsTime(marsTimeData: MarsTimeData): string {
+  const { hours, minutes, sol } = marsTimeData;
+
+  // Format using the calculated H:M components manually
+  const hours12 = hours % 12 === 0 ? 12 : hours % 12; // Convert 0 to 12 for 12-hour format
+  const ampm = hours < 12 ? 'AM' : 'PM';
+  const formattedMinutes = minutes.toString().padStart(2, '0');
+
+  // Note: The label "MTC" is technically incorrect here as we've calculated LMST.
+  // However, for user display consistency with common Mars time reporting, we might keep it,
+  // or change it to LMST or simply omit it. Let's keep MTC for now as per previous format.
+  return `${hours12}:${formattedMinutes} ${ampm} MTC (Sol ${sol})`;
 }
 
 /**

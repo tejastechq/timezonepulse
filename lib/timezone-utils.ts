@@ -8,7 +8,7 @@
 
 import { DateTime } from 'luxon';
 import type { Timezone } from '@/store/timezoneStore';
-import { getCurrentMarsTime, formatMarsTime, getMarsTimezoneOffset } from './utils/mars-timezone';
+import { convertEarthToMarsTime, formatMarsTime, getMarsTimezoneOffset } from './utils/mars-timezone'; // Added convertEarthToMarsTime
 
 /**
  * Format a time for a specific timezone
@@ -20,9 +20,10 @@ export function formatTimeForTimezone(time = new Date(), timezone: string, forma
   try {
     // Handle Mars timezones
     if (timezone.startsWith('Mars/')) {
-      // For Mars timezones, use the special Mars time calculation
-      const marsTime = getCurrentMarsTime(timezone);
-      return formatMarsTime(marsTime);
+      // Convert the specific Earth time slot to its equivalent Mars time components
+      const marsTimeData = convertEarthToMarsTime(DateTime.fromJSDate(time), timezone);
+      // Format the resulting Mars time using the components object (includes Sol count)
+      return formatMarsTime(marsTimeData);
     }
     
     // Normal Earth timezone

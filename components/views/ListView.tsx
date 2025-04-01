@@ -38,6 +38,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { formatTimeForTimezone } from '@/lib/timezone-utils';
+import { convertEarthToMarsTime } from '@/lib/utils/mars-timezone'; // Import Mars time conversion
 
 
 // Define outside the component
@@ -125,14 +126,16 @@ interface TimeItemProps {
   isDSTTransitionFn: (time: Date, timezone: string) => boolean;
   isCurrentTimeFn: (time: Date) => boolean;
   isWeekendFn: (time: Date, timezone: string) => boolean;
-  formatTimeFn: (time: Date, timezone: string) => string;
+  // formatTimeFn is no longer needed here, formatting happens in Row
   getHighlightAnimationClassFn: (isHighlight: boolean) => string;
   handleTimeSelectionFn: (time: Date) => void;
-  getHighlightClass: (isWeekend: boolean) => string; // Added this prop
+  getHighlightClass: (isWeekend: boolean) => string; 
+  formattedTimeStr: string; // Receive pre-formatted string
 }
 
 // Define TimeItem component outside ListView
-const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn, isNightTimeFn, isDateBoundaryFn, isDSTTransitionFn, isCurrentTimeFn, isWeekendFn, formatTimeFn, getHighlightAnimationClassFn, handleTimeSelectionFn, getHighlightClass }: TimeItemProps) {
+// Removed formatTimeFn from props
+const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn, isNightTimeFn, isDateBoundaryFn, isDSTTransitionFn, isCurrentTimeFn, isWeekendFn, getHighlightAnimationClassFn, handleTimeSelectionFn, getHighlightClass, formattedTimeStr }: TimeItemProps) {
   const isHighlight = isHighlightedFn(time);
   const isNight = isNightTimeFn(time, timezone);
   const isDay = !isNight;
@@ -140,7 +143,8 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
   const isDST = isDSTTransitionFn(time, timezone);
   const isCurrent = isCurrentTimeFn(time);
   const isWknd = isWeekendFn(time, timezone);
-  const formatted = formatTimeFn(time, timezone);
+  // Use the pre-formatted string passed in props
+  const formatted = formattedTimeStr; 
   const animClass = getHighlightAnimationClassFn(isHighlight);
   const cellClasses = clsx(
     'relative z-10 px-3 py-3 transition-all duration-300 border-b border-gray-100 dark:border-gray-800',
@@ -209,31 +213,55 @@ TimeItem.displayName = 'TimeItem'; // Add display name
 // Define the Row component for FixedSizeList (Moved outside ListView)
 const Row = ({ index, style, data }: ListChildComponentProps) => {
   // Access itemData passed from FixedSizeList
-  const currentItemData = data; 
-  const slots = currentItemData.slots; // Use slots from itemData
-  const time = slots[index];
-  
-  // Ensure all required functions are present in itemData
-  if (!currentItemData || typeof currentItemData.isHighlightedFn !== 'function') {
-    // Handle error or return placeholder
+  const currentItemData = data;
+  const slots = currentItemData.slots; // Earth time slots
+  const time = slots[index]; // Current Earth time slot
+
+  // Ensure all required functions/data are present in itemData
+  if (!currentItemData || typeof currentItemData.isHighlightedFn !== 'function' || !currentItemData.timezoneId) {
     return <div style={style}>Error: Missing item data</div>;
   }
+
+  let formattedTimeStr: string;
+
+  // Check if it's a Mars timezone and use pre-calculated data
+  if (currentItemData.isMars && currentItemData.marsSlotsData && currentItemData.marsSlotsData[index]) {
+    const marsData = currentItemData.marsSlotsData[index];
+    // Directly call the simplified formatMarsTime (ensure it's imported if needed, though it's called via formatTimeForTimezone which should be okay)
+    // We need to call the actual formatting function here. Let's import formatMarsTime directly.
+    // We'll need to modify the import later. For now, assume formatTimeFn handles it based on timezone ID.
+    // Correction: We need to format it here using the precalculated data.
+    // Let's call the underlying formatMarsTime directly. We need to import it.
+    // Import formatMarsTime from '@/lib/utils/mars-timezone'; // Add this import later
+    
+    // Manual formatting based on formatMarsTime logic:
+    const hours12 = marsData.hours % 12 === 0 ? 12 : marsData.hours % 12;
+    const ampm = marsData.hours < 12 ? 'AM' : 'PM';
+    const formattedMinutes = marsData.minutes.toString().padStart(2, '0');
+    formattedTimeStr = `${hours12}:${formattedMinutes} ${ampm} MTC (Sol ${marsData.sol})`;
+
+  } else {
+    // For Earth timezones, use the standard formatting function
+    formattedTimeStr = currentItemData.formatTimeFn(time, currentItemData.timezoneId);
+  }
+
 
   return (
     <TimeItem
       style={style}
       time={time}
-      timezone={currentItemData.timezoneId} // Use timezoneId from itemData
+      timezone={currentItemData.timezoneId}
       isHighlightedFn={currentItemData.isHighlightedFn}
       isNightTimeFn={currentItemData.isNightTimeFn}
       isDateBoundaryFn={currentItemData.isDateBoundaryFn}
       isDSTTransitionFn={currentItemData.isDSTTransitionFn}
       isCurrentTimeFn={currentItemData.isCurrentTimeFn}
       isWeekendFn={currentItemData.isWeekendFn}
-      formatTimeFn={currentItemData.formatTimeFn}
+      // formatTimeFn is removed
       getHighlightAnimationClassFn={currentItemData.getHighlightAnimationClassFn}
       handleTimeSelectionFn={currentItemData.handleTimeSelectionFn}
-      getHighlightClass={currentItemData.getHighlightClass} // Use getHighlightClass from itemData
+      getHighlightClass={currentItemData.getHighlightClass}
+      formattedTimeStr={formattedTimeStr} // Pass the formatted string
     />
   );
 };
@@ -1172,9 +1200,60 @@ const TimezoneColumn = memo(({
   getHighlightClass: (isWeekend: boolean) => string; // Added prop
 }) => {
   const isDST = isInDST(timezone.id);
+  const isMars = timezone.id.startsWith('Mars/');
+
+  // Calculate Mars time data incrementally if it's a Mars timezone
+  const marsTimeSlotsData = useMemo(() => {
+    if (!isMars || !timeSlots.length) return null;
+
+    // Use the more precise ratio directly from mars-timezone constants
+    const MARS_SOL_TO_EARTH_DAY_RATIO = 1.0274912517; 
+    const EARTH_INCREMENT_SECONDS = 30 * 60; // 30 minutes = 1800 Earth seconds
+    // Calculate Mars seconds equivalent to 30 Earth minutes
+    const MARS_INCREMENT_SECONDS = EARTH_INCREMENT_SECONDS / MARS_SOL_TO_EARTH_DAY_RATIO; 
+    const MARS_SECONDS_IN_SOL = 86400; // 24 Mars hours * 60 Mars mins * 60 Mars secs
+
+    // Calculate the reference time for the first slot
+    const referenceEarthTime = DateTime.fromJSDate(timeSlots[0]);
+    const referenceMarsData = convertEarthToMarsTime(referenceEarthTime, timezone.id);
+    let currentTotalMarsSeconds = (referenceMarsData.hours * 3600) + (referenceMarsData.minutes * 60) + referenceMarsData.seconds;
+    let currentSol = referenceMarsData.sol;
+
+    const slotsData: { hours: number; minutes: number; sol: number }[] = [];
+
+    for (let i = 0; i < timeSlots.length; i++) {
+      if (i > 0) {
+        currentTotalMarsSeconds += MARS_INCREMENT_SECONDS;
+        // Handle Sol rollover if seconds exceed MARS_SECONDS_IN_SOL
+        if (currentTotalMarsSeconds >= MARS_SECONDS_IN_SOL) {
+           currentSol += Math.floor(currentTotalMarsSeconds / MARS_SECONDS_IN_SOL);
+           currentTotalMarsSeconds %= MARS_SECONDS_IN_SOL;
+        }
+      }
+      
+      // Ensure positive seconds after modulo
+      const positiveTotalSeconds = (currentTotalMarsSeconds % MARS_SECONDS_IN_SOL + MARS_SECONDS_IN_SOL) % MARS_SECONDS_IN_SOL;
+      
+      // Calculate H:M from unrounded total seconds, round only the final seconds
+      const hours = Math.floor(positiveTotalSeconds / 3600);
+      const minutes = Math.floor((positiveTotalSeconds % 3600) / 60);
+      let seconds = Math.round(positiveTotalSeconds % 60); // Round only seconds
+
+      // Handle seconds rounding up to 60 (though less likely with this method)
+      if (seconds === 60) {
+        seconds = 0;
+        // Minute/Hour rollover will be handled naturally by the next iteration's floor calculation
+      }
+
+      slotsData.push({ hours, minutes, sol: currentSol }); // Store H:M (seconds not needed for display)
+    }
+    return slotsData;
+  }, [isMars, timeSlots, timezone.id]); // Dependencies for the memoized calculation
+
   // Prepare itemData for this specific timezone column
   const itemData = {
     slots: isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots : timeSlots,
+    marsSlotsData: marsTimeSlotsData, // Pass pre-calculated Mars data
     timezoneId: timezone.id,
     isHighlightedFn: isHighlighted,
     isNightTimeFn: checkNightHours,
@@ -1186,10 +1265,15 @@ const TimezoneColumn = memo(({
     getHighlightAnimationClassFn: getHighlightAnimationClass,
     handleTimeSelectionFn: handleTimeSelection,
     getHighlightClass: getHighlightClass, // Pass down getHighlightClass
+    isMars: isMars, // Pass flag to Row
   };
 
+
+  // Determine which slots array to use for the list count
+  const displaySlots = isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots : timeSlots;
+
   return (
-    <motion.div 
+    <motion.div
       layout // Keep layout animation
       initial={{ opacity: 0, y: 20 }} 
       animate={{ opacity: 1, y: 0 }} 
@@ -1298,7 +1382,7 @@ const TimezoneColumn = memo(({
             <FixedSizeList
               height={height}
               width={width}
-              itemCount={itemData.slots.length}
+              itemCount={displaySlots.length} // Use displaySlots length
               itemSize={48}
               overscanCount={10}
               ref={(ref) => { listRefs.current[timezone.id] = ref; }}
