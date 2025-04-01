@@ -7,6 +7,7 @@ import { ViewProvider } from './contexts/ViewContext';
 import { ClientInitializer } from '@/components/performance/ClientInitializer';
 import ErrorBoundary from '@/components/error/ErrorBoundary';
 import { initGlobalErrorHandlers } from '@/lib/utils/errorHandler';
+import { Toaster } from 'sonner';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -103,6 +104,7 @@ export function Providers({ children }: ProvidersProps) {
           {typeof window !== 'undefined' && <ClientInitializer />}
           {children}
         </ViewProvider>
+        <Toaster richColors closeButton position="top-right" />
       </ThemeProvider>
     </ErrorBoundary>
   );

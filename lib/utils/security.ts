@@ -21,11 +21,12 @@ export function generateNonce(): string {
  */
 export function getCspWithNonce(nonce: string): string {
   const isDevelopment = process.env.NODE_ENV === 'development';
-  
-  // Remove nonce completely to allow 'unsafe-inline' to work. Keep 'unsafe-eval'.
+  const statuspageDomains = 'https://*.statuspage.io https://timezonepulse1.statuspage.io';
+
+  // Allow Statuspage scripts and maintain existing rules
   const scriptSrcDirective = isDevelopment
-    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' https:` // Removed nonce
-    : `script-src 'self' 'unsafe-eval' 'unsafe-inline' https:`; // Removed nonce
+    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' https: ${statuspageDomains}`
+    : `script-src 'self' 'unsafe-eval' 'unsafe-inline' https: ${statuspageDomains}`;
 
   // In development, we need to be more permissive with trusted types
   const trustedTypesDirective = isDevelopment
@@ -38,48 +39,51 @@ export function getCspWithNonce(nonce: string): string {
   // Object security
   const objectSrc = `object-src 'none'`;
 
-  // Frame security - allow frames for embedded content
-  const frameSrc = `frame-src 'self' https:`;
+  // Frame security - allow frames for embedded content and Statuspage
+  const frameSrc = `frame-src 'self' https: ${statuspageDomains}`;
   const frameAncestors = `frame-ancestors 'self'`;
   const formAction = `form-action 'self'`;
 
   // Media and font security
   const mediaSrc = `media-src 'self'`;
   const fontSrc = `font-src 'self' data: https:`;
-  
-  // Image security with strict sources
-  const imgSrc = `img-src 'self' data: https: blob: ${isDevelopment ? 'http://localhost:* http://127.0.0.1:*' : ''}`;
-  
-  // Style security - Keep unsafe-inline for now due to potential library needs
-  const styleSrc = isDevelopment
-    ? `style-src 'self' 'unsafe-inline'`
-    : `style-src 'self' 'unsafe-inline'`; 
 
-  // Connect sources including development needs
+  // Image security with strict sources, allow Statuspage images
+  const imgSrc = `img-src 'self' data: https: blob: ${statuspageDomains} ${isDevelopment ? 'http://localhost:* http://127.0.0.1:*' : ''}`;
+
+  // Style security - Keep unsafe-inline, allow Statuspage styles
+  const styleSrc = isDevelopment
+    ? `style-src 'self' 'unsafe-inline' ${statuspageDomains}`
+    : `style-src 'self' 'unsafe-inline' ${statuspageDomains}`;
+
+  // Connect sources including development needs and Statuspage
   const connectSrc = isDevelopment
-    ? `connect-src 'self' https://va.vercel-analytics.com https://*.vercel-analytics.com https://*.vercel.com ws: http://localhost:* http://127.0.0.1:*`
-    : `connect-src 'self' https://va.vercel-analytics.com https://*.vercel-analytics.com https://*.vercel.com`;
+    ? `connect-src 'self' https://va.vercel-analytics.com https://*.vercel-analytics.com https://*.vercel.com ws: http://localhost:* http://127.0.0.1:* ${statuspageDomains}`
+    : `connect-src 'self' https://va.vercel-analytics.com https://*.vercel-analytics.com https://*.vercel.com ${statuspageDomains}`;
 
   // Manifest security
   const manifestSrc = `manifest-src 'self'`;
 
-  // Combine all directives
-  return `
-    default-src 'self';
-    ${scriptSrcDirective};
-    ${styleSrc};
-    ${imgSrc};
-    ${fontSrc};
-    ${connectSrc};
-    ${mediaSrc};
-    ${manifestSrc};
-    ${baseUri};
-    ${objectSrc};
-    ${frameSrc};
-    ${frameAncestors};
-    ${formAction};
-    ${trustedTypesDirective}
-  `.replace(/\s+/g, ' ').trim();
+  // Create a single-line CSP with proper spacing between directives
+  const directives = [
+    `default-src 'self'`,
+    scriptSrcDirective,
+    styleSrc,
+    imgSrc,
+    fontSrc,
+    connectSrc,
+    mediaSrc,
+    manifestSrc,
+    baseUri,
+    objectSrc,
+    frameSrc,
+    frameAncestors,
+    formAction,
+    trustedTypesDirective
+  ];
+
+  // Join all directives with semicolons and proper spacing
+  return directives.join('; ');
 }
 
 /**

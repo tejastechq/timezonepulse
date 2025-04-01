@@ -61,9 +61,14 @@ export default function RootLayout({
             |{' '}
             <a href="/about" className="hover:underline">
               About
+            </a>{' '}
+            |{' '}
+            <a href="https://timezonepulse1.statuspage.io" target="_blank" rel="noopener noreferrer" className="hover:underline">
+              System Status
             </a>
           </footer>
         </Providers>
+        <script src="https://timezonepulse1.statuspage.io/embed/script.js"></script>
       </body>
     </html>
   );

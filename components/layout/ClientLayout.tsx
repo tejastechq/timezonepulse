@@ -4,6 +4,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from '@vercel/analytics/react';
 import ThemeToggle from '@/components/ThemeToggle';
 import MobileMenu from '@/components/MobileMenu';
+import StatusIndicator from '@/components/StatusIndicator';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { Settings } from 'lucide-react';
@@ -52,6 +53,7 @@ export default function ClientLayout({
             </nav>
           </div>
           <div className="flex items-center space-x-4">
+            <StatusIndicator className="hidden md:flex" />
             <ThemeToggle />
             <MobileMenu />
           </div>
@@ -71,6 +73,7 @@ export default function ClientLayout({
             <Link href="/" className="hover:text-primary-500 transition-colors">Home</Link>
             <Link href="/about" className="hover:text-primary-500 transition-colors">About</Link>
             <Link href="/settings" className="hover:text-primary-500 transition-colors">Settings</Link>
+            <Link href="https://timezonepulse1.statuspage.io" target="_blank" rel="noopener noreferrer" className="hover:text-primary-500 transition-colors">System Status</Link>
           </div>
         </div>
       </footer>

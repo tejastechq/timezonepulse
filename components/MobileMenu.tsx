@@ -3,9 +3,10 @@
 import React, { useEffect, useRef } from 'react';
 import { Drawer } from 'vaul';
 import { Button } from '@/components/ui/button';
-import { Menu, Settings, Info, X, Home, ChevronRight, Clock } from 'lucide-react';
+import { Menu, Settings, Info, X, Home, ChevronRight, Clock, AlertCircle } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import StatusIndicator from '@/components/StatusIndicator';
 
 export function MobileMenu() {
   const navRef = useRef<HTMLDivElement>(null);
@@ -121,6 +122,9 @@ export function MobileMenu() {
           
           {/* Footer section */}
           <div className="border-t border-border/40 p-4">
+            <div className="mb-3 flex justify-center">
+              <StatusIndicator />
+            </div>
             <div className="text-xs text-muted-foreground text-center">
               &copy; {new Date().getFullYear()} TimeZonePulse
             </div>
