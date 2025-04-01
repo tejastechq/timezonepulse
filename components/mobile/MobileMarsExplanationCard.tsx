@@ -22,9 +22,19 @@ const ExplanationContent = () => (
       <p>
         <strong>Mars Time Zones:</strong> Like Earth, Mars uses time zones based on longitude (15° ≈ 1 Mars hour).
       </p>
-      {/* Removed Sol Count and NASA fact for brevity */}
-      
-      {/* Removed the explanation about time slot matching as the underlying issue is fixed. */}
+      {/* Add Call to Action */}
+      <p className="mt-2 text-xs italic text-gray-600 dark:text-gray-400"> {/* Added margin-top, italic, smaller text */}
+        Try it out! Add a Mars timezone like "Mars/Jezero" (Perseverance) to compare.
+      </p>
+      {/* Add Perseverance Rover Info */}
+      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600"> {/* Add separator */}
+        <p className="flex justify-between items-baseline">
+          <span className="font-medium text-gray-800 dark:text-gray-100">Perseverance Rover</span>
+          <span className="text-xs font-semibold text-yellow-600 dark:text-yellow-400">(Sol 1462)</span> {/* Example Sol, adjust if dynamic */}
+        </p>
+        <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">NASA Mars 2020 Mission</p>
+        <p className="text-xs text-gray-600 dark:text-gray-400">Location: Jezero Crater 18.38°N, 77.58°E</p>
+      </div>
       {/* Removed Call to action */}
     </div>
   </div>

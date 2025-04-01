@@ -24,15 +24,7 @@ const ExplanationContent = () => (
         <strong>Sol Count:</strong> Mission teams count days on Mars as "sols" since landing. Perseverance landed on February 18, 2021 (Sol 0).
       </p>
 
-      {/* Time increments explanation - Apply red theme */}
-      <div className="mt-4 p-3 bg-red-100/70 dark:bg-red-800/20 rounded border border-red-200/80 dark:border-red-700/30 flex items-start gap-2"> 
-        <Info size={18} className="text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-        {/* Apply red text theme */}
-        <div className="text-xs text-red-700/90 dark:text-red-300/90"> 
-          <p className="font-medium">About Time Increments</p>
-          <p className="mt-1">The time slots show the same time because Mars days are longer than Earth days. In this April Fools feature, we've simulated Mars time but kept Earth's 30-minute increments.</p>
-        </div>
-      </div>
+      {/* Removed the explanation about time increments as the underlying issue is fixed. */}
 
       {/* Apply red text theme */}
       <p className="text-xs mt-4 text-red-500/80 dark:text-red-400/80 italic"> 

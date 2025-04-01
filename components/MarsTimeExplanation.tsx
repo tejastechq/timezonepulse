@@ -200,14 +200,7 @@ const TooltipContent = ({ onClose }: { onClose: () => void }) => (
         <strong>Sol Count:</strong> Mission teams count days on Mars as "sols" since landing. Perseverance landed on February 18, 2021 (Sol 0).
       </p>
       
-      {/* Time increments explanation */}
-      <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-700/40 flex items-start gap-2"> {/* Changed colors, p-3 */}
-        <Info size={18} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" /> {/* Changed color, size */}
-        <div className="text-sm text-blue-800 dark:text-blue-200"> {/* Changed colors, text-sm */}
-          <p className="font-medium">Why Time Slots Match</p> {/* Changed copy */}
-          <p className="mt-1">Mars days (sols) are ~40 mins longer than Earth days. This clock shows simulated Mars time using standard 30-minute Earth increments, so slots might appear the same.</p> {/* Simplified copy */}
-        </div>
-      </div>
+      {/* Removed the explanation about time slot matching as the underlying issue is fixed. */}
       
       <p className="text-sm mt-3 text-gray-600 dark:text-gray-400"> {/* Changed colors, text-sm, removed italic */}
         NASA mission teams work on "Mars time" during critical phases, shifting their Earth schedules by ~40 minutes daily!
