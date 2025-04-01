@@ -263,7 +263,8 @@ export default function TimezoneSelector({
                   <Clock className="w-4 h-4 flex-shrink-0" />
                   <span className="whitespace-nowrap">{context.currentTime}</span>
                 </div>
-                {context.isBusinessHours && !context.isRoverLocation && (
+                {/* Hide Business Hours for Mars timezones */}
+                {context.isBusinessHours && !timezone.id.startsWith('Mars/') && (
                   <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
                     <Briefcase className="w-4 h-4 flex-shrink-0" />
                     <span className="text-xs whitespace-nowrap">Business hours</span>
@@ -513,7 +514,8 @@ export default function TimezoneSelector({
                                         <Clock className="w-4 h-4 flex-shrink-0" />
                                         <span className="whitespace-nowrap">{context.currentTime}</span>
                                       </div>
-                                      {context.isBusinessHours && !context.isRoverLocation && (
+                                      {/* Hide Business Hours for Mars timezones */}
+                                      {context.isBusinessHours && !timezone.id.startsWith('Mars/') && (
                                         <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
                                           <Briefcase className="w-4 h-4 flex-shrink-0" />
                                           <span className="text-xs whitespace-nowrap">Business hours</span>
