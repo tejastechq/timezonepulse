@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import Image from 'next/image';
 import { getAllTimezones } from '@/lib/utils/timezone';
 import { sortTimezonesByRelevance, getTimezoneContext } from '@/lib/utils/timezoneSearch';
 import { Timezone } from '@/store/timezoneStore';
@@ -263,7 +264,7 @@ export default function TimezoneSelector({
                                     <div className="flex items-center space-x-2 min-w-0 flex-1">
                                       <span className="truncate">
                                         {/* Replace emoji with image */}
-                                        {timezone.id === 'Mars/Jezero' && <img src="/perseverance.png" alt="Perseverance Rover" className="inline-block w-4 h-4 mr-1 align-middle" title="Perseverance Rover Location" />}
+                                        {timezone.id === 'Mars/Jezero' && <Image src="/perseverance.png" alt="Perseverance Rover" width={16} height={16} className="inline-block w-4 h-4 mr-1 align-middle" />}
                                         {timezone.city || timezone.name}
                                       </span>
                                       {timezone.abbreviation && (
@@ -296,20 +297,20 @@ export default function TimezoneSelector({
                 {timezone.id.startsWith('Mars/') && (
                   <div className="flex items-center space-x-1">
                     {context.isMarsDaytime ? (
-                      <div className="flex items-center space-x-1 text-amber-500 dark:text-amber-400">
-                        <span className="flex items-center">
-                          <img src="/mars.png" alt="Mars" className="inline-block w-4 h-4 mr-1 align-middle" />
-                          <span className="text-xs">☀️</span>
-                        </span>
-                        <span className="text-xs whitespace-nowrap">Mars Daytime</span>
+                                      <div className="flex items-center space-x-1 text-amber-500 dark:text-amber-400">
+                                        <span className="flex items-center">
+                                          <Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 mr-1 align-middle" />
+                                          <span className="text-xs">☀️</span>
+                                        </span>
+                                        <span className="text-xs whitespace-nowrap">Mars Daytime</span>
                       </div>
                     ) : (
-                      <div className="flex items-center space-x-1 text-indigo-500 dark:text-indigo-400">
-                        <span className="flex items-center">
-                          <img src="/mars.png" alt="Mars" className="inline-block w-4 h-4 mr-1 align-middle" />
-                          <span className="text-xs">🌙</span>
-                        </span>
-                        <span className="text-xs whitespace-nowrap">Mars Night</span>
+                                      <div className="flex items-center space-x-1 text-indigo-500 dark:text-indigo-400">
+                                        <span className="flex items-center">
+                                          <Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 mr-1 align-middle" />
+                                          <span className="text-xs">🌙</span>
+                                        </span>
+                                        <span className="text-xs whitespace-nowrap">Mars Night</span>
                       </div>
                     )}
                   </div>
@@ -515,7 +516,7 @@ export default function TimezoneSelector({
               <div className="flex items-center space-x-2 min-w-0 flex-1">
                 <span className="truncate">
                   {/* Replace emoji with image */}
-                  {timezone.id === 'Mars/Jezero' && <img src="/perseverance.png" alt="Perseverance Rover" className="inline-block w-4 h-4 mr-1 align-middle" title="Perseverance Rover Location" />}
+                  {timezone.id === 'Mars/Jezero' && <Image src="/perseverance.png" alt="Perseverance Rover" width={16} height={16} className="inline-block w-4 h-4 mr-1 align-middle" />}
                   {timezone.city || timezone.name}
                 </span>
                 {timezone.abbreviation && (
@@ -550,7 +551,7 @@ export default function TimezoneSelector({
                                           {context.isMarsDaytime ? (
                                             <div className="flex items-center space-x-1 text-amber-500 dark:text-amber-400">
                                               <span className="flex items-center">
-                                                <img src="/mars.png" alt="Mars" className="inline-block w-4 h-4 mr-1 align-middle" />
+                                                <Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 mr-1 align-middle" />
                                                 <span className="text-xs">☀️</span>
                                               </span>
                                               <span className="text-xs whitespace-nowrap">Mars Daytime</span>
@@ -558,7 +559,7 @@ export default function TimezoneSelector({
                                           ) : (
                                             <div className="flex items-center space-x-1 text-indigo-500 dark:text-indigo-400">
                                               <span className="flex items-center">
-                                                <img src="/mars.png" alt="Mars" className="inline-block w-4 h-4 mr-1 align-middle" />
+                                                <Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 mr-1 align-middle" />
                                                 <span className="text-xs">🌙</span>
                                               </span>
                                               <span className="text-xs whitespace-nowrap">Mars Night</span>

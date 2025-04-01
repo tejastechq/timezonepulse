@@ -257,6 +257,7 @@ export function getTimezoneContext(timezone: Timezone, userTimezone: string): {
       offset: offsetStr,
       isBusinessHours,
       currentTime,
+      isMarsDaytime: false // Earth timezones don't have Mars daytime
     };
   } catch (error) {
     console.error('Error in getTimezoneContext:', error);

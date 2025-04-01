@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useCallback, useMemo, memo, forwardRef, useImperativeHandle, startTransition } from 'react'; // Import startTransition
+import Image from 'next/image'; // Import next/image
 import { DateTime } from 'luxon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Timezone, useTimezoneStore } from '@/store/timezoneStore';
@@ -37,6 +38,63 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { formatTimeForTimezone } from '@/lib/timezone-utils';
+
+
+// Define outside the component
+const useConsolidatedTimerHook = (
+  mounted: boolean,
+  highlightedTime: Date | null,
+  highlightAutoClear: boolean,
+  highlightDuration: number,
+  handleTimeSelection: (time: Date | null) => void,
+  timeRemainingRef: React.MutableRefObject<number>,
+  setTimeRemaining: React.Dispatch<React.SetStateAction<number>>
+) => {
+  const animationFrameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Only run timer if auto-clear is enabled and time is highlighted
+    if (!mounted || !highlightedTime || !highlightAutoClear) {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      return; // Exit early if conditions aren't met
+    }
+
+    let lastTickTime = Date.now();
+    let remainingTime = timeRemainingRef.current; // Use the ref
+
+    const timerLoop = () => {
+      // Check again inside the loop
+      if (!mounted || !highlightedTime || !highlightAutoClear) {
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+        return;
+      }
+      const now = Date.now();
+      const deltaTime = now - lastTickTime;
+      if (deltaTime >= 1000) {
+        lastTickTime = now;
+        remainingTime -= 1;
+        if (remainingTime <= 0) {
+          if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+          handleTimeSelection(null); // Clear selection
+          return;
+        }
+        timeRemainingRef.current = remainingTime;
+        setTimeRemaining(remainingTime); // Update state for UI
+      }
+      animationFrameRef.current = requestAnimationFrame(timerLoop);
+    };
+
+    // Start the timer loop
+    animationFrameRef.current = requestAnimationFrame(timerLoop);
+
+    // Cleanup function
+    return () => {
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    };
+  }, [mounted, highlightedTime, highlightAutoClear, highlightDuration, handleTimeSelection, timeRemainingRef, setTimeRemaining]); // Dependencies for the hook itself
+
+  // The hook doesn't need to return anything, its effect runs based on dependencies
+};
 
 
 interface ListViewProps {
@@ -124,11 +182,11 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
           `}
         >
           {timezone.startsWith('Mars/') && !isHighlight && (
-            <span className="mr-1 text-red-600 dark:text-red-400" title="Mars Time">
+            <span className="mr-1 text-red-600 dark:text-red-400 inline-flex items-center" title="Mars Time">
               {timezone === 'Mars/Jezero' ? (
-                <img src="/perseverance.png" alt="Perseverance Rover" className="inline-block w-4 h-4 align-text-bottom" title="Perseverance Rover" />
+                <Image src="/perseverance.png" alt="Perseverance Rover" width={16} height={16} className="inline-block w-4 h-4 align-text-bottom" />
               ) : (
-                <img src="/mars.png" alt="Mars" className="inline-block w-4 h-4 align-text-bottom" />
+                <Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 align-text-bottom" />
               )}
             </span>
           )}
@@ -203,9 +261,9 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
   const listRefs = useRef<Record<string, FixedSizeList | null>>({});
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const animationFrameRef = useRef<number | null>(null); // Keep for timer
+  const animationFrameRef = useRef<number | null>(null); // NOTE: This ref is now managed inside useConsolidatedTimerHook
   const lastRenderTimeRef = useRef<number>(Date.now());
-  const timerCleanupRef = useRef<(() => void) | null>(null);
+  // timerCleanupRef is no longer needed as the hook manages its own cleanup
   const scrollSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Keep for current time scroll
   
   const { resolvedTheme } = useTheme();
@@ -219,8 +277,8 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
   const removeTimezone = externalRemoveTimezone || storeRemoveTimezone;
 
   // Initialize timeRemaining based on highlightDuration setting
-  const [timeRemaining, setTimeRemaining] = useState<number>(highlightDuration);
-  const timeRemainingRef = useRef<number>(highlightDuration);
+  const timeRemainingRef = useRef<number>(highlightDuration); // Ref is primary source for timer logic
+  const [timeRemaining, setTimeRemaining] = useState<number>(highlightDuration); // State for UI display
 
   const [userIsScrolling, setUserIsScrolling] = useState(false);
   const userIsScrollingRef = useRef(false);
@@ -266,13 +324,25 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     return () => {
       markRender('unmount');
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+      // Fix: Capture ref value inside effect for cleanup
+      const intervalId = countdownIntervalRef.current;
+      if (intervalId) clearInterval(intervalId);
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      if (timerCleanupRef.current) timerCleanupRef.current();
       if (scrollSyncTimeoutRef.current) clearTimeout(scrollSyncTimeoutRef.current);
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     };
   }, [markRender, timeSlots, currentDate]);
+
+  // Call the custom hook at the top level
+  useConsolidatedTimerHook(
+    mounted,
+    highlightedTime,
+    highlightAutoClear,
+    highlightDuration,
+    handleTimeSelection,
+    timeRemainingRef, // Pass the ref
+    setTimeRemaining  // Pass the state setter
+  );
 
   // Sync local dnd items state with store state
   useEffect(() => {
@@ -289,100 +359,59 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     highlightedTimeRef.current = highlightedTime;
   }, [highlightedTime]);
 
-  // Updated timer logic to respect highlightAutoClear and highlightDuration
-  const useConsolidatedTimer = useCallback(() => {
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    // Only run timer if auto-clear is enabled
-    if (!highlightedTimeRef.current || !mounted || !highlightAutoClear) return () => {};
-
-    let lastTickTime = Date.now();
-    let remainingTime = timeRemainingRef.current; // Use the ref which is updated with highlightDuration
-
-    const timerLoop = () => {
-      // Check again inside the loop in case settings change or component unmounts
-      if (!mounted || !highlightedTimeRef.current || !highlightAutoClear) {
-        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-        return;
-      }
-      const now = Date.now();
-      const deltaTime = now - lastTickTime;
-      if (deltaTime >= 1000) {
-        lastTickTime = now;
-        remainingTime -= 1;
-        if (remainingTime <= 0) {
-          if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-          handleTimeSelection(null);
-          return;
-        }
-        timeRemainingRef.current = remainingTime;
-        setTimeRemaining(remainingTime);
-      }
-      animationFrameRef.current = requestAnimationFrame(timerLoop);
-    };
-    animationFrameRef.current = requestAnimationFrame(timerLoop);
-    return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    };
-  }, [mounted, handleTimeSelection, highlightAutoClear]); // Added highlightAutoClear dependency
-
-  // Updated effect to respect highlightAutoClear and highlightDuration
+  // Effect to manage the overall highlight duration timeout (if auto-clear is on)
   useEffect(() => {
-    if (!highlightedTime) {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      if (timerCleanupRef.current) timerCleanupRef.current();
-      return;
-    }
+    // Clear previous timeout if dependencies change or component unmounts
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    if (timerCleanupRef.current) timerCleanupRef.current();
 
-    // Only set up timers if auto-clear is enabled
-    if (highlightAutoClear) {
-      setTimeRemaining(highlightDuration); // Use setting
-      timeRemainingRef.current = highlightDuration; // Use setting
-      const cleanup = useConsolidatedTimer();
-      timerCleanupRef.current = cleanup;
-      timeoutRef.current = setTimeout(() => {
-        if (highlightedTimeRef.current) handleTimeSelection(null);
-      }, highlightDuration * 1000); // Use setting (convert s to ms)
-    } else {
-      // If auto-clear is off, ensure no timers are running
-      setTimeRemaining(highlightDuration); // Still set initial display value if needed
+    if (highlightedTime && highlightAutoClear) {
+      // Reset the visual timer state when highlight changes or auto-clear is enabled
+      setTimeRemaining(highlightDuration);
       timeRemainingRef.current = highlightDuration;
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+
+      // Set the main timeout to clear the highlight
+      timeoutRef.current = setTimeout(() => {
+        // Check ref inside timeout in case state changed rapidly
+        if (highlightedTimeRef.current) {
+          handleTimeSelection(null);
+        }
+      }, highlightDuration * 1000); // Use setting (convert s to ms)
+    } else if (!highlightedTime) {
+      // If highlight is cleared manually or auto-clear is off, ensure timer state is reset
+      setTimeRemaining(highlightDuration); // Reset display state
+      timeRemainingRef.current = highlightDuration; // Reset ref
     }
 
+    // Cleanup function for this effect
     return () => {
-      if (timerCleanupRef.current) timerCleanupRef.current();
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [highlightedTime, handleTimeSelection, useConsolidatedTimer, highlightAutoClear, highlightDuration]); // Added dependencies
+  }, [highlightedTime, highlightAutoClear, highlightDuration, handleTimeSelection]); // Dependencies for the outer timeout
+
 
   // Updated reset logic to respect settings
   const resetInactivityTimer = useCallback(() => {
     if (!highlightedTimeRef.current || !highlightAutoClear) return; // Only reset if auto-clear is on
 
-    const previousCleanup = timerCleanupRef.current;
+    // Clear the main timeout
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    if (previousCleanup) previousCleanup();
 
-    setTimeRemaining(highlightDuration); // Use setting
-    timeRemainingRef.current = highlightDuration; // Use setting
+    // Reset the timer state/ref
+    setTimeRemaining(highlightDuration);
+    timeRemainingRef.current = highlightDuration;
 
+    // Restart the main timeout
     timeoutRef.current = setTimeout(() => {
-      if (highlightedTimeRef.current) handleTimeSelection(null);
-    }, highlightDuration * 1000); // Use setting (convert s to ms)
+      if (highlightedTimeRef.current) {
+        handleTimeSelection(null);
+      }
+    }, highlightDuration * 1000);
 
-    const cleanup = useConsolidatedTimer();
-    timerCleanupRef.current = cleanup;
-  }, [handleTimeSelection, useConsolidatedTimer, highlightAutoClear, highlightDuration]); // Added dependencies
+    // The useConsolidatedTimerHook will automatically restart its internal loop
+    // because its `highlightedTime` dependency hasn't changed to null.
+    // We just need to ensure the state/ref it reads (`timeRemainingRef`) is reset.
+
+  }, [handleTimeSelection, highlightAutoClear, highlightDuration]); // Dependencies for the reset callback
 
   useEffect(() => {
     if (!mounted || !highlightedTime) return;
@@ -492,7 +521,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
       lastRenderTimeRef.current = now;
       resetInactivityTimer();
     }
-  }, [resetInactivityTimer, handleUserScroll]);
+  }, [resetInactivityTimer, handleUserScroll]); // Added handleUserScroll dependency
 
   useEffect(() => {
     if (!mounted || !highlightedTime) return;
@@ -1172,18 +1201,18 @@ const TimezoneColumn = memo(({
       {/* Added relative positioning to card */}
       <div className="flex justify-between items-center mb-3 md:mb-4 relative z-[2]">
         <div>
-          <h3 className={`text-lg font-semibold ${timezone.id === 'Mars/Jezero' ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+          <h3 className={`text-lg font-semibold ${timezone.id === 'Mars/Jezero' ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'} inline-flex items-center`}>
             {timezone.id.startsWith('Mars/') && (
-              <span className="inline-block mr-1" title="Mars Time">
-                <img src="/mars.png" alt="Mars" className="inline-block w-5 h-5 align-text-bottom" />
+              <span className="inline-block mr-1.5" title="Mars Time">
+                <Image src="/mars.png" alt="Mars" width={20} height={20} className="inline-block w-5 h-5 align-text-bottom" />
               </span>
             )}
             {timezone.id === 'Mars/Jezero' && (
-              <span className="inline-block mr-1" title="Perseverance Rover Location">
-                <img src="/perseverance.png" alt="Perseverance Rover" className="inline-block w-5 h-5 align-text-bottom" />
+              <span className="inline-block mr-1.5" title="Perseverance Rover Location">
+                <Image src="/perseverance.png" alt="Perseverance Rover" width={20} height={20} className="inline-block w-5 h-5 align-text-bottom" />
               </span>
             )}
-            {timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}
+            <span className="truncate">{timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}</span>
             {timezone.id === 'Mars/Jezero' && (
               <span className="ml-2 text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded animate-pulse">
                 

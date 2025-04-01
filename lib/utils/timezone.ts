@@ -158,7 +158,7 @@ export function getAllTimezones(): TimezoneInfo[] {
     };
     
     // Get timezone info for all zones
-    const timezones = zones.map(tz => {
+    const timezones: TimezoneInfo[] = zones.map(tz => {
       try {
         const now = DateTime.now().setZone(tz);
         // Skip invalid timezones or handle with fallback data
@@ -293,4 +293,4 @@ export function getCurrentTime(timezone: string): DateTime {
  */
 export function formatInTimezone(date: Date, timezone: string, format: string): string {
   return DateTime.fromJSDate(date).setZone(timezone).toFormat(format);
-} 
+}

@@ -73,11 +73,12 @@ export default function StatusIndicator({ className = '' }: StatusIndicatorProps
         setLastChecked(new Date());
       } catch (error) {
         console.error('Error fetching status:', error);
-        // Keep previous status or set to operational if this is first load
-        if (status === 'loading') {
+        // Set to operational if this is the first fetch attempt that failed
+        if (previousStatus.current === null) {
           setStatus('operational');
           previousStatus.current = 'operational';
         }
+        // Otherwise, keep the existing status (do nothing)
       }
     };
 
@@ -145,4 +146,4 @@ export default function StatusIndicator({ className = '' }: StatusIndicatorProps
       <span>{statusInfo.text}</span>
     </Link>
   );
-} 
+}

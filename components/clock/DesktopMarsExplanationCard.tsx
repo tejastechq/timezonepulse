@@ -84,7 +84,7 @@ const DesktopMarsExplanationCard: React.FC = () => {
         <div className="flex items-center space-x-2">
           <Info size={18} className="text-red-600 dark:text-red-400" />
           <h2 className="text-base font-medium text-red-700 dark:text-red-300"> {/* Adjusted size & color */}
-            About Mars Time & Sols
+            About Mars Time
           </h2>
         </div>
         {/* Expand/Collapse Chevron - Apply red theme */}
