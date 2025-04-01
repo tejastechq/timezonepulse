@@ -177,16 +177,27 @@ export default function Home() {
       <div className="flex flex-col min-h-screen text-white p-4 font-sans" id="main-content">
          <JsonLd data={jsonLd} /> {/* Keep SEO */}
          {/* Mobile Header */}
-         <header className="flex items-center justify-between mb-4">
+         <header className="flex items-center justify-between mb-4"> {/* Removed landscape padding condition */}
            <MobileMenu /> {/* Replace the placeholder button with the MobileMenu component */}
-           <h1 className="text-xl font-bold uppercase">TimeZonePulse</h1>
-           <button
-             onClick={() => setIsSelectorOpen(true)}
-             className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors"
-             aria-label="Add Timezone"
-           >
-             <Plus size={20} />
-           </button>
+           <h1 className="font-bold uppercase text-xl">TimeZonePulse</h1> {/* Removed landscape font/size condition */}
+           {/* Group Add and Date buttons */}
+           <div className="flex items-center space-x-2">
+             <button
+               onClick={() => setIsSelectorOpen(true)}
+               className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors"
+               aria-label="Add Timezone"
+             >
+               <Plus size={20} /> {/* Consistent icon size */}
+             </button>
+             {/* Date Display */}
+             {localTime && (
+               <div className="flex items-center space-x-1 text-sm"> {/* Consistent text size */}
+                 <span>{DateTime.fromJSDate(localTime).toFormat('MMM dd, yyyy')}</span>
+                 {/* Add Calendar icon if needed, requires importing Calendar icon from lucide-react */}
+                 {/* <Calendar size={16} /> */}
+               </div>
+             )}
+           </div>
      </header>
 
      {/* Mobile Timezone Cards */}
