@@ -432,7 +432,7 @@ export default function TimezoneSelector({
                     height={320}
                     width="100%"
                     itemCount={filteredTimezones.length}
-                    itemSize={80}
+                    itemSize={100} // Increased item size to accommodate Mars info
                     className="timezone-list focus:outline-none"
                     overscanCount={5}
                   >
