@@ -1,44 +1,25 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useCallback, useMemo, memo, forwardRef, useImperativeHandle, startTransition } from 'react'; // Import startTransition
-import Image from 'next/image'; // Import next/image
+import React, { useRef, useEffect, useState, useCallback, useMemo, memo, forwardRef, useImperativeHandle, startTransition } from 'react';
+import Image from 'next/image';
 import { DateTime } from 'luxon';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Timezone, useTimezoneStore } from '@/store/timezoneStore';
 import { isNightHours, isWeekend } from '@/lib/utils/dateTimeFormatter';
-import { FixedSizeList, ListChildComponentProps } from 'react-window'; // Import ListChildComponentProps
+import { FixedSizeList, ListChildComponentProps } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { ChevronUp, ChevronDown, Sun, Moon, Clock, Plus, X, Edit2, Settings, CalendarDays } from 'lucide-react';
 import { getAllTimezones, isInDST } from '@/lib/utils/timezone';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import TimezoneSelector from '../clock/TimezoneSelector'; // Import the shared TimezoneSelector
-import TimeSearch from '../ui/TimeSearch'; // Import the TimeSearch component
+import TimezoneSelector from '../clock/TimezoneSelector';
+import TimeSearch from '../ui/TimeSearch';
 import { useTheme } from 'next-themes';
 import clsx from 'clsx';
-// Import highlight settings from the store
 import { useSettingsStore, getWeekendHighlightClass } from '@/store/settingsStore';
-// Dnd Imports
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-} from '@dnd-kit/core';
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy, // Using vertical strategy for list items, might need horizontal for columns
-  rectSortingStrategy, // More appropriate for grid layout
-} from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
+// Removed Dnd Imports
 import { formatTimeForTimezone } from '@/lib/timezone-utils';
-import { convertEarthToMarsTime } from '@/lib/utils/mars-timezone'; // Import Mars time conversion
+import { convertEarthToMarsTime, formatMarsTime } from '@/lib/utils/mars-timezone'; // Added formatMarsTime import
 
 
 // Define outside the component
@@ -54,17 +35,15 @@ const useConsolidatedTimerHook = (
   const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    // Only run timer if auto-clear is enabled and time is highlighted
     if (!mounted || !highlightedTime || !highlightAutoClear) {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      return; // Exit early if conditions aren't met
+      return;
     }
 
     let lastTickTime = Date.now();
-    let remainingTime = timeRemainingRef.current; // Use the ref
+    let remainingTime = timeRemainingRef.current;
 
     const timerLoop = () => {
-      // Check again inside the loop
       if (!mounted || !highlightedTime || !highlightAutoClear) {
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
         return;
@@ -76,25 +55,21 @@ const useConsolidatedTimerHook = (
         remainingTime -= 1;
         if (remainingTime <= 0) {
           if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-          handleTimeSelection(null); // Clear selection
+          handleTimeSelection(null);
           return;
         }
         timeRemainingRef.current = remainingTime;
-        setTimeRemaining(remainingTime); // Update state for UI
+        setTimeRemaining(remainingTime);
       }
       animationFrameRef.current = requestAnimationFrame(timerLoop);
     };
 
-    // Start the timer loop
     animationFrameRef.current = requestAnimationFrame(timerLoop);
 
-    // Cleanup function
     return () => {
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
     };
-  }, [mounted, highlightedTime, highlightAutoClear, highlightDuration, handleTimeSelection, timeRemainingRef, setTimeRemaining]); // Dependencies for the hook itself
-
-  // The hook doesn't need to return anything, its effect runs based on dependencies
+  }, [mounted, highlightedTime, highlightAutoClear, highlightDuration, handleTimeSelection, timeRemainingRef, setTimeRemaining]);
 };
 
 
@@ -105,17 +80,15 @@ interface ListViewProps {
   localTime: Date | null;
   highlightedTime: Date | null;
   handleTimeSelection: (time: Date | null) => void;
-  roundToNearestIncrement: (date: Date, increment: number) => Date; // Make this required, not optional
+  roundToNearestIncrement: (date: Date, increment: number) => Date;
   removeTimezone?: (id: string) => void;
   currentDate?: Date | null;
 }
 
-// Define handle type for useImperativeHandle
 export interface ListViewHandle {
   scrollToTime: (time: Date, alignment?: 'start' | 'center' | 'end' | 'smart' | 'auto') => void;
 }
 
-// Define TimeItemProps interface outside ListView
 interface TimeItemProps {
   style: React.CSSProperties;
   time: Date;
@@ -126,15 +99,12 @@ interface TimeItemProps {
   isDSTTransitionFn: (time: Date, timezone: string) => boolean;
   isCurrentTimeFn: (time: Date) => boolean;
   isWeekendFn: (time: Date, timezone: string) => boolean;
-  // formatTimeFn is no longer needed here, formatting happens in Row
   getHighlightAnimationClassFn: (isHighlight: boolean) => string;
   handleTimeSelectionFn: (time: Date) => void;
-  getHighlightClass: (isWeekend: boolean) => string; 
-  formattedTimeStr: string; // Receive pre-formatted string
+  getHighlightClass: (isWeekend: boolean) => string;
+  formattedTimeStr: string;
 }
 
-// Define TimeItem component outside ListView
-// Removed formatTimeFn from props
 const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn, isNightTimeFn, isDateBoundaryFn, isDSTTransitionFn, isCurrentTimeFn, isWeekendFn, getHighlightAnimationClassFn, handleTimeSelectionFn, getHighlightClass, formattedTimeStr }: TimeItemProps) {
   const isHighlight = isHighlightedFn(time);
   const isNight = isNightTimeFn(time, timezone);
@@ -143,8 +113,7 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
   const isDST = isDSTTransitionFn(time, timezone);
   const isCurrent = isCurrentTimeFn(time);
   const isWknd = isWeekendFn(time, timezone);
-  // Use the pre-formatted string passed in props
-  const formatted = formattedTimeStr; 
+  const formatted = formattedTimeStr;
   const animClass = getHighlightAnimationClassFn(isHighlight);
   const cellClasses = clsx(
     'relative z-10 px-3 py-3 transition-all duration-300 border-b border-gray-100 dark:border-gray-800',
@@ -154,7 +123,7 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
     isCurrent && !isHighlight ? 'current-time-highlight' : '',
     isNight && !isHighlight && !isCurrent ? 'bg-gray-100/80 dark:bg-gray-800/80' : '',
     isDay && !isHighlight && !isCurrent ? 'bg-amber-50/30 dark:bg-amber-900/5 border-l-2 border-l-amber-300/50 dark:border-l-amber-700/30' : '',
-    isWknd && !isHighlight && !isCurrent ? getHighlightClass(isWknd) : '', // Use passed getHighlightClass
+    isWknd && !isHighlight && !isCurrent ? getHighlightClass(isWknd) : '',
     !isNight && !isHighlight && !isWknd && !isCurrent ? 'bg-white dark:bg-gray-900' : '',
     animClass
   );
@@ -178,7 +147,7 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
           handleTimeSelectionFn(time);
         }}
       >
-        <span 
+        <span
           className={`
             ${isHighlight ? 'text-white font-semibold' : ''}
             ${isCurrent && !isHighlight ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}
@@ -208,43 +177,27 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
     </div>
   );
 }, (prevProps, nextProps) => prevProps.time.getTime() === nextProps.time.getTime() && prevProps.timezone === nextProps.timezone && prevProps.isHighlightedFn(prevProps.time) === nextProps.isHighlightedFn(nextProps.time) && prevProps.isCurrentTimeFn(prevProps.time) === nextProps.isCurrentTimeFn(nextProps.time));
-TimeItem.displayName = 'TimeItem'; // Add display name
+TimeItem.displayName = 'TimeItem';
 
-// Define the Row component for FixedSizeList (Moved outside ListView)
 const Row = ({ index, style, data }: ListChildComponentProps) => {
-  // Access itemData passed from FixedSizeList
   const currentItemData = data;
-  const slots = currentItemData.slots; // Earth time slots
-  const time = slots[index]; // Current Earth time slot
+  const slots = currentItemData.slots;
+  const time = slots[index];
 
-  // Ensure all required functions/data are present in itemData
   if (!currentItemData || typeof currentItemData.isHighlightedFn !== 'function' || !currentItemData.timezoneId) {
     return <div style={style}>Error: Missing item data</div>;
   }
 
   let formattedTimeStr: string;
 
-  // Check if it's a Mars timezone and use pre-calculated data
   if (currentItemData.isMars && currentItemData.marsSlotsData && currentItemData.marsSlotsData[index]) {
     const marsData = currentItemData.marsSlotsData[index];
-    // Directly call the simplified formatMarsTime (ensure it's imported if needed, though it's called via formatTimeForTimezone which should be okay)
-    // We need to call the actual formatting function here. Let's import formatMarsTime directly.
-    // We'll need to modify the import later. For now, assume formatTimeFn handles it based on timezone ID.
-    // Correction: We need to format it here using the precalculated data.
-    // Let's call the underlying formatMarsTime directly. We need to import it.
-    // Import formatMarsTime from '@/lib/utils/mars-timezone'; // Add this import later
-    
-    // Manual formatting based on formatMarsTime logic:
-    const hours12 = marsData.hours % 12 === 0 ? 12 : marsData.hours % 12;
-    const ampm = marsData.hours < 12 ? 'AM' : 'PM';
-    const formattedMinutes = marsData.minutes.toString().padStart(2, '0');
-    formattedTimeStr = `${hours12}:${formattedMinutes} ${ampm} MTC (Sol ${marsData.sol})`;
-
+    // Pass the correct object including sol to formatMarsTime
+    const marsDateTime = { hours: marsData.hours, minutes: marsData.minutes, seconds: 0, sol: marsData.sol };
+    formattedTimeStr = formatMarsTime(marsDateTime); // formatMarsTime should handle including Sol if needed by its logic
   } else {
-    // For Earth timezones, use the standard formatting function
     formattedTimeStr = currentItemData.formatTimeFn(time, currentItemData.timezoneId);
   }
-
 
   return (
     <TimeItem
@@ -257,22 +210,14 @@ const Row = ({ index, style, data }: ListChildComponentProps) => {
       isDSTTransitionFn={currentItemData.isDSTTransitionFn}
       isCurrentTimeFn={currentItemData.isCurrentTimeFn}
       isWeekendFn={currentItemData.isWeekendFn}
-      // formatTimeFn is removed
       getHighlightAnimationClassFn={currentItemData.getHighlightAnimationClassFn}
       handleTimeSelectionFn={currentItemData.handleTimeSelectionFn}
       getHighlightClass={currentItemData.getHighlightClass}
-      formattedTimeStr={formattedTimeStr} // Pass the formatted string
+      formattedTimeStr={formattedTimeStr}
     />
   );
 };
 
-/**
- * ListView Component
- * 
- * Displays multiple timezones in a list view with time columns.
- * Shows current time, business hours, and other time-related information.
- * 
- */
 const ListView = forwardRef<ListViewHandle, ListViewProps>(({
   selectedTimezones,
   userLocalTimezone,
@@ -289,47 +234,35 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
   const listRefs = useRef<Record<string, FixedSizeList | null>>({});
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const animationFrameRef = useRef<number | null>(null); // NOTE: This ref is now managed inside useConsolidatedTimerHook
+  const animationFrameRef = useRef<number | null>(null);
   const lastRenderTimeRef = useRef<number>(Date.now());
-  // timerCleanupRef is no longer needed as the hook manages its own cleanup
-  const scrollSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Keep for current time scroll
-  
+  const scrollSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const { resolvedTheme } = useTheme();
-  // Get highlight settings from the store
   const { weekendHighlightColor, highlightAutoClear, highlightDuration } = useSettingsStore();
-  
+
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [editingTimezoneId, setEditingTimezoneId] = useState<string | null>(null);
-  
-  const { addTimezone, removeTimezone: storeRemoveTimezone } = useTimezoneStore();
+
+  const { addTimezone, removeTimezone: storeRemoveTimezone, timezones: storeTimezones } = useTimezoneStore(); // Get timezones from store
   const removeTimezone = externalRemoveTimezone || storeRemoveTimezone;
 
-  // Initialize timeRemaining based on highlightDuration setting
-  const timeRemainingRef = useRef<number>(highlightDuration); // Ref is primary source for timer logic
-  const [timeRemaining, setTimeRemaining] = useState<number>(highlightDuration); // State for UI display
+  const timeRemainingRef = useRef<number>(highlightDuration);
+  const [timeRemaining, setTimeRemaining] = useState<number>(highlightDuration);
 
   const [userIsScrolling, setUserIsScrolling] = useState(false);
   const userIsScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastScrollTimeRef = useRef<number>(0);
-  const [currentScrollOffset, setCurrentScrollOffset] = useState(0); // State for scroll offset
+  const [currentScrollOffset, setCurrentScrollOffset] = useState(0);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredTimeSlots, setFilteredTimeSlots] = useState<Date[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedDateInfo, setSelectedDateInfo] = useState<string | null>(null);
 
-  // Dnd State & Sensors
-  const { timezones: storeTimezones, reorderTimezones } = useTimezoneStore(); // Get timezones and reorder action
-  const [items, setItems] = useState<Timezone[]>([]); // Local state for dnd order
+  // Removed Dnd State & Sensors
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-  
   const markRender = useCallback((name: string) => {
     if (typeof performance !== 'undefined' && process.env.NODE_ENV === 'development') {
       performance.mark(`ListView-${name}-${Date.now()}`);
@@ -352,7 +285,6 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     return () => {
       markRender('unmount');
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      // Fix: Capture ref value inside effect for cleanup
       const intervalId = countdownIntervalRef.current;
       if (intervalId) clearInterval(intervalId);
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
@@ -361,85 +293,53 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     };
   }, [markRender, timeSlots, currentDate]);
 
-  // Call the custom hook at the top level
   useConsolidatedTimerHook(
     mounted,
     highlightedTime,
     highlightAutoClear,
     highlightDuration,
     handleTimeSelection,
-    timeRemainingRef, // Pass the ref
-    setTimeRemaining  // Pass the state setter
+    timeRemainingRef,
+    setTimeRemaining
   );
 
-  // Sync local dnd items state with store state
-  useEffect(() => {
-    // Filter out the local timezone if it exists, as it shouldn't be draggable/reorderable relative to others
-    // Or maybe keep it but disable dragging? For now, let's filter it for simplicity in reordering logic.
-    // We need a stable list of IDs for dnd-kit.
-    const draggableTimezones = storeTimezones.filter(tz => tz.id !== userLocalTimezone);
-    setItems(draggableTimezones);
-  }, [storeTimezones, userLocalTimezone]);
-
+  // Removed effect for syncing dnd items state
 
   const highlightedTimeRef = useRef<Date | null>(null);
   useEffect(() => {
     highlightedTimeRef.current = highlightedTime;
   }, [highlightedTime]);
 
-  // Effect to manage the overall highlight duration timeout (if auto-clear is on)
   useEffect(() => {
-    // Clear previous timeout if dependencies change or component unmounts
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
     if (highlightedTime && highlightAutoClear) {
-      // Reset the visual timer state when highlight changes or auto-clear is enabled
       setTimeRemaining(highlightDuration);
       timeRemainingRef.current = highlightDuration;
-
-      // Set the main timeout to clear the highlight
       timeoutRef.current = setTimeout(() => {
-        // Check ref inside timeout in case state changed rapidly
         if (highlightedTimeRef.current) {
           handleTimeSelection(null);
         }
-      }, highlightDuration * 1000); // Use setting (convert s to ms)
+      }, highlightDuration * 1000);
     } else if (!highlightedTime) {
-      // If highlight is cleared manually or auto-clear is off, ensure timer state is reset
-      setTimeRemaining(highlightDuration); // Reset display state
-      timeRemainingRef.current = highlightDuration; // Reset ref
+      setTimeRemaining(highlightDuration);
+      timeRemainingRef.current = highlightDuration;
     }
-
-    // Cleanup function for this effect
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [highlightedTime, highlightAutoClear, highlightDuration, handleTimeSelection]); // Dependencies for the outer timeout
+  }, [highlightedTime, highlightAutoClear, highlightDuration, handleTimeSelection]);
 
-
-  // Updated reset logic to respect settings
   const resetInactivityTimer = useCallback(() => {
-    if (!highlightedTimeRef.current || !highlightAutoClear) return; // Only reset if auto-clear is on
-
-    // Clear the main timeout
+    if (!highlightedTimeRef.current || !highlightAutoClear) return;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-
-    // Reset the timer state/ref
     setTimeRemaining(highlightDuration);
     timeRemainingRef.current = highlightDuration;
-
-    // Restart the main timeout
     timeoutRef.current = setTimeout(() => {
       if (highlightedTimeRef.current) {
         handleTimeSelection(null);
       }
     }, highlightDuration * 1000);
-
-    // The useConsolidatedTimerHook will automatically restart its internal loop
-    // because its `highlightedTime` dependency hasn't changed to null.
-    // We just need to ensure the state/ref it reads (`timeRemainingRef`) is reset.
-
-  }, [handleTimeSelection, highlightAutoClear, highlightDuration]); // Dependencies for the reset callback
+  }, [handleTimeSelection, highlightAutoClear, highlightDuration]);
 
   useEffect(() => {
     if (!mounted || !highlightedTime) return;
@@ -457,36 +357,36 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [mounted, highlightedTime, handleTimeSelection]);
 
-  const handleUserScroll = useCallback(() => {
-    setUserIsScrolling(true);
-    userIsScrollingRef.current = true;
-    lastScrollTimeRef.current = Date.now();
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    scrollTimeoutRef.current = setTimeout(() => {
-      setUserIsScrolling(false);
-      userIsScrollingRef.current = false;
-    }, 500);
-    if (highlightedTimeRef.current) resetInactivityTimer();
+  const handleUserScroll = useCallback((event: { scrollOffset: number; scrollUpdateWasRequested: boolean }) => {
+    // Only react to user-initiated scrolls
+    if (!event.scrollUpdateWasRequested) {
+        setUserIsScrolling(true);
+        userIsScrollingRef.current = true;
+        lastScrollTimeRef.current = Date.now();
+        setCurrentScrollOffset(event.scrollOffset); // Update scroll offset state
+
+        if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = setTimeout(() => {
+            setUserIsScrolling(false);
+            userIsScrollingRef.current = false;
+        }, 500); // Reset scrolling flag after 500ms of inactivity
+
+        if (highlightedTimeRef.current) resetInactivityTimer();
+    }
   }, [resetInactivityTimer]);
+
 
   const getCurrentTimeIndex = useCallback(() => {
     if (!localTime || !timeSlots.length) return 0;
-    // Using non-null assertion since we know roundToNearestIncrement is required in props
-    const roundedLocalTime = roundToNearestIncrement!(localTime, 30);
+    const roundedLocalTime = roundToNearestIncrement(localTime, 30);
     const index = timeSlots.findIndex(t => DateTime.fromJSDate(t).hasSame(DateTime.fromJSDate(roundedLocalTime), 'minute'));
     return index > -1 ? index : 0;
   }, [localTime, timeSlots, roundToNearestIncrement]);
 
   const scrollToIndex = useCallback((index: number, alignment: 'start' | 'center' | 'end' | 'smart' | 'auto' = 'center') => {
-    // Don't scroll if user is actively scrolling, unless forced
     if (userIsScrollingRef.current) return;
-
-    const prefersReducedMotion = typeof window !== 'undefined' && 
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    // Batch scrolling operations in requestAnimationFrame for better performance
+    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     requestAnimationFrame(() => {
-      // Scroll all lists to the same index
       Object.values(listRefs.current).forEach(listRef => {
         if (listRef) {
           listRef.scrollToItem(index, prefersReducedMotion ? 'start' : alignment);
@@ -495,26 +395,17 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     });
   }, []);
 
-  // Expose the scrollToTime function via ref
   useImperativeHandle(ref, () => ({
     scrollToTime: (time: Date, alignment: 'start' | 'center' | 'end' | 'smart' | 'auto' = 'center') => {
       if (!time || !timeSlots.length) return;
-      
-      // Convert to UTC for consistent timezone handling
       const targetTimeUTC = DateTime.fromJSDate(time).toUTC();
-      
-      // Find the matching time slot using a more precise comparison
       const targetIndex = timeSlots.findIndex(t => {
         const slotTimeUTC = DateTime.fromJSDate(t).toUTC();
         return slotTimeUTC.hasSame(targetTimeUTC, 'minute');
       });
-      
       if (targetIndex !== -1) {
-        // Use requestAnimationFrame for immediate visual response
         requestAnimationFrame(() => {
           const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-          
-          // Scroll all timezone columns to show the selected time
           Object.values(listRefs.current).forEach(listRef => {
             if (listRef) {
               listRef.scrollToItem(targetIndex, prefersReducedMotion ? 'start' : alignment);
@@ -523,7 +414,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         });
       }
     }
-  }), [timeSlots]); // Dependency: timeSlots (if they change, index calculation needs update)
+  }), [timeSlots]);
 
   const throttledUserInteraction = useCallback((event: Event) => {
     const now = Date.now();
@@ -538,38 +429,37 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         return;
       }
     }
-    if (event.type === 'scroll') {
-      handleUserScroll();
-      lastRenderTimeRef.current = now;
-      return;
-    }
+    // Scroll events are now handled by the onScroll prop of FixedSizeList calling handleUserScroll
+    // if (event.type === 'scroll') {
+    //   handleUserScroll(); // This needs the event object if called directly
+    //   lastRenderTimeRef.current = now;
+    //   return;
+    // }
     const target = event.target as Element;
     const isRelevantInteraction = timeColumnsContainerRef.current?.contains(target) || target.closest('[data-time-item="true"]') !== null || target.closest('[data-reset-timer]') !== null;
     if (isRelevantInteraction) {
       lastRenderTimeRef.current = now;
       resetInactivityTimer();
     }
-  }, [resetInactivityTimer, handleUserScroll]); // Added handleUserScroll dependency
+  }, [resetInactivityTimer]); // Removed handleUserScroll dependency here
 
   useEffect(() => {
     if (!mounted || !highlightedTime) return;
     window.addEventListener('keydown', throttledUserInteraction, { passive: true });
     window.addEventListener('click', throttledUserInteraction, { passive: true });
-    window.addEventListener('scroll', throttledUserInteraction, { passive: true });
+    // Removed scroll listener, handled by FixedSizeList's onScroll prop
+    // window.addEventListener('scroll', throttledUserInteraction, { passive: true });
     return () => {
       window.removeEventListener('keydown', throttledUserInteraction);
       window.removeEventListener('click', throttledUserInteraction);
-      window.removeEventListener('scroll', throttledUserInteraction);
+      // window.removeEventListener('scroll', throttledUserInteraction);
     };
   }, [mounted, highlightedTime, throttledUserInteraction]);
 
   const formatTimeFunction = useMemo(() => (date: Date, timezone: string) => {
-    // Use our timezone utility that already handles Mars timezones
     return formatTimeForTimezone(date, timezone, 'h:mm a');
   }, []);
   const formatTime = useCallback((date: Date, timezone: string) => formatTimeFunction(date, timezone), [formatTimeFunction]);
-  
-  // Removed isLocalTime function as it's no longer needed
 
   const isHighlighted = useCallback((time: Date) => highlightedTime ? time.getTime() === highlightedTime.getTime() : false, [highlightedTime]);
   const getHighlightAnimationClass = useCallback((isHighlight: boolean) => isHighlight ? 'highlight-item-optimized highlight-pulse-effect' : '', []);
@@ -617,18 +507,11 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
   useEffect(() => { timeCalculationCache.current.clear(); }, [localTime, highlightedTime]);
   const isCurrentTime = useCallback((time: Date): boolean => {
     if (!localTime) return false;
-    
     const timeDateTime = DateTime.fromJSDate(time);
     const localDateTime = DateTime.fromJSDate(localTime);
-    
-    // Use a wider window for "current time" to ensure the highlight appears
-    // and round down the local time to nearest 30 minutes increment
     const roundedLocalTime = Math.floor(localDateTime.minute / 30) * 30;
     const roundedLocalDateTime = localDateTime.set({ minute: roundedLocalTime, second: 0, millisecond: 0 });
-    
-    // Check if time slot matches the rounded local time
-    return timeDateTime.hasSame(roundedLocalDateTime, 'hour') && 
-           timeDateTime.minute === roundedLocalDateTime.minute;
+    return timeDateTime.hasSame(roundedLocalDateTime, 'hour') && timeDateTime.minute === roundedLocalDateTime.minute;
   }, [localTime]);
   const getWeekdayName = useCallback((time: Date, timezone: string) => DateTime.fromJSDate(time).setZone(timezone).toFormat('cccc'), []);
   const isWeekend = useCallback((time: Date, timezone: string) => {
@@ -649,7 +532,6 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     }
   }, [addTimezone, removeTimezone, editingTimezoneId]);
 
-  // Updated handleRemoveTimezone to include confirmation
   const handleRemoveTimezone = useCallback((id: string) => {
     if (id !== userLocalTimezone) {
       const timezoneToRemove = selectedTimezones.find(tz => tz.id === id);
@@ -658,26 +540,23 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         removeTimezone(id);
       }
     }
-  }, [removeTimezone, userLocalTimezone, selectedTimezones]); // Added selectedTimezones dependency
+  }, [removeTimezone, userLocalTimezone, selectedTimezones]);
 
   const getHighlightClass = useCallback((isWeekend: boolean) => isWeekend ? getWeekendHighlightClass(weekendHighlightColor) : '', [weekendHighlightColor]);
 
-  useEffect(() => { if (searchTerm) handleSearch(searchTerm); else setFilteredTimeSlots([]); }, [timeSlots]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  // Moved handleSearch definition before the useEffect that depends on it
   const handleSearch = useCallback((term: string) => {
     setSearchTerm(term);
     if (!term.trim()) {
       setFilteredTimeSlots([]);
       setIsSearching(false);
       if (isSearching) {
-        // When exiting search mode, sync back to current time position
         requestAnimationFrame(() => {
           scrollToIndex(getCurrentTimeIndex(), 'center');
         });
       }
       return;
     }
-    
     setIsSearching(true);
     const searchLower = term.toLowerCase().trim();
     const filtered = timeSlots.filter(timeSlot => {
@@ -689,86 +568,41 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
       if (searchLower.includes(':')) return fullTime12.startsWith(searchLower) || fullTime24.startsWith(searchLower);
       else return hour12 === searchLower || hour24 === searchLower;
     });
-    
     setFilteredTimeSlots(filtered);
-    
     if (filtered.length > 0) {
-      // Store current user scrolling state
       const wasScrolling = userIsScrollingRef.current;
-      
-      // Temporarily disable user scrolling flag to ensure scroll action happens
       userIsScrollingRef.current = false;
-      
       const targetIndex = timeSlots.findIndex(t => t.getTime() === filtered[0].getTime());
       if (targetIndex !== -1) {
-        // Use requestAnimationFrame for smoother scrolling
         requestAnimationFrame(() => {
           scrollToIndex(targetIndex, 'center');
-          
-          // Restore previous user scrolling state
           userIsScrollingRef.current = wasScrolling;
         });
       } else {
-        // Restore previous user scrolling state if no scrolling occurred
         userIsScrollingRef.current = wasScrolling;
       }
     }
   }, [timeSlots, userLocalTimezone, isSearching, scrollToIndex, getCurrentTimeIndex]);
 
+  // useEffect depends on handleSearch, so it comes after handleSearch definition
+  useEffect(() => { if (searchTerm) handleSearch(searchTerm); else setFilteredTimeSlots([]); }, [timeSlots, searchTerm, handleSearch]);
+
   const handleClearSearch = useCallback(() => {
     setSearchTerm('');
     setFilteredTimeSlots([]);
     setIsSearching(false);
-    scrollToIndex(getCurrentTimeIndex(), 'center'); 
+    scrollToIndex(getCurrentTimeIndex(), 'center');
   }, [scrollToIndex, getCurrentTimeIndex]);
 
-  // Dnd Drag End Handler (Moved Here)
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (over && active.id !== over.id) {
-      const oldIndex = items.findIndex((item) => item.id === active.id);
-      const newIndex = items.findIndex((item) => item.id === over.id);
-      
-      // Calculate indices based on the original store array (including local timezone if present)
-      // This is crucial because the store action needs indices relative to the full list.
-      // Find the index of the *first* non-local timezone in the store array.
-      const firstDraggableIndexInStore = storeTimezones.findIndex(tz => tz.id !== userLocalTimezone);
-      
-      // Adjust the dnd indices (which are relative to the `items` array) 
-      // to be relative to the `storeTimezones` array.
-      // Ensure we handle the case where there might be no draggable items (firstDraggableIndexInStore === -1)
-      const storeOldIndex = firstDraggableIndexInStore !== -1 ? firstDraggableIndexInStore + oldIndex : -1;
-      const storeNewIndex = firstDraggableIndexInStore !== -1 ? firstDraggableIndexInStore + newIndex : -1;
-
-      // Update local state for immediate UI feedback
-      setItems(currentItems => arrayMove(currentItems, oldIndex, newIndex));
-
-      // Then update the store state in a separate operation wrapped in startTransition
-      if (storeOldIndex !== -1 && storeNewIndex !== -1) {
-        startTransition(() => {
-          reorderTimezones(storeOldIndex, storeNewIndex);
-        });
-      } else {
-        console.error("Could not calculate valid store indices for reordering.", { storeOldIndex, storeNewIndex, firstDraggableIndexInStore });
-      }
-    }
-  }, [items, reorderTimezones, storeTimezones, userLocalTimezone]);
-
+  // Removed Dnd Drag End Handler
 
   const renderTimeColumns = useCallback(() => {
     if (!mounted) return null;
-    
-    // Find the local timezone object from the store to render it first
-    const localTimezoneObj = storeTimezones.find(tz => tz.id === userLocalTimezone);
-    
-    // The `items` state already contains the draggable (non-local) timezones in their current order
-    const draggableTimezones = items; 
 
-    // Combine local (if found) and draggable timezones for rendering
-    const displayTimezones = localTimezoneObj ? [localTimezoneObj, ...draggableTimezones] : [...draggableTimezones];
-    
-    const canAddMore = displayTimezones.length < 8; // Max 8 columns including local
+    const localTimezoneObj = storeTimezones.find(tz => tz.id === userLocalTimezone);
+    const nonLocalTimezones = storeTimezones.filter(tz => tz.id !== userLocalTimezone);
+    const displayTimezones = localTimezoneObj ? [localTimezoneObj, ...nonLocalTimezones] : [...nonLocalTimezones];
+    const canAddMore = displayTimezones.length < 8;
 
     const getTimeDifference = () => {
       if (!highlightedTime || !localTime) return null;
@@ -803,7 +637,6 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
                 <div className="flex items-center"><span className="inline-block w-3 h-3 bg-primary-500 rounded-full mr-2"></span><span className="text-sm font-medium text-gray-900 dark:text-white">{DateTime.fromJSDate(highlightedTime).toFormat('h:mm a')}</span></div>
                 <button onClick={() => handleTimeSelection(null)} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1 rounded focus:outline-none focus:ring-2 focus:ring-primary-500" aria-label="Clear time selection"><X className="h-4 w-4" /></button>
               </div>
-              {/* Only show timer UI if auto-clear is enabled */}
               {highlightAutoClear && (
                 <div className="mt-2 relative z-[2]">
                   <div className="flex justify-between text-xs text-gray-600 dark:text-gray-300 mb-1">
@@ -811,7 +644,6 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
                     <button onClick={resetInactivityTimer} className="text-primary-500 hover:text-primary-600 focus:outline-none" data-reset-timer="true">Reset</button>
                   </div>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1.5">
-                    {/* Use highlightDuration for progress bar calculation */}
                     <div className="bg-primary-500 h-1.5 rounded-full transition-all duration-1000" style={{ width: `${(timeRemaining / highlightDuration) * 100}%` }}></div>
                   </div>
                 </div>
@@ -819,110 +651,60 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
             </motion.div>
           </>
         )}
-        {/* Wrap grid with DndContext and SortableContext */}
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          {/* Use items (draggable timezones) for SortableContext */}
-          <SortableContext items={items.map(item => item.id)} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3 gap-1 md:gap-1">
-              {/* Render the local timezone first (not sortable relative to others) */}
-              {localTimezoneObj && (
-                 <TimezoneColumn 
-                   key={localTimezoneObj.id} 
-                   timezone={localTimezoneObj} 
-                   isLocal={true} 
-                   // Pass other necessary props
-                   isSearching={isSearching}
-                   filteredTimeSlots={filteredTimeSlots}
-                   timeSlots={timeSlots}
-                   isHighlighted={isHighlighted}
-                   checkNightHours={checkNightHours}
-                   isDateBoundary={isDateBoundary}
-                   isDSTTransition={isDSTTransition}
-                   isCurrentTime={isCurrentTime}
-                   isWeekend={isWeekend}
-                   formatTime={formatTime}
-                   getHighlightAnimationClass={getHighlightAnimationClass}
-                   handleTimeSelection={handleTimeSelection}
-                   listRefs={listRefs}
-                   handleUserScroll={handleUserScroll}
-                   resolvedTheme={resolvedTheme}
-                   getTimezoneOffset={getTimezoneOffset}
-                   handleRemoveTimezone={handleRemoveTimezone}
-                   setEditingTimezoneId={setEditingTimezoneId}
-                   setSelectorOpen={setSelectorOpen}
-                   userLocalTimezone={userLocalTimezone}
-                   localTime={localTime}
-                   getHighlightClass={getHighlightClass} // Pass down getHighlightClass
-                 />
-              )}
-              
-              {/* Render the sortable (draggable) timezones */}
-              {items.map((timezone) => (
-                <SortableTimezoneColumn 
-                  key={timezone.id} 
-                  timezone={timezone} 
-                  isLocal={false}
-                  // Pass other necessary props
-                  isSearching={isSearching}
-                  filteredTimeSlots={filteredTimeSlots}
-                  timeSlots={timeSlots}
-                  isHighlighted={isHighlighted}
-                  checkNightHours={checkNightHours}
-                  isDateBoundary={isDateBoundary}
-                  isDSTTransition={isDSTTransition}
-                  isCurrentTime={isCurrentTime}
-                  isWeekend={isWeekend}
-                  formatTime={formatTime}
-                  getHighlightAnimationClass={getHighlightAnimationClass}
-                  handleTimeSelection={handleTimeSelection}
-                  listRefs={listRefs}
-                  handleUserScroll={handleUserScroll}
-                  resolvedTheme={resolvedTheme}
-                  getTimezoneOffset={getTimezoneOffset}
-                  handleRemoveTimezone={handleRemoveTimezone}
-                  setEditingTimezoneId={setEditingTimezoneId}
-                  setSelectorOpen={setSelectorOpen}
-                  userLocalTimezone={userLocalTimezone}
-                  localTime={localTime}
-                  getHighlightClass={getHighlightClass} // Pass down getHighlightClass
-                />
-              ))}
-
-              {/* Add Timezone Button */}
-              {canAddMore && (
-                <motion.button initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.2 }} onClick={() => setSelectorOpen(true)} className={`glass-card backdrop-blur-fix ${resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'} rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 p-5 md:p-6 lg:p-7 h-full min-h-[300px] md:min-h-[320px] flex flex-col items-center justify-center hover:border-primary-500 dark:hover:border-primary-500 transition-all duration-200 cursor-pointer`} style={{ isolation: 'isolate', backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.2)' : 'rgba(255, 255, 255, 0.15)', minWidth: '280px' }} aria-label="Add Timezone or Region - Track time for another region">
-                  <div className="rounded-full bg-primary-100/80 dark:bg-primary-900/30 backdrop-blur-sm p-3 mb-3 shadow-md relative z-[2]"><Plus className="h-6 w-6 text-primary-600 dark:text-primary-400" /></div>
-                  <p className="text-gray-600 dark:text-gray-300 font-medium relative z-[2]">Add Timezone or Region</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1 relative z-[2]">Track time for another region</p>
-                </motion.button>
-              )}
-            </div>
-          </SortableContext>
-        </DndContext>
+        {/* Removed DndContext and SortableContext wrappers */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3 gap-1 md:gap-1">
+          {/* Render all timezones using TimezoneColumn directly */}
+          {displayTimezones.map((timezone) => (
+             <TimezoneColumn
+               key={timezone.id}
+               timezone={timezone}
+               isLocal={timezone.id === userLocalTimezone}
+               isSearching={isSearching}
+               filteredTimeSlots={filteredTimeSlots}
+               timeSlots={timeSlots}
+               isHighlighted={isHighlighted}
+               checkNightHours={checkNightHours}
+               isDateBoundary={isDateBoundary}
+               isDSTTransition={isDSTTransition}
+               isCurrentTime={isCurrentTime}
+               isWeekend={isWeekend}
+               formatTime={formatTime}
+               getHighlightAnimationClass={getHighlightAnimationClass}
+               handleTimeSelection={handleTimeSelection}
+               listRefs={listRefs}
+               handleUserScroll={handleUserScroll}
+               resolvedTheme={resolvedTheme}
+               getTimezoneOffset={getTimezoneOffset}
+               handleRemoveTimezone={handleRemoveTimezone}
+               setEditingTimezoneId={setEditingTimezoneId}
+               setSelectorOpen={setSelectorOpen}
+               userLocalTimezone={userLocalTimezone}
+               localTime={localTime}
+               getHighlightClass={getHighlightClass}
+             />
+          ))}
+          {canAddMore && (
+            <motion.button initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.2 }} onClick={() => setSelectorOpen(true)} className={`glass-card backdrop-blur-fix ${resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'} rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 p-5 md:p-6 lg:p-7 h-full min-h-[300px] md:min-h-[320px] flex flex-col items-center justify-center hover:border-primary-500 dark:hover:border-primary-500 transition-all duration-200 cursor-pointer`} style={{ isolation: 'isolate', backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.2)' : 'rgba(255, 255, 255, 0.15)', minWidth: '280px' }} aria-label="Add Timezone or Region - Track time for another region">
+              <div className="rounded-full bg-primary-100/80 dark:bg-primary-900/30 backdrop-blur-sm p-3 mb-3 shadow-md relative z-[2]"><Plus className="h-6 w-6 text-primary-600 dark:text-primary-400" /></div>
+              <p className="text-gray-600 dark:text-gray-300 font-medium relative z-[2]">Add Timezone or Region</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1 relative z-[2]">Track time for another region</p>
+            </motion.button>
+          )}
+        </div>
       </>
     );
-  }, [mounted, userLocalTimezone, storeTimezones, items, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, handleReplaceTimezone, editingTimezoneId, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, isSearching, filteredTimeSlots, highlightAutoClear, highlightDuration, sensors, handleDragEnd, getHighlightClass]); // Added Dnd related dependencies and getHighlightClass
+  }, [mounted, userLocalTimezone, storeTimezones, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, handleReplaceTimezone, editingTimezoneId, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, isSearching, filteredTimeSlots, highlightAutoClear, highlightDuration, getHighlightClass]); // Removed Dnd related dependencies
 
-  // Optimize synchronization of scrolling across timezone columns when highlightedTime changes
   useEffect(() => {
     if (!mounted || !highlightedTime) return;
-    
-    // Skip if user is actively scrolling to avoid interrupting user interaction
     if (userIsScrollingRef.current) {
-      // Set a flag to sync after user stops scrolling
       const syncAfterScrolling = () => {
         if (!highlightedTime) return;
-        
         const targetIndex = timeSlots.findIndex(slot => {
           const slotDateTime = DateTime.fromJSDate(slot).toUTC();
           const highlightedDateTime = DateTime.fromJSDate(highlightedTime).toUTC();
           return slotDateTime.hasSame(highlightedDateTime, 'minute');
         });
-        
         if (targetIndex !== -1) {
           Object.values(listRefs.current).forEach(listRef => {
             if (listRef) {
@@ -931,32 +713,20 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
           });
         }
       };
-
-      // Wait until user stops scrolling
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
       scrollTimeoutRef.current = setTimeout(syncAfterScrolling, 500);
       return;
     }
-    
-    // Find the target index for the highlighted time in UTC to ensure consistent behavior across timezones
     const highlightedDateTime = DateTime.fromJSDate(highlightedTime).toUTC();
-    
     const targetIndex = timeSlots.findIndex(slot => {
       const slotDateTime = DateTime.fromJSDate(slot).toUTC();
       return slotDateTime.hasSame(highlightedDateTime, 'minute');
     });
-    
     if (targetIndex !== -1) {
-      // Use requestAnimationFrame instead of setTimeout for better performance
-      // This will run the scrolling on the next frame, which is visually immediate
-      // but still gives React enough time to finish rendering
       requestAnimationFrame(() => {
-        // Scroll all timezone columns to the highlighted time
         Object.values(listRefs.current).forEach(listRef => {
           if (listRef) {
-            const prefersReducedMotion = typeof window !== 'undefined' && 
-              window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            
+            const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             listRef.scrollToItem(targetIndex, prefersReducedMotion ? 'start' : 'center');
           }
         });
@@ -964,34 +734,22 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     }
   }, [highlightedTime, timeSlots, mounted]);
 
-  // NEW useEffect for scrolling to CURRENT time (or initial load / when highlight is cleared)
   useEffect(() => {
-    // Only run if mounted, we have localTime, and NO time is highlighted
     if (!mounted || !localTime || highlightedTime || !timeSlots.length) return;
-
-    // Don't scroll to current time if user has scrolled recently
-    const recentlyScrolled = Date.now() - lastScrollTimeRef.current < 1000; // Use 1s threshold
+    const recentlyScrolled = Date.now() - lastScrollTimeRef.current < 1000;
     if (userIsScrollingRef.current || recentlyScrolled) {
       return;
     }
+    const targetIndex = getCurrentTimeIndex();
+    scrollToIndex(targetIndex, 'center'); // No cleanup needed from scrollToIndex
+  }, [mounted, localTime, highlightedTime, timeSlots, getCurrentTimeIndex, scrollToIndex]);
 
-    const targetIndex = getCurrentTimeIndex(); 
-
-    // Call the scrollToIndex function (which now uses manual calc)
-    const cleanup = scrollToIndex(targetIndex, 'center');
-    return cleanup; // Return the cleanup function from scrollToIndex
-
-  }, [mounted, localTime, highlightedTime, timeSlots, getCurrentTimeIndex, scrollToIndex]); // Dependencies: localTime, highlightedTime, scrollToIndex
-
-  // Add cleanup for general timeouts (scrollTimeoutRef)
   useEffect(() => {
     return () => {
-      // Clean up all timeouts on unmount
       if (scrollSyncTimeoutRef.current) {
         clearTimeout(scrollSyncTimeoutRef.current);
         scrollSyncTimeoutRef.current = null;
       }
-      
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
         scrollTimeoutRef.current = null;
@@ -999,64 +757,40 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     };
   }, []);
 
-  // Add this before the return statement in the component
   const isViewingFutureDate = useMemo(() => {
     if (!timeSlots.length) return false;
-    
     const firstSlot = timeSlots[0];
     const firstSlotDate = DateTime.fromJSDate(firstSlot);
     const currentDateTime = currentDate ? DateTime.fromJSDate(currentDate).startOf('day') : DateTime.local().startOf('day');
-    
     return !firstSlotDate.hasSame(currentDateTime, 'day');
   }, [timeSlots, currentDate]);
 
-  // Add this additional useEffect near other effects to force a refresh of time calculations
   useEffect(() => {
     if (!mounted || !localTime) return;
-    
-    // Clear the time calculation cache when local time changes
     timeCalculationCache.current.clear();
-    
-    // Force list refresh on time changes at the 30-minute boundaries
     const localDateTime = DateTime.fromJSDate(localTime);
     const minute = localDateTime.minute;
-    
-    // If we're close to a 30-minute boundary (within 10 seconds), force refresh all lists
     if ((minute === 0 || minute === 30) && localDateTime.second < 10) {
       Object.values(listRefs.current).forEach(listRef => {
         if (listRef) {
           listRef.forceUpdate();
         }
       });
-      
-      // Also scroll to current time if not highlighted
       if (!highlightedTime) {
         scrollToIndex(getCurrentTimeIndex(), 'center');
       }
     }
   }, [localTime, mounted, highlightedTime, scrollToIndex, getCurrentTimeIndex]);
 
-  // Calculate the vertical position for the current time line
   const currentTimeLineTop = useMemo(() => {
     if (!localTime || !timeSlots.length || !mounted) return null;
-
-    const itemSize = 48; // Height of each time slot item
+    const itemSize = 48;
     const listStartTime = DateTime.fromJSDate(timeSlots[0]);
     const currentLocalTime = DateTime.fromJSDate(localTime);
-
-    // Calculate the difference in minutes from the start of the list
     const diffInMinutes = currentLocalTime.diff(listStartTime, 'minutes').minutes;
-
-    // Calculate the pixel offset based on minutes (each 30 min slot is itemSize)
     const pixelOffset = (diffInMinutes / 30) * itemSize;
-
-    // The final top position is the calculated offset minus the current scroll offset
-    // We subtract scrollOffset because the line is positioned relative to the container,
-    // but its logical position is within the scrolled content.
     return pixelOffset - currentScrollOffset;
-
   }, [localTime, timeSlots, mounted, currentScrollOffset]);
-
 
   return (
     <motion.div
@@ -1064,39 +798,18 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="w-full max-w-screen-xl mx-auto px-2 sm:px-4 lg:px-6 relative" // Added relative positioning
+      className="w-full max-w-screen-xl mx-auto px-2 sm:px-4 lg:px-6 relative"
       style={{ isolation: 'isolate' }}
-      // Removed onScroll from the outer div, handled by FixedSizeList
     >
-      {/* Current Time Line - Temporarily commented out as requested */}
-      {/* TODO: Re-implement or restyle the current time indicator line. It was previously a thin red line causing confusion.
-      {mounted && currentTimeLineTop !== null && (
-         // Ensure the line is only rendered within the visible bounds of the list area potentially
-         // We might need to refine this based on the exact container structure later
-         // Adding a check to prevent rendering way above/below the typical view
-         currentTimeLineTop > -100 && currentTimeLineTop < 20000 && // Basic bounds check
-          <div
-            className="absolute left-0 right-0 h-px bg-red-500 dark:bg-red-400 z-30 pointer-events-none shadow-md"
-            style={{
-              top: `${currentTimeLineTop}px`,
-              // Consider adding a transition for smoother updates if needed, but might impact performance
-              // transition: 'top 0.1s linear' 
-            }}
-            aria-hidden="true" // Hide from screen readers
-          />
-      )} 
-      */}
-
-      {/* Search Box with minimal styling - positioned above first column */}
+      {/* Search Box */}
       <div className="mb-4 w-full sm:w-80 ml-0 pt-3">
-        <TimeSearch 
+        <TimeSearch
           onSearch={handleSearch}
           onClear={handleClearSearch}
           className="w-full"
           autoFormatTime={true}
           earlyFormattingDelay={100}
         />
-        
         <AnimatePresence>
           {(filteredTimeSlots.length > 0 || (searchTerm && filteredTimeSlots.length === 0)) && (
             <motion.div
@@ -1104,57 +817,36 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className={clsx(
-                'mt-2 py-1 px-3 text-xs',
-                filteredTimeSlots.length > 0 
-                  ? 'text-gray-300'
-                  : 'text-amber-300'
-              )}
+              className={clsx('mt-2 py-1 px-3 text-xs', filteredTimeSlots.length > 0 ? 'text-gray-300' : 'text-amber-300')}
             >
               {filteredTimeSlots.length > 0 ? (
-                <div className="flex items-center">
-                  <span>
-                    Found {filteredTimeSlots.length} time{filteredTimeSlots.length === 1 ? '' : 's'} matching {searchTerm.includes(':') 
-                      ? `"${searchTerm}"` 
-                      : `${searchTerm} o'clock`}
-                  </span>
-                </div>
+                <div className="flex items-center"><span>Found {filteredTimeSlots.length} time{filteredTimeSlots.length === 1 ? '' : 's'} matching {searchTerm.includes(':') ? `"${searchTerm}"` : `${searchTerm} o'clock`}</span></div>
               ) : (
-                <div className="flex items-center">
-                  <span>
-                    No results found
-                  </span>
-                </div>
+                <div className="flex items-center"><span>No results found</span></div>
               )}
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Add date notification banner - moved to a more prominent position */}
+      {/* Date notification banner */}
       {selectedDateInfo && (
         <div className="sticky top-0 z-20 bg-background mb-4 p-3 w-full rounded-md border border-primary-500 shadow-sm">
           <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <CalendarDays className="text-primary-500 h-5 w-5 mr-2" />
-              <span className="font-medium text-primary-500">{selectedDateInfo}</span>
-            </div>
+            <div className="flex items-center"><CalendarDays className="text-primary-500 h-5 w-5 mr-2" /><span className="font-medium text-primary-500">{selectedDateInfo}</span></div>
           </div>
         </div>
       )}
 
       {renderTimeColumns()}
-      
+
       {/* Timezone Selection Modal */}
       <AnimatePresence>
         {selectorOpen && (
           <TimezoneSelector
             key="timezone-selector"
             isOpen={true}
-            onClose={() => {
-              setSelectorOpen(false);
-              setEditingTimezoneId(null);
-            }}
+            onClose={() => { setSelectorOpen(false); setEditingTimezoneId(null); }}
             onSelect={editingTimezoneId ? handleReplaceTimezone : handleAddTimezone}
             excludeTimezones={[userLocalTimezone, ...selectedTimezones.map(tz => tz.id)]}
             data-timezone-selector
@@ -1164,18 +856,15 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     </motion.div>
   );
 });
-ListView.displayName = 'ListView'; // Add display name for React DevTools
+ListView.displayName = 'ListView';
 
-// Define TimezoneColumn component (extracted from renderTimeColumns map)
-const TimezoneColumn = memo(({ 
-  timezone, 
+const TimezoneColumn = memo(({
+  timezone,
   isLocal,
-  // Pass down all necessary props from ListView
   isSearching, filteredTimeSlots, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, formatTime, getHighlightAnimationClass, handleTimeSelection, listRefs, handleUserScroll, resolvedTheme, getTimezoneOffset, handleRemoveTimezone, setEditingTimezoneId, setSelectorOpen, userLocalTimezone, localTime, getHighlightClass
-}: { 
-  timezone: Timezone; 
+}: {
+  timezone: Timezone;
   isLocal: boolean;
-  // Define types for passed props
   isSearching: boolean;
   filteredTimeSlots: Date[];
   timeSlots: Date[];
@@ -1197,63 +886,41 @@ const TimezoneColumn = memo(({
   setSelectorOpen: React.Dispatch<React.SetStateAction<boolean>>;
   userLocalTimezone: string;
   localTime: Date | null;
-  getHighlightClass: (isWeekend: boolean) => string; // Added prop
+  getHighlightClass: (isWeekend: boolean) => string;
 }) => {
   const isDST = isInDST(timezone.id);
   const isMars = timezone.id.startsWith('Mars/');
 
-  // Calculate Mars time data incrementally if it's a Mars timezone
   const marsTimeSlotsData = useMemo(() => {
     if (!isMars || !timeSlots.length) return null;
-
-    // Use the more precise ratio directly from mars-timezone constants
-    const MARS_SOL_TO_EARTH_DAY_RATIO = 1.0274912517; 
-    const EARTH_INCREMENT_SECONDS = 30 * 60; // 30 minutes = 1800 Earth seconds
-    // Calculate Mars seconds equivalent to 30 Earth minutes
-    const MARS_INCREMENT_SECONDS = EARTH_INCREMENT_SECONDS / MARS_SOL_TO_EARTH_DAY_RATIO; 
-    const MARS_SECONDS_IN_SOL = 86400; // 24 Mars hours * 60 Mars mins * 60 Mars secs
-
-    // Calculate the reference time for the first slot
+    const MARS_SOL_TO_EARTH_DAY_RATIO = 1.0274912517;
+    const EARTH_INCREMENT_SECONDS = 30 * 60;
+    const MARS_INCREMENT_SECONDS = EARTH_INCREMENT_SECONDS / MARS_SOL_TO_EARTH_DAY_RATIO;
+    const MARS_SECONDS_IN_SOL = 86400;
     const referenceEarthTime = DateTime.fromJSDate(timeSlots[0]);
     const referenceMarsData = convertEarthToMarsTime(referenceEarthTime, timezone.id);
     let currentTotalMarsSeconds = (referenceMarsData.hours * 3600) + (referenceMarsData.minutes * 60) + referenceMarsData.seconds;
     let currentSol = referenceMarsData.sol;
-
     const slotsData: { hours: number; minutes: number; sol: number }[] = [];
-
     for (let i = 0; i < timeSlots.length; i++) {
       if (i > 0) {
         currentTotalMarsSeconds += MARS_INCREMENT_SECONDS;
-        // Handle Sol rollover if seconds exceed MARS_SECONDS_IN_SOL
         if (currentTotalMarsSeconds >= MARS_SECONDS_IN_SOL) {
            currentSol += Math.floor(currentTotalMarsSeconds / MARS_SECONDS_IN_SOL);
            currentTotalMarsSeconds %= MARS_SECONDS_IN_SOL;
         }
       }
-      
-      // Ensure positive seconds after modulo
       const positiveTotalSeconds = (currentTotalMarsSeconds % MARS_SECONDS_IN_SOL + MARS_SECONDS_IN_SOL) % MARS_SECONDS_IN_SOL;
-      
-      // Calculate H:M from unrounded total seconds, round only the final seconds
       const hours = Math.floor(positiveTotalSeconds / 3600);
       const minutes = Math.floor((positiveTotalSeconds % 3600) / 60);
-      let seconds = Math.round(positiveTotalSeconds % 60); // Round only seconds
-
-      // Handle seconds rounding up to 60 (though less likely with this method)
-      if (seconds === 60) {
-        seconds = 0;
-        // Minute/Hour rollover will be handled naturally by the next iteration's floor calculation
-      }
-
-      slotsData.push({ hours, minutes, sol: currentSol }); // Store H:M (seconds not needed for display)
+      slotsData.push({ hours, minutes, sol: currentSol });
     }
     return slotsData;
-  }, [isMars, timeSlots, timezone.id]); // Dependencies for the memoized calculation
+  }, [isMars, timeSlots, timezone.id]);
 
-  // Prepare itemData for this specific timezone column
   const itemData = {
     slots: isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots : timeSlots,
-    marsSlotsData: marsTimeSlotsData, // Pass pre-calculated Mars data
+    marsSlotsData: marsTimeSlotsData,
     timezoneId: timezone.id,
     isHighlightedFn: isHighlighted,
     isNightTimeFn: checkNightHours,
@@ -1264,44 +931,29 @@ const TimezoneColumn = memo(({
     formatTimeFn: formatTime,
     getHighlightAnimationClassFn: getHighlightAnimationClass,
     handleTimeSelectionFn: handleTimeSelection,
-    getHighlightClass: getHighlightClass, // Pass down getHighlightClass
-    isMars: isMars, // Pass flag to Row
+    getHighlightClass: getHighlightClass,
+    isMars: isMars,
   };
 
-
-  // Determine which slots array to use for the list count
   const displaySlots = isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots : timeSlots;
 
   return (
     <motion.div
-      layout // Keep layout animation
-      initial={{ opacity: 0, y: 20 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      exit={{ opacity: 0, y: -20 }} 
-      className={`glass-card backdrop-blur-fix ${resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'} rounded-lg p-5 md:p-6 lg:p-7 border border-gray-200 dark:border-gray-700 transition-all duration-200 hover:shadow-lg relative`} 
-      style={{ isolation: 'isolate', backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.2)' : 'rgba(255, 255, 255, 0.15)', minWidth: '280px' }} 
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      className={`glass-card backdrop-blur-fix ${resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'} rounded-lg p-5 md:p-6 lg:p-7 border border-gray-200 dark:border-gray-700 transition-all duration-200 hover:shadow-lg relative`}
+      style={{ isolation: 'isolate', backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.2)' : 'rgba(255, 255, 255, 0.15)', minWidth: '280px' }}
       data-timezone-id={timezone.id}
     >
-      {/* Added relative positioning to card */}
       <div className="flex justify-between items-center mb-3 md:mb-4 relative z-[2]">
         <div>
           <h3 className={`text-lg font-semibold ${timezone.id === 'Mars/Jezero' ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'} inline-flex items-center`}>
-            {timezone.id.startsWith('Mars/') && (
-              <span className="inline-block mr-1.5" title="Mars Time">
-                <Image src="/mars.png" alt="Mars" width={20} height={20} className="inline-block w-5 h-5 align-text-bottom" />
-              </span>
-            )}
-            {timezone.id === 'Mars/Jezero' && (
-              <span className="inline-block mr-1.5" title="Perseverance Rover Location">
-                <Image src="/perseverance.png" alt="Perseverance Rover" width={20} height={20} className="inline-block w-5 h-5 align-text-bottom" />
-              </span>
-            )}
+            {timezone.id.startsWith('Mars/') && (<span className="inline-block mr-1.5" title="Mars Time"><Image src="/mars.png" alt="Mars" width={20} height={20} className="inline-block w-5 h-5 align-text-bottom" /></span>)}
+            {timezone.id === 'Mars/Jezero' && (<span className="inline-block mr-1.5" title="Perseverance Rover Location"><Image src="/perseverance.png" alt="Perseverance Rover" width={20} height={20} className="inline-block w-5 h-5 align-text-bottom" /></span>)}
             <span className="truncate">{timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}</span>
-            {timezone.id === 'Mars/Jezero' && (
-              <span className="ml-2 text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded animate-pulse">
-                
-              </span>
-            )}
+            {timezone.id === 'Mars/Jezero' && (<span className="ml-2 text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded animate-pulse"></span>)}
           </h3>
           <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center space-x-2">
             <span>{timezone.id.startsWith('Mars/') ? timezone.id === 'Mars/Jezero' ? '(MTC+05:10)' : 'MTC' : DateTime.now().setZone(timezone.id).toFormat('ZZZZ')}</span>
@@ -1316,60 +968,24 @@ const TimezoneColumn = memo(({
             <div className="mt-2 text-xs bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/20">
               <div className="flex justify-between items-center">
                 <p className="font-medium text-red-700 dark:text-red-300">Perseverance Rover</p>
-                <p className="font-medium text-amber-500 dark:text-amber-400">
-                  {localTime && formatTime(localTime, timezone.id).includes('Sol') ? 
-                    formatTime(localTime, timezone.id).split('MTC')[1].trim() : 
-                    'Sol'}
-                </p>
+                <p className="font-medium text-amber-500 dark:text-amber-400">{localTime && formatTime(localTime, timezone.id).includes('Sol') ? formatTime(localTime, timezone.id).split('MTC')[1].trim() : 'Sol'}</p>
               </div>
               <p className="text-red-600/80 dark:text-red-400/80 mt-1">NASA Mars 2020 Mission</p>
-              <p className="text-red-600/70 dark:text-red-400/70">
-                <span className="inline-block">Location: Jezero Crater</span>
-                <span className="inline-block ml-2">18.38°N, 77.58°E</span>
-              </p>
-              <p className="mt-1 flex items-center">
-                {localTime && formatTime(localTime, timezone.id).includes('a') ? 
-                  (formatTime(localTime, timezone.id).includes('am') ? 
-                    <span className="text-amber-500 dark:text-amber-400 flex items-center"><span className="mr-1">☀️</span> Mars Morning</span> : 
-                    <span className="text-indigo-500 dark:text-indigo-400 flex items-center"><span className="mr-1">🌙</span> Mars Evening</span>)
-                  : null}
-              </p>
+              <p className="text-red-600/70 dark:text-red-400/70"><span className="inline-block">Location: Jezero Crater</span><span className="inline-block ml-2">18.38°N, 77.58°E</span></p>
+              <p className="mt-1 flex items-center">{localTime && formatTime(localTime, timezone.id).includes('a') ? (formatTime(localTime, timezone.id).includes('am') ? <span className="text-amber-500 dark:text-amber-400 flex items-center"><span className="mr-1">☀️</span> Mars Morning</span> : <span className="text-indigo-500 dark:text-indigo-400 flex items-center"><span className="mr-1">🌙</span> Mars Evening</span>) : null}</p>
             </div>
           )}
         </div>
-        {/* Only show controls for non-local timezones */}
         {!isLocal && (
           <div className="flex items-center space-x-1 relative z-[2]">
-            {/* Settings Dropdown - Remove button moved inside */}
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
-                <button className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500" aria-label="Timezone options">
-                  <Settings className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-                </button>
+                <button className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500" aria-label="Timezone options"><Settings className="h-4 w-4 text-gray-500 dark:text-gray-400" /></button>
               </DropdownMenu.Trigger>
               <DropdownMenu.Portal>
                 <DropdownMenu.Content className="min-w-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1.5 border border-gray-200 dark:border-gray-700" sideOffset={5} align="end">
-                  {/* Simplified: Only show Change Timezone if not local */}
-                  {timezone.id !== userLocalTimezone && (
-                    <DropdownMenu.Item
-                      onSelect={() => { setEditingTimezoneId(timezone.id); setTimeout(() => setSelectorOpen(true), 100); }}
-                      className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
-                    >
-                      <Edit2 className="h-4 w-4 mr-2" />Change Timezone
-                    </DropdownMenu.Item>
-                  )}
-                  {/* Add Remove option inside the dropdown */}
-                  {timezone.id !== userLocalTimezone && (
-                    <>
-                      <DropdownMenu.Separator className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
-                      <DropdownMenu.Item
-                        onSelect={() => handleRemoveTimezone(timezone.id)}
-                        className="flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-300 focus:outline-none"
-                      >
-                        <X className="h-4 w-4 mr-2" />Remove
-                      </DropdownMenu.Item>
-                    </>
-                  )}
+                  {timezone.id !== userLocalTimezone && (<DropdownMenu.Item onSelect={() => { setEditingTimezoneId(timezone.id); setTimeout(() => setSelectorOpen(true), 100); }} className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"><Edit2 className="h-4 w-4 mr-2" />Change Timezone</DropdownMenu.Item>)}
+                  {timezone.id !== userLocalTimezone && (<><DropdownMenu.Separator className="h-px bg-gray-200 dark:bg-gray-700 my-1" /><DropdownMenu.Item onSelect={() => handleRemoveTimezone(timezone.id)} className="flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-300 focus:outline-none"><X className="h-4 w-4 mr-2" />Remove</DropdownMenu.Item></>)}
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
@@ -1382,19 +998,17 @@ const TimezoneColumn = memo(({
             <FixedSizeList
               height={height}
               width={width}
-              itemCount={displaySlots.length} // Use displaySlots length
+              itemCount={displaySlots.length}
               itemSize={48}
               overscanCount={10}
               ref={(ref) => { listRefs.current[timezone.id] = ref; }}
               className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md"
               style={{ backdropFilter: 'blur(2px)', backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.05)' : 'rgba(255, 255, 255, 0.05)' }}
               itemKey={(index) => `${timezone.id}-${itemData.slots[index].getTime()}`}
-              // Pass the scroll event object to handleUserScroll
               onScroll={handleUserScroll}
-              itemData={itemData} // Pass itemData here
+              itemData={itemData}
             >
-              {/* Pass Row component defined outside ListView */}
-              {Row} 
+              {Row}
             </FixedSizeList>
           )}
         </AutoSizer>
@@ -1404,36 +1018,10 @@ const TimezoneColumn = memo(({
 });
 TimezoneColumn.displayName = 'TimezoneColumn';
 
-// Define SortableTimezoneColumn component
-const SortableTimezoneColumn = (props: React.ComponentProps<typeof TimezoneColumn>) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging, // Add isDragging state
-  } = useSortable({ id: props.timezone.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    zIndex: isDragging ? 10 : undefined, // Increase z-index while dragging
-    opacity: isDragging ? 0.8 : 1, // Slightly transparent when dragging
-    cursor: isDragging ? 'grabbing' : 'grab', // Change cursor style
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <TimezoneColumn {...props} />
-    </div>
-  );
-};
-
+// Removed SortableTimezoneColumn component definition
 
 export default ListView;
 
-// Update the TimeHeaderRow component to show the selected date
 const TimeHeaderRow = memo(function TimeHeaderRow({
   timeSlot,
   isHalfHour,
@@ -1449,63 +1037,21 @@ const TimeHeaderRow = memo(function TimeHeaderRow({
   isCurrentTime: boolean;
   formattedTime: string;
 }) {
-  // Convert to Luxon DateTime for easier formatting
   const dt = DateTime.fromJSDate(timeSlot);
-  
-  // Format the date for display in the header
   const dateDisplay = dt.toFormat('EEE, MMM d');
-  
-  // Check if time is during night hours using the same function as in ListView
   const store = useSettingsStore.getState();
   const hour = dt.hour;
-  const isNightTime = store.nightHoursStart > store.nightHoursEnd
-    ? hour >= store.nightHoursStart || hour < store.nightHoursEnd
-    : hour >= store.nightHoursStart && hour < store.nightHoursEnd;
-  
-  // Set day/night theme colors
+  const isNightTime = store.nightHoursStart > store.nightHoursEnd ? hour >= store.nightHoursStart || hour < store.nightHoursEnd : hour >= store.nightHoursStart && hour < store.nightHoursEnd;
   const dayTimeColor = 'text-amber-500 dark:text-amber-400';
   const nightTimeColor = 'text-indigo-400 dark:text-indigo-300';
-  
   return (
-    <div 
-      className={`
-        px-2 py-1 text-sm 
-        ${isHalfHour ? 'opacity-60 text-xs' : 'font-semibold'}
-        ${isCurrentTime ? 'text-primary-500 font-bold' : ''}
-        ${isDateBoundary ? 'border-t border-gray-300 dark:border-gray-700 pt-4 mt-4' : ''}
-        ${isNightTime ? 'bg-gray-100/50 dark:bg-gray-800/30' : 'bg-transparent'}
-      `}
-    >
-      {/* Show date at midnight or first time slot */}
+    <div className={`px-2 py-1 text-sm ${isHalfHour ? 'opacity-60 text-xs' : 'font-semibold'} ${isCurrentTime ? 'text-primary-500 font-bold' : ''} ${isDateBoundary ? 'border-t border-gray-300 dark:border-gray-700 pt-4 mt-4' : ''} ${isNightTime ? 'bg-gray-100/50 dark:bg-gray-800/30' : 'bg-transparent'}`}>
       {(dt.hour === 0 && dt.minute === 0) || ((dt.hour === 0 || dt.hour === 12) && dt.minute === 0) ? (
-        <div className="flex flex-col">
-          <span className="text-primary-500 font-bold">{dateDisplay}</span>
-          <div className="mt-1 flex items-center">
-            <span>{formattedTime}</span>
-            {isNightTime ? (
-              <Moon className={`ml-2 h-3.5 w-3.5 ${nightTimeColor}`} />
-            ) : (
-              <Sun className={`ml-2 h-3.5 w-3.5 ${dayTimeColor}`} />
-            )}
-          </div>
-        </div>
+        <div className="flex flex-col"><span className="text-primary-500 font-bold">{dateDisplay}</span><div className="mt-1 flex items-center"><span>{formattedTime}</span>{isNightTime ? (<Moon className={`ml-2 h-3.5 w-3.5 ${nightTimeColor}`} />) : (<Sun className={`ml-2 h-3.5 w-3.5 ${dayTimeColor}`} />)}</div></div>
       ) : (
-        <div className="flex items-center">
-          <span>{formattedTime}</span>
-          {isNightTime ? (
-            <Moon className={`ml-2 h-3 w-3 ${nightTimeColor}`} />
-          ) : (
-            <Sun className={`ml-2 h-3 w-3 ${dayTimeColor}`} />
-          )}
-        </div>
+        <div className="flex items-center"><span>{formattedTime}</span>{isNightTime ? (<Moon className={`ml-2 h-3 w-3 ${nightTimeColor}`} />) : (<Sun className={`ml-2 h-3 w-3 ${dayTimeColor}`} />)}</div>
       )}
-      
-      {/* Show DST transition indicator */}
-      {isDSTTransition && (
-        <span className="block text-xs text-amber-500 dark:text-amber-400 mt-1">
-          DST {dt.isInDST ? 'begins' : 'ends'}
-        </span>
-      )}
+      {isDSTTransition && (<span className="block text-xs text-amber-500 dark:text-amber-400 mt-1">DST {dt.isInDST ? 'begins' : 'ends'}</span>)}
     </div>
   );
 });
