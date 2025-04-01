@@ -9,11 +9,12 @@ import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import dynamic from 'next/dynamic';
 import { ListView, ClocksView, DigitalView } from '../views';
 import MobileTimezoneCard from '../mobile/MobileTimezoneCard'; // Import MobileTimezoneCard
+import DraggableTimezoneCard from '../mobile/DraggableTimezoneCard'; // Import DraggableTimezoneCard
 import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
-// Removed duplicate Timezone import
-import { CalendarDays, ArrowLeftCircle, Plus, Calendar, X, Menu } from 'lucide-react'; // Added Calendar, X, and Menu icons
+import { MobileMenu } from '@/components/MobileMenu'; // Import MobileMenu for the header
+import { CalendarDays, ArrowLeftCircle, Plus, Calendar, X } from 'lucide-react'; // Removed Menu icon, added MobileMenu component instead
 
 // Define interfaces for the view components based on their implementations
 interface ListViewProps {
@@ -279,16 +280,37 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
 
   return (
     <div className="clock-container w-full max-w-screen-xl mx-auto px-4 py-6">
-      {/* Top Controls - Only show on desktop or conditionally on mobile */}
-      <div className="flex justify-between items-center mb-4 h-12">
-        {/* Only show ViewSwitcher when not on mobile */}
-        {!isConsideredMobile && <ViewSwitcher />}
-        
-        {/* Desktop Controls */}
-        {!isConsideredMobile && (
+      {/* Conditional Header Rendering */}
+      {isConsideredMobile ? (
+        // Mobile Header (Moved from app/page.tsx and adapted)
+        <header className="flex items-center justify-between mb-4 h-12">
+          <MobileMenu />
+          <h1 className="font-bold uppercase text-xl">TimeZonePulse</h1>
           <div className="flex items-center space-x-2">
-            {/* Add Timezone Button */}
+            {/* Add Timezone Button (Mobile FAB exists, but keep this for consistency?) */}
+             <button
+               onClick={() => setIsSelectorOpen(true)}
+               className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors text-white" // Added text-white for visibility if needed
+               aria-label="Add Timezone"
+             >
+               <Plus size={20} />
+             </button>
+            {/* Calendar Button (Mobile) */}
             <button
+              onClick={() => setShowDatePickerModal(true)} // Connect to modal state
+              className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors text-white" // Added text-white
+              aria-label="Open Calendar"
+            >
+              <Calendar size={20} />
+            </button>
+          </div>
+        </header>
+      ) : (
+        // Desktop Header Controls
+        <div className="flex justify-between items-center mb-4 h-12">
+          <ViewSwitcher />
+          <div className="flex items-center space-x-2">
+            <button // Desktop Add Button
               onClick={() => setIsSelectorOpen(true)}
               className="p-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
               aria-label="Add Timezone"
@@ -296,9 +318,7 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
             >
               <Plus size={20} />
             </button>
-
-            {/* Date Picker */}
-            <DatePicker
+            <DatePicker // Desktop Date Picker
               selectedDate={selectedDate}
               onDateChange={setSelectedDate}
               minDate={new Date()} // Prevent selecting dates in the past
@@ -317,86 +337,49 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
               </button>
             )}
           </div>
-        )}
-        
-        {/* Mobile Date Controls - Only show on mobile */}
-        {isConsideredMobile && (
-          <div className="flex justify-between items-center w-full">
-            {/* Hamburger Menu Icon */}
-            <button
-              className="p-2 rounded-md text-foreground hover:bg-muted transition-colors"
-              aria-label="Open Menu"
-              title="Open Menu" // Tooltip for clarity
-            >
-              <Menu size={20} />
-            </button>
+        </div>
+      )}
+      {/* End of Conditional Header Rendering */}
 
-            <h1 className="text-xl font-medium">TimeZonePulse</h1>
-            
-            <div className="flex items-center gap-2">
-              {/* Add Timezone Button for landscape mode */}
-              {isMobileLandscapeOrSmaller && !isMobilePortraitOrSmaller && (
-                <button
-                  onClick={() => setIsSelectorOpen(true)}
-                  className="p-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors" // Changed to rounded-full
-                  aria-label="Add Timezone"
-                  title="Add Timezone"
-                >
-                  <Plus size={20} />
-                </button>
-              )}
-
-              {/* Calendar Icon Button for Portrait Mode */}
-              {isMobilePortraitOrSmaller && (
-                <button
-                  onClick={() => setShowDatePickerModal(true)}
-                  className="p-2 rounded-md text-foreground hover:bg-muted transition-colors"
-                  aria-label="Select Date"
-                  title="Select Date"
-                >
-                  <Calendar size={20} />
-                </button>
-              )}
-              
-              {/* Date indicator that opens modal when clicked (Landscape Mode) */}
-              {/* Only show text + icon in landscape */}
-              {isMobileLandscapeOrSmaller && !isMobilePortraitOrSmaller && (
-                <button
-                  onClick={() => setShowDatePickerModal(true)}
-                  className="flex items-center gap-1 text-foreground hover:text-primary transition-colors"
-                  aria-label="Select Date"
-                >
-                  <span className="text-sm font-medium">
-                    {selectedDate ? DateTime.fromJSDate(selectedDate).toFormat('LLL dd, yyyy') : 'Today'}
-                  </span>
-                  <Calendar className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Dynamic View Rendering - Using Suspense for better loading experience */}
-      <div className="flex justify-center w-full">
+      <div className="flex justify-center w-full"> {/* Removed redundant mobile controls from here */}
         <Suspense fallback={<ViewPlaceholder />}>
           {/* Render mobile view or desktop view based on detection */}
           {isConsideredMobile ? (
-            // Mobile View: List of MobileTimezoneCards with improved spacing
-            <div className="w-full space-y-4 pb-20"> {/* Increased spacing and added bottom padding for FAB */}
-              {timezones.map((tz) => (
-                <MobileTimezoneCard
-                  key={tz.id}
-                  timezone={tz}
-                  localTime={currentTime}
-                  highlightedTime={highlightedTime}
-                  timeSlots={timeSlots}
-                  handleTimeSelection={handleMobileTimeSelection} // Use mobile handler
-                  roundToNearestIncrement={roundToNearestIncrement}
-                  isExpanded={expandedTimezoneId === tz.id}
-                  onToggleExpand={handleToggleExpand}
-                />
-              ))}
+            // Mobile View: List of DraggableTimezoneCards (assuming this is the intended mobile card)
+            // Need to import DraggableTimezoneCard if not already done
+            <div className="w-full space-y-4 pb-20">
+              <AnimatePresence initial={false}> {/* Keep animation wrapper */}
+                {timezones.map((tz: Timezone) => ( // Ensure type is specified
+                  <DraggableTimezoneCard // Use DraggableTimezoneCard if that's the correct one for mobile list
+                    key={tz.id}
+                    timezone={tz}
+                    isLocal={tz.id === localTimezone} // Pass isLocal prop
+                    onRemove={removeTimezone} // Pass remove function
+                    // Pass down other necessary props
+                    localTime={currentTime}
+                    highlightedTime={highlightedTime}
+                    timeSlots={timeSlots}
+                    handleTimeSelection={handleMobileTimeSelection}
+                    roundToNearestIncrement={roundToNearestIncrement}
+                    isExpanded={expandedTimezoneId === tz.id}
+                    onToggleExpand={handleToggleExpand}
+                  />
+                ))}
+              </AnimatePresence>
+              {timezones.length === 0 && ( // Add empty state message for mobile
+                <div className="text-center text-gray-400 mt-10">
+                  <p>No timezones added yet.</p>
+                  <button
+                    onClick={() => setIsSelectorOpen(true)}
+                    className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <Plus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
+                    Add Timezone
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             // Desktop View: Switch between List, Analog, Digital with Framer Motion
