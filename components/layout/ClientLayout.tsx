@@ -2,7 +2,7 @@
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import ThemeToggle from '@/components/ThemeToggle';
-import MobileMenu from '@/components/MobileMenu';
+import { MobileMenu } from '@/components/MobileMenu';
 import StatusIndicator from '@/components/StatusIndicator';
 import Link from 'next/link';
 import { Suspense } from 'react';

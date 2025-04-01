@@ -56,7 +56,7 @@ export function getCspWithNonce(nonce: string): string {
 
   // Style security - Remove 'unsafe-inline'. If needed, use hashes or nonces for specific inline styles.
   // Allow Statuspage styles.
-  const styleSrc = `style-src 'self' ${statuspageDomains}`;
+  const styleSrc = `style-src 'self' 'unsafe-inline' ${statuspageDomains}`;
 
   // Connect sources including development needs, Vercel Analytics, and Statuspage
   const connectSrc = isDevelopment

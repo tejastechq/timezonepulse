@@ -64,7 +64,9 @@ export async function authenticateApi(options: AuthOptions = { type: AuthType.RA
   
   // ADMIN auth check
   if (options.type === AuthType.ADMIN) {
+    // Get headers and handle as Promise in Next.js 15
     const headersList = await headers();
+    // Now we can safely call get() on the resolved headers
     const authToken = headersList.get('x-admin-token');
     
     if (!await validateAdminToken(authToken)) {
@@ -93,4 +95,4 @@ export async function authenticateApi(options: AuthOptions = { type: AuthType.RA
   
   // If we get here, authentication was successful
   return null;
-}
+} 

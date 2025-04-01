@@ -20,6 +20,8 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 import GlassmorphismAnimation from '@/components/GlassmorphismAnimation';
 import DevInfo from '@/components/DevInfo';
 import '@/lib/utils/trusted-types'; // Import trusted-types configuration
+import { Inter } from 'next/font/google';
+import Script from 'next/script';
 
 // Export metadata and viewport configurations
 export const metadata = baseMetadata;
@@ -50,13 +52,6 @@ export default function RootLayout({
           <Analytics 
             mode={process.env.NODE_ENV === 'production' ? 'production' : 'development'}
             debug={process.env.NODE_ENV !== 'production'}
-            beforeSend={(event) => {
-              // Don't track events from development
-              if (process.env.NODE_ENV !== 'production') {
-                return null;
-              }
-              return event;
-            }}
           />
           <SpeedInsights />
           <GlassmorphismAnimation />
@@ -78,7 +73,7 @@ export default function RootLayout({
             </a>
           </footer>
         </Providers>
-        <script src="https://timezonepulse1.statuspage.io/embed/script.js"></script>
+        <Script src="https://timezonepulse1.statuspage.io/embed/script.js" strategy="afterInteractive" />
       </body>
     </html>
   );
