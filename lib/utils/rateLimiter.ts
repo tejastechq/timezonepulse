@@ -1,28 +1,75 @@
 import { Ratelimit } from '@upstash/ratelimit';
 import { kv } from '@vercel/kv';
 
-// Define rate limit configurations using Upstash Ratelimit and Vercel KV
-// These configurations mirror the previous in-memory setup but are now distributed.
-export const rateLimiters = { // Added export keyword
+// Simple in-memory storage for development
+class MemoryStore {
+  private storage = new Map<string, { count: number, expires: number }>();
+
+  async increment(key: string, opts?: { count?: number, expireIn?: number }): Promise<{ count: number }> {
+    const now = Date.now();
+    const count = opts?.count || 1;
+    const expireIn = opts?.expireIn || 60000; // Default 1 minute
+    const expires = now + expireIn;
+    
+    // Clean expired entries
+    this.cleanExpired();
+    
+    // Get or create entry
+    const entry = this.storage.get(key) || { count: 0, expires };
+    entry.count += count;
+    entry.expires = expires;
+    
+    this.storage.set(key, entry);
+    return { count: entry.count };
+  }
+
+  async get(key: string): Promise<{ count: number } | undefined> {
+    this.cleanExpired();
+    const entry = this.storage.get(key);
+    return entry ? { count: entry.count } : undefined;
+  }
+  
+  private cleanExpired() {
+    const now = Date.now();
+    for (const [key, entry] of this.storage.entries()) {
+      if (entry.expires < now) {
+        this.storage.delete(key);
+      }
+    }
+  }
+}
+
+// Use memory store in development, KV in production
+const isDev = process.env.NODE_ENV !== 'production';
+const store = isDev ? new MemoryStore() : kv;
+
+// Define rate limit configurations using the appropriate store
+export const rateLimiters = { 
   default: new Ratelimit({
-    redis: kv,
+    redis: isDev ? undefined : kv,
     limiter: Ratelimit.slidingWindow(500, '60 s'), // 500 requests per minute (8.3/sec)
     prefix: 'ratelimit:default',
+    analytics: !isDev, // Only use analytics in production
+    ephemeralCache: isDev, // Use memory cache in development
   }),
   time: new Ratelimit({
-    redis: kv,
+    redis: isDev ? undefined : kv,
     limiter: Ratelimit.slidingWindow(1200, '60 s'), // 1200 requests per minute (20/sec) for screensaver use
     prefix: 'ratelimit:time',
+    analytics: !isDev,
+    ephemeralCache: isDev,
   }),
   cleanup: new Ratelimit({
-    redis: kv,
+    redis: isDev ? undefined : kv,
     limiter: Ratelimit.slidingWindow(20, '60 s'), // Unchanged for admin function
     prefix: 'ratelimit:cleanup',
+    analytics: !isDev,
+    ephemeralCache: isDev,
   }),
 };
 
 /**
- * Checks if a request should be rate limited using Vercel KV.
+ * Checks if a request should be rate limited.
  * @param key Identifier for the request (e.g., IP address or user ID).
  * @param endpoint Which endpoint's rate limiter configuration to use.
  * @returns Object containing rate limit status, remaining points, and reset time.

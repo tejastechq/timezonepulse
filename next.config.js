@@ -6,6 +6,21 @@ const nextConfig = {
   // Optimize for smaller function size
   output: 'standalone',
   
+  // Experimental options to reduce size
+  experimental: {
+    optimizeCss: true,
+    outputFileTracingRoot: process.cwd(),
+    outputFileTracingExcludes: {
+      '*': [
+        '.git/**',
+        '.github/**',
+        '.next/cache/**',
+        'node_modules/**/*.{md,d.ts,map}',
+        '**/*.{scss,css}.map',
+      ],
+    },
+  },
+  
   // Security headers configuration
   headers: async () => {
     const securityHeaders = [

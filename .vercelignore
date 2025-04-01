@@ -1,2 +1,5 @@
-.next/cache
-node_modules/.cache 
+.next/cache/**
+node_modules/.cache/**
+.vercel
+dist
+.turbo 

@@ -1,24 +1,44 @@
-# Environment files
-.env
-.env.*
-!.env.example
-!.env.development
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
 
-# Cache and build directories
-.next/
-out/
-build/
-dist/
-.cache/
-/node_modules/
+# Testing
+/coverage
 
-# Debug logs
+# Next.js
+/.next/
+/out/
+.swc/
+
+# Production
+/build
+/dist
+
+# Misc
+.DS_Store
+*.pem
+Thumbs.db
+
+# Debug
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
 
-# Local SSL certificates
-*.pem
-node_modules
-node_modules
+# Local env files
+.env*.local
+
+# Vercel
+.vercel
+
+# Cache
+.cache/
+node_modules/.cache/
+.next/cache/
+**/.cache/
+
+# Turbo
+.turbo
+
+# TypeScript
+*.tsbuildinfo
