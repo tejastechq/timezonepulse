@@ -222,9 +222,9 @@ export default function TimezoneSelector({
         <div style={style}>
           <button
             onClick={() => handleSelect(timezone)}
-            className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 
+            className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 
                       transition-colors duration-150 focus:outline-none focus:ring-2 
-                      focus:ring-primary-500"
+                      focus:ring-primary-500 ${timezone.id === 'Mars/Jezero' ? 'bg-red-50 dark:bg-red-900/20 border-l-2 border-red-400 dark:border-red-600' : ''}`}
             role="option"
             aria-selected="false"
             id={`timezone-option-${timezone.id}`}
@@ -239,10 +239,18 @@ export default function TimezoneSelector({
           >
             <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between gap-2">
               <div className="flex items-center space-x-2 min-w-0 flex-1">
-                <span className="truncate">{timezone.city || timezone.name}</span>
+                <span className="truncate">
+                  {timezone.id === 'Mars/Jezero' && <span className="mr-1" title="Perseverance Rover Location">🤖</span>}
+                  {timezone.city || timezone.name}
+                </span>
                 {timezone.abbreviation && (
                   <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded flex-shrink-0">
                     {timezone.abbreviation}
+                  </span>
+                )}
+                {context.isRoverLocation && (
+                  <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded flex-shrink-0 animate-pulse">
+                    Rover
                   </span>
                 )}
               </div>
@@ -255,7 +263,7 @@ export default function TimezoneSelector({
                   <Clock className="w-4 h-4 flex-shrink-0" />
                   <span className="whitespace-nowrap">{context.currentTime}</span>
                 </div>
-                {context.isBusinessHours && (
+                {context.isBusinessHours && !context.isRoverLocation && (
                   <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
                     <Briefcase className="w-4 h-4 flex-shrink-0" />
                     <span className="text-xs whitespace-nowrap">Business hours</span>
@@ -263,6 +271,15 @@ export default function TimezoneSelector({
                 )}
               </div>
             </div>
+            
+            {/* Add Perseverance rover information */}
+            {context.isRoverLocation && context.roverInfo && (
+              <div className="mt-2 text-xs bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/20">
+                <p className="font-medium text-red-700 dark:text-red-300">{context.roverInfo.name} Rover</p>
+                <p className="text-red-600/80 dark:text-red-400/80 mt-1">{context.roverInfo.mission}</p>
+                <p className="text-red-600/70 dark:text-red-400/70">Landed: {context.roverInfo.landingDate}</p>
+              </div>
+            )}
           </button>
         </div>
       );
@@ -303,9 +320,12 @@ export default function TimezoneSelector({
 
                 {DateTime.now().month === 4 && DateTime.now().day === 1 && (
                   <div className="mt-2 px-3 py-2 bg-red-100 dark:bg-red-900/30 rounded-md border border-red-200 dark:border-red-800/50 text-sm">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mb-1">
                       <span className="text-red-600 dark:text-red-400 font-semibold">April Fools!</span>
                       <span className="text-red-600/90 dark:text-red-400/90">Mars timezones now available! 🚀</span>
+                    </div>
+                    <div className="text-xs text-red-600/80 dark:text-red-400/80 font-medium">
+                      Check out the <span className="font-bold">Perseverance Rover</span> timezone at Jezero Crater 🤖
                     </div>
                   </div>
                 )}
@@ -431,9 +451,10 @@ export default function TimezoneSelector({
                                 <button
                                   key={timezone.id}
                                   onClick={() => handleSelect(timezone)}
-                                  className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 
+                                  className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 
                                             transition-colors duration-150 focus:outline-none focus:ring-2 
-                                            focus:ring-primary-500 border-b border-gray-200 dark:border-gray-700"
+                                            focus:ring-primary-500 border-b border-gray-200 dark:border-gray-700
+                                            ${timezone.id === 'Mars/Jezero' ? 'bg-red-50 dark:bg-red-900/20 border-l-2 border-red-400 dark:border-red-600' : ''}`}
                                   role="option"
                                   aria-selected="false"
                                   id={`timezone-option-${timezone.id}`}
@@ -448,10 +469,18 @@ export default function TimezoneSelector({
                                 >
                                   <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between gap-2">
                                     <div className="flex items-center space-x-2 min-w-0 flex-1">
-                                      <span className="truncate">{timezone.city || timezone.name}</span>
+                                      <span className="truncate">
+                                        {timezone.id === 'Mars/Jezero' && <span className="mr-1" title="Perseverance Rover Location">🤖</span>}
+                                        {timezone.city || timezone.name}
+                                      </span>
                                       {timezone.abbreviation && (
                                         <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded flex-shrink-0">
                                           {timezone.abbreviation}
+                                        </span>
+                                      )}
+                                      {context.isRoverLocation && (
+                                        <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded flex-shrink-0 animate-pulse">
+                                          Rover
                                         </span>
                                       )}
                                     </div>
@@ -464,7 +493,7 @@ export default function TimezoneSelector({
                                         <Clock className="w-4 h-4 flex-shrink-0" />
                                         <span className="whitespace-nowrap">{context.currentTime}</span>
                                       </div>
-                                      {context.isBusinessHours && (
+                                      {context.isBusinessHours && !context.isRoverLocation && (
                                         <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
                                           <Briefcase className="w-4 h-4 flex-shrink-0" />
                                           <span className="text-xs whitespace-nowrap">Business hours</span>
@@ -472,6 +501,15 @@ export default function TimezoneSelector({
                                       )}
                                     </div>
                                   </div>
+                                  
+                                  {/* Add Perseverance rover information */}
+                                  {context.isRoverLocation && context.roverInfo && (
+                                    <div className="mt-2 text-xs bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/20">
+                                      <p className="font-medium text-red-700 dark:text-red-300">{context.roverInfo.name} Rover</p>
+                                      <p className="text-red-600/80 dark:text-red-400/80 mt-1">{context.roverInfo.mission}</p>
+                                      <p className="text-red-600/70 dark:text-red-400/70">Landed: {context.roverInfo.landingDate}</p>
+                                    </div>
+                                  )}
                                 </button>
                               );
                             } catch (err) {

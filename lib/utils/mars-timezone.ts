@@ -15,7 +15,12 @@ interface MarsLocation {
   name: string;
   city: string;
   longitude: number; // Degrees from Mars Prime Meridian (Airy-0 crater)
+  latitude: number; // Degrees north/south of equator
   description: string;
+  roverPresent?: boolean; // Flag for locations with active rovers
+  roverName?: string; // Name of rover if present
+  roverMission?: string; // Mission details if rover present
+  roverLandingDate?: string; // When the rover landed
 }
 
 /**
@@ -26,14 +31,20 @@ const MARS_LOCATIONS: MarsLocation[] = [
     id: 'Mars/Jezero',
     name: 'Jezero Crater',
     city: 'Jezero Crater',
-    longitude: 77.43, // East longitude
-    description: 'Perseverance Rover landing site (2021)'
+    longitude: 77.58, // East longitude (updated to match Perseverance's actual location)
+    latitude: 18.38, // North latitude
+    description: 'Perseverance Rover landing site (2021)',
+    roverPresent: true,
+    roverName: 'Perseverance',
+    roverMission: 'NASA Mars 2020 Mission',
+    roverLandingDate: 'February 18, 2021'
   },
   {
     id: 'Mars/Elysium',
     name: 'Elysium Planitia',
     city: 'Elysium Planitia',
     longitude: 135.97, // East longitude
+    latitude: 4.5, // North latitude
     description: 'InSight landing site (2018)'
   },
   {
@@ -41,6 +52,7 @@ const MARS_LOCATIONS: MarsLocation[] = [
     name: 'Gale Crater',
     city: 'Gale Crater',
     longitude: 137.44, // East longitude
+    latitude: -5.08, // South latitude
     description: 'Curiosity Rover landing site (2012)'
   },
   {
@@ -48,6 +60,7 @@ const MARS_LOCATIONS: MarsLocation[] = [
     name: 'Olympus City',
     city: 'Olympus Mons',
     longitude: 226.31, // East longitude (Olympus Mons)
+    latitude: 18.39, // North latitude
     description: 'Future settlement at the base of the largest volcano in the solar system'
   },
   {
@@ -55,6 +68,7 @@ const MARS_LOCATIONS: MarsLocation[] = [
     name: 'Marineris Colony',
     city: 'Valles Marineris',
     longitude: 70.00, // East longitude (near Valles Marineris)
+    latitude: -13.8, // South latitude
     description: 'Future settlement in the largest canyon system in the solar system'
   },
   {
@@ -62,6 +76,7 @@ const MARS_LOCATIONS: MarsLocation[] = [
     name: 'Airy Prime',
     city: 'Airy-0 (Prime Meridian)',
     longitude: 0, // Prime Meridian
+    latitude: 5.1, // South latitude
     description: 'Mars Prime Meridian settlement (Airy-0 crater)'
   }
 ];
@@ -138,12 +153,45 @@ export function getMarsSiteTimezones(): TimezoneInfo[] {
     
     return {
       id: location.id,
-      name: `${location.name} (${offset})`,
+      name: `${location.name} ${location.roverPresent ? '🤖' : ''} (${offset})`,
       offset,
       city: location.city,
       country: 'Mars',
       abbreviation: 'MTC',
-      region: 'Mars'
+      region: 'Mars',
+      description: location.description,
+      roverPresent: location.roverPresent,
+      roverName: location.roverName,
+      roverMission: location.roverMission
     };
   });
+}
+
+/**
+ * Get details about any active rover at a Mars location
+ * @param locationId Mars location ID
+ * @returns Object with rover details or null if no rover present
+ */
+export function getRoverInfo(locationId: string): {
+  name: string;
+  mission: string;
+  landingDate: string;
+  location: string;
+  latitude: number;
+  longitude: number;
+} | null {
+  const location = MARS_LOCATIONS.find(loc => loc.id === locationId);
+  
+  if (!location || !location.roverPresent) {
+    return null;
+  }
+  
+  return {
+    name: location.roverName || 'Unknown Rover',
+    mission: location.roverMission || 'Unknown Mission',
+    landingDate: location.roverLandingDate || 'Unknown Date',
+    location: location.name,
+    latitude: location.latitude,
+    longitude: location.longitude
+  };
 } 

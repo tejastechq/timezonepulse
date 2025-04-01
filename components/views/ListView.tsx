@@ -1164,11 +1164,19 @@ const TimezoneColumn = memo(({
       {/* Added relative positioning to card */}
       <div className="flex justify-between items-center mb-3 md:mb-4 relative z-[2]">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h3 className={`text-lg font-semibold ${timezone.id === 'Mars/Jezero' ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
             {timezone.id.startsWith('Mars/') && (
-              <span className="inline-block mr-1 text-red-600 dark:text-red-400" title="Mars Time">🔴</span>
+              <span className="inline-block mr-1" title="Mars Time">🔴</span>
+            )}
+            {timezone.id === 'Mars/Jezero' && (
+              <span className="inline-block mr-1" title="Perseverance Rover Location">🤖</span>
             )}
             {timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}
+            {timezone.id === 'Mars/Jezero' && (
+              <span className="ml-2 text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded animate-pulse">
+                Perseverance
+              </span>
+            )}
           </h3>
           <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center space-x-2">
             <span>{timezone.id.startsWith('Mars/') ? 'MTC' : DateTime.now().setZone(timezone.id).toFormat('ZZZZ')}</span>
@@ -1179,6 +1187,16 @@ const TimezoneColumn = memo(({
           <div className={`text-sm font-medium mt-1 ${timezone.id.startsWith('Mars/') ? 'text-red-600 dark:text-red-400' : 'text-primary-600 dark:text-primary-400'}`}>
             {localTime && formatTime(localTime, timezone.id)}
           </div>
+          {timezone.id === 'Mars/Jezero' && (
+            <div className="mt-2 text-xs bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/20">
+              <p className="font-medium text-red-700 dark:text-red-300">Perseverance Rover</p>
+              <p className="text-red-600/80 dark:text-red-400/80 mt-1">NASA Mars 2020 Mission</p>
+              <p className="text-red-600/70 dark:text-red-400/70">
+                <span className="inline-block">Location: Jezero Crater</span>
+                <span className="inline-block ml-2">18.38°N, 77.58°E</span>
+              </p>
+            </div>
+          )}
         </div>
         {/* Only show controls for non-local timezones */}
         {!isLocal && (

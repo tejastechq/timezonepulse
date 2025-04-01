@@ -1,4 +1,6 @@
 import { Timezone } from '@/store/timezoneStore';
+import { formatMarsTime, getCurrentMarsTime, getMarsTimezoneOffset, getRoverInfo } from './mars-timezone';
+import { DateTime } from 'luxon';
 
 // Scoring weights for different match types
 const WEIGHTS = {
@@ -8,10 +10,14 @@ const WEIGHTS = {
   FUZZY_MATCH: 40,
   RECENTLY_USED: 30,
   POPULAR: 20,
+  ROVER_LOCATION: 50, // Higher weight for rover locations
 };
 
-// Popular timezone IDs based on global usage
+// Update the Popular timezones set to include Mars/Jezero for Perseverance rover
 const POPULAR_TIMEZONES = new Set([
+  // Mars rover location
+  'Mars/Jezero',     // Perseverance rover location
+
   // North America
   'America/New_York',     // Eastern Time (US & Canada)
   'America/Chicago',      // Central Time (US & Canada) 
@@ -115,6 +121,11 @@ export function calculateTimezoneScore(
     score += WEIGHTS.POPULAR;
   }
 
+  // Boost score for rover locations 
+  if (timezone.id === 'Mars/Jezero') {
+    score += WEIGHTS.ROVER_LOCATION;
+  }
+
   return score;
 }
 
@@ -144,8 +155,51 @@ export function getTimezoneContext(timezone: Timezone, userTimezone: string): {
   offset: string;
   isBusinessHours: boolean;
   currentTime: string;
+  isRoverLocation?: boolean;
+  roverInfo?: {
+    name: string;
+    mission: string;
+    landingDate: string;
+  } | null;
 } {
   try {
+    // Special handling for Mars timezones
+    if (timezone.id.startsWith('Mars/')) {
+      // Get Mars time using our Mars-specific functions
+      const marsTime = getCurrentMarsTime(timezone.id);
+      const marsOffset = getMarsTimezoneOffset(timezone.id);
+      const roverInfo = getRoverInfo(timezone.id);
+      
+      // Format time in Mars time format
+      const currentTime = formatMarsTime(marsTime);
+      
+      // Extract numeric offset from MTC+XX:XX format
+      const match = marsOffset.match(/MTC([+-])(\d+):(\d+)/);
+      let offsetStr = 'Mars Time';
+      if (match) {
+        const sign = match[1];
+        const hours = parseInt(match[2], 10);
+        const minutes = parseInt(match[3], 10);
+        offsetStr = `${sign}${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
+      }
+      
+      // Business hours are always set to true for Mars (it's an April Fools feature)
+      const isBusinessHours = true;
+      
+      return {
+        offset: offsetStr,
+        isBusinessHours,
+        currentTime,
+        isRoverLocation: !!roverInfo,
+        roverInfo: roverInfo ? {
+          name: roverInfo.name,
+          mission: roverInfo.mission,
+          landingDate: roverInfo.landingDate
+        } : null
+      };
+    }
+    
+    // Original handling for Earth timezones
     const now = new Date();
     
     // Handle missing or invalid timezone data with fallbacks
