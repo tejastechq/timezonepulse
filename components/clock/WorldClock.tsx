@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic';
 import { ListView, ClocksView, DigitalView } from '../views';
 import MobileTimezoneCard from '../mobile/MobileTimezoneCard'; // Import MobileTimezoneCard
 import DraggableTimezoneCard from '../mobile/DraggableTimezoneCard'; // Import DraggableTimezoneCard
+import MobileMarsExplanationCard from '../mobile/MobileMarsExplanationCard'; // Import the new Mars explanation card
 import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
@@ -93,7 +94,8 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
     localTimezone,
     selectedDate,
     setSelectedDate,
-    resetToToday
+    resetToToday,
+    showMarsExplanation // Get the state for showing the Mars explanation
   } = useTimezoneStore();
 
   // Get view state from the view context
@@ -347,13 +349,16 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
         <Suspense fallback={<ViewPlaceholder />}>
           {/* Render mobile view or desktop view based on detection */}
           {isConsideredMobile ? (
-            // Mobile View: List of DraggableTimezoneCards (assuming this is the intended mobile card)
-            // Need to import DraggableTimezoneCard if not already done
+            // Mobile View: List of DraggableTimezoneCards
             <div className="w-full space-y-4 pb-20">
+              {/* Conditionally render the Mars Explanation Card at the top */}
+              {showMarsExplanation && (
+                <MobileMarsExplanationCard key="mars-explanation" />
+              )}
               <AnimatePresence initial={false}> {/* Keep animation wrapper */}
                 {timezones.map((tz: Timezone) => ( // Ensure type is specified
-                  <DraggableTimezoneCard // Use DraggableTimezoneCard if that's the correct one for mobile list
-                    key={tz.id}
+                  <DraggableTimezoneCard // Use DraggableTimezoneCard for the timezones
+                    key={tz.id} // Keep unique key for timezones
                     timezone={tz}
                     isLocal={tz.id === localTimezone} // Pass isLocal prop
                     onRemove={removeTimezone} // Pass remove function
