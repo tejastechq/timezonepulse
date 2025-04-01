@@ -83,13 +83,29 @@ export const useTimezoneStore = create<TimezoneState>()(
             city: 'Local',
             country: '',
           },
-          // Add Mars/Jezero by default
+          // Add Chicago
+          {
+            id: 'America/Chicago',
+            name: 'Chicago (America/Chicago)',
+            city: 'Chicago',
+            country: 'United States',
+          },
+          // Add London
+          {
+            id: 'Europe/London',
+            name: 'London (Europe/London)',
+            city: 'London',
+            country: 'United Kingdom',
+          },
+          // Add Mars/Jezero (moved from position 2 to position 4)
           {
             id: 'Mars/Jezero',
             name: '🔴 Jezero Crater (Mars)', // Added emoji
             city: 'Jezero Crater',
             country: 'Mars',
           },
+          // The rest of the conditional logic is kept for additional timezones
+          // but won't be used in the initial 4 timezones
           // Add a timezone from a different continent based on user's location
           ...(/^America\//.test(localTz) ? [{
             id: 'Europe/London',
