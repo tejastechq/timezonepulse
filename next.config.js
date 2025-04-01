@@ -3,6 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   
+  // Optimize for smaller function size
+  output: 'standalone',
+  
   // Security headers configuration
   headers: async () => {
     const securityHeaders = [

@@ -8,5 +8,18 @@
   "env": {
     "NODE_ENV": "production",
     "NEXT_PUBLIC_ENABLE_ANALYTICS": "true"
+  },
+  "functions": {
+    "api/*.js": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "build": {
+    "env": {
+      "NODE_OPTIONS": "--max-old-space-size=4096"
+    }
   }
 } 
