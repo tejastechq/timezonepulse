@@ -6,19 +6,21 @@ const nextConfig = {
   // Optimize for smaller function size
   output: 'standalone',
   
-  // Experimental options to reduce size
+  // Experimental options for optimization
   experimental: {
     optimizeCss: true,
-    outputFileTracingRoot: process.cwd(),
-    outputFileTracingExcludes: {
-      '*': [
-        '.git/**',
-        '.github/**',
-        '.next/cache/**',
-        'node_modules/**/*.{md,d.ts,map}',
-        '**/*.{scss,css}.map',
-      ],
-    },
+  },
+  
+  // File tracing options moved to root level
+  outputFileTracingRoot: process.cwd(),
+  outputFileTracingExcludes: {
+    '*': [
+      '.git/**',
+      '.github/**',
+      '.next/cache/**',
+      'node_modules/**/*.{md,d.ts,map}',
+      '**/*.{scss,css}.map',
+    ],
   },
   
   // Security headers configuration

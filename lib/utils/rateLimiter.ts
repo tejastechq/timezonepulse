@@ -31,11 +31,11 @@ class MemoryStore {
   
   private cleanExpired() {
     const now = Date.now();
-    for (const [key, entry] of this.storage.entries()) {
+    this.storage.forEach((entry, key) => {
       if (entry.expires < now) {
         this.storage.delete(key);
       }
-    }
+    });
   }
 }
 
