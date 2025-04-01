@@ -442,18 +442,6 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
         </Suspense>
       </div>
 
-      {/* Mobile Floating Action Button (FAB) for adding timezone - only in portrait mode */}
-      {isConsideredMobile && isMobilePortraitOrSmaller && (
-        <button
-          onClick={() => setIsSelectorOpen(true)}
-          className="fixed right-4 bottom-4 p-4 rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90 transition-colors"
-          aria-label="Add Timezone"
-          title="Add Timezone"
-        >
-          <Plus size={24} />
-        </button>
-      )}
-
       {/* Mobile DatePicker Modal */}
       <AnimatePresence>
         {isConsideredMobile && showDatePickerModal && (
