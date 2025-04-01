@@ -47,7 +47,7 @@ export const baseMetadata: Metadata = {
     card: 'summary_large_image',
     title: APP_DEFAULT_TITLE,
     description: APP_DESCRIPTION,
-    images: ['/twitter.PNG'], // Using twitter.PNG from public folder
+    images: ['/timezonepulse.png'], // Using known working image
     creator: '@timezonepulse', // Handle seems correct
   },
   // Now using app route /manifest.ts instead of static file
