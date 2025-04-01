@@ -1011,7 +1011,8 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
       style={{ isolation: 'isolate' }}
       // Removed onScroll from the outer div, handled by FixedSizeList
     >
-      {/* Current Time Line */}
+      {/* Current Time Line - Temporarily commented out as requested */}
+      {/* TODO: Re-implement or restyle the current time indicator line. It was previously a thin red line causing confusion.
       {mounted && currentTimeLineTop !== null && (
          // Ensure the line is only rendered within the visible bounds of the list area potentially
          // We might need to refine this based on the exact container structure later
@@ -1026,7 +1027,8 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
             }}
             aria-hidden="true" // Hide from screen readers
           />
-      )}
+      )} 
+      */}
 
       {/* Search Box with minimal styling - positioned above first column */}
       <div className="mb-4 w-full sm:w-80 ml-0 pt-3">

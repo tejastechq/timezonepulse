@@ -145,11 +145,23 @@ export default function TimezoneSelector({
     
     try {
       const allTimezones = getAllTimezones();
-      const availableTimezones = allTimezones.filter(tz => 
-        !excludeTimezones.includes(tz.id)
-      );
+       let availableTimezones = allTimezones.filter(tz => 
+         !excludeTimezones.includes(tz.id)
+       );
+
+      // Sort the initial list to put Mars timezones first
+      availableTimezones.sort((a, b) => {
+        const aIsMars = a.id.startsWith('Mars/');
+        const bIsMars = b.id.startsWith('Mars/');
+        if (aIsMars && !bIsMars) return -1; // a (Mars) comes before b
+        if (!aIsMars && bIsMars) return 1;  // b (Mars) comes before a
+        // Keep original alphabetical/regional order for non-Mars timezones (or apply another sort if needed)
+        // For now, let's assume the original `getAllTimezones` provides a reasonable default sort
+        return 0; 
+      });
+
       setTimezones(availableTimezones);
-      setFilteredTimezones(availableTimezones);
+      setFilteredTimezones(availableTimezones); // Initial filtered list is the full sorted list
       setSearchResultsCount(availableTimezones.length);
     } catch (err) {
       setError('Error loading timezones. Please try again.');
@@ -174,12 +186,22 @@ export default function TimezoneSelector({
         tz.id.toLowerCase().includes(searchLower) ||
         (tz.city && tz.city.toLowerCase().includes(searchLower)) ||
         (tz.country && tz.country.toLowerCase().includes(searchLower)) ||
-        (tz.abbreviation && tz.abbreviation.toLowerCase().includes(searchLower))
-      );
+         (tz.abbreviation && tz.abbreviation.toLowerCase().includes(searchLower))
+       );
 
-      return sortTimezonesByRelevance(filtered, debouncedSearch, recentTimezones);
+      // Temporarily boost Mars timezones to the top during search
+      const sortedFiltered = filtered.sort((a, b) => {
+        const aIsMars = a.id.startsWith('Mars/');
+        const bIsMars = b.id.startsWith('Mars/');
+        if (aIsMars && !bIsMars) return -1; // a comes first
+        if (!aIsMars && bIsMars) return 1;  // b comes first
+        return 0; // Keep original relative order otherwise
+      });
+
+      // Apply relevance sorting after boosting Mars timezones
+      return sortTimezonesByRelevance(sortedFiltered, debouncedSearch, recentTimezones);
     } catch (err) {
-      console.error('Error filtering timezones:', err);
+      console.error('Error filtering or sorting timezones:', err);
       return [];
     }
   }, [debouncedSearch, timezones, recentTimezones]);
@@ -237,13 +259,14 @@ export default function TimezoneSelector({
               }
             }}
           >
-            <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between gap-2">
-              <div className="flex items-center space-x-2 min-w-0 flex-1">
-                <span className="truncate">
-                  {timezone.id === 'Mars/Jezero' && <span className="mr-1" title="Perseverance Rover Location">🤖</span>}
-                  {timezone.city || timezone.name}
-                </span>
-                {timezone.abbreviation && (
+                                  <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between gap-2">
+                                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                                      <span className="truncate">
+                                        {/* Replace emoji with image */}
+                                        {timezone.id === 'Mars/Jezero' && <img src="/perseverance.png" alt="Perseverance Rover" className="inline-block w-4 h-4 mr-1 align-middle" title="Perseverance Rover Location" />}
+                                        {timezone.city || timezone.name}
+                                      </span>
+                                      {timezone.abbreviation && (
                   <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded flex-shrink-0">
                     {timezone.abbreviation}
                   </span>
@@ -488,13 +511,14 @@ export default function TimezoneSelector({
                                     }
                                   }}
                                 >
-                                  <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between gap-2">
-                                    <div className="flex items-center space-x-2 min-w-0 flex-1">
-                                      <span className="truncate">
-                                        {timezone.id === 'Mars/Jezero' && <span className="mr-1" title="Perseverance Rover Location">🤖</span>}
-                                        {timezone.city || timezone.name}
-                                      </span>
-                                      {timezone.abbreviation && (
+            <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between gap-2">
+              <div className="flex items-center space-x-2 min-w-0 flex-1">
+                <span className="truncate">
+                  {/* Replace emoji with image */}
+                  {timezone.id === 'Mars/Jezero' && <img src="/perseverance.png" alt="Perseverance Rover" className="inline-block w-4 h-4 mr-1 align-middle" title="Perseverance Rover Location" />}
+                  {timezone.city || timezone.name}
+                </span>
+                {timezone.abbreviation && (
                                         <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded flex-shrink-0">
                                           {timezone.abbreviation}
                                         </span>

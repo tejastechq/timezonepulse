@@ -13,7 +13,8 @@ import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery'; // Import the hook
 // Mobile components are now primarily handled within TimeZonePulse
 import TimeZonePulse from '@/components/clock/WorldClock'; // Import the main component
-import MarsTimeExplanation from '@/components/MarsTimeExplanation';
+// Removed import for the old MarsTimeExplanation tooltip
+// import MarsTimeExplanation from '@/components/MarsTimeExplanation'; 
 
 // Define mobile breakpoint (adjust as needed, e.g., Tailwind's 'md' breakpoint)
 const MOBILE_BREAKPOINT = '(max-width: 768px)'; // Keep this for the top-level switch
@@ -50,12 +51,13 @@ export default function Home() {
   const isMobile = useMediaQuery(MOBILE_BREAKPOINT); // Keep for top-level switch
   const isMobileLandscape = useMediaQuery('(max-width: 932px) and (max-height: 430px)'); // Keep for loading state
 
-  const { 
-    showMarsExplanation, 
-    hideMarsExplanation, 
-    marsExplanationPosition, 
-    lastAddedMarsTimezoneId 
-  } = useTimezoneStore();
+  // Removed state fetching for the old MarsTimeExplanation tooltip
+  // const { 
+  //   showMarsExplanation, 
+  //   hideMarsExplanation, 
+  //   marsExplanationPosition, 
+  //   lastAddedMarsTimezoneId 
+  // } = useTimezoneStore();
 
   useEffect(() => {
     setIsMounted(true); // Set mounted state
@@ -104,13 +106,7 @@ export default function Home() {
           <WorldClockWrapper />
         </>
       )}
-      {/* Mars Time Explanation Popup */}
-      <MarsTimeExplanation 
-        isOpen={showMarsExplanation} 
-        onClose={hideMarsExplanation} 
-        position={marsExplanationPosition}
-        targetTimezoneId={lastAddedMarsTimezoneId}
-      />
+      {/* Removed the old Mars Time Explanation Popup rendering */}
     </main>
   );
 }
