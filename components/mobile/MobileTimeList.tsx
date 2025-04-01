@@ -2,6 +2,7 @@
 
 import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { DateTime } from 'luxon';
+import { convertEarthToMarsTime, formatMarsTime } from '@/lib/utils/mars-timezone'; // Import Mars time utils
 import { FixedSizeList } from 'react-window';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import clsx from 'clsx';
@@ -107,9 +108,21 @@ const MobileTimeList: React.FC<MobileTimeListProps> = ({
   const isCurrentTime = useCallback((time: Date): boolean => {
     if (!localTime) return false;
     const roundedLocal = roundToNearestIncrement(localTime, 30);
-    const timeInZone = DateTime.fromJSDate(time).setZone(timezoneId);
-    const localInZone = DateTime.fromJSDate(roundedLocal).setZone(timezoneId);
-    return timeInZone.hasSame(localInZone, 'minute');
+
+    if (timezoneId.startsWith('Mars/')) {
+      // Mars Timezone Logic
+      const slotMarsTime = convertEarthToMarsTime(DateTime.fromJSDate(time), timezoneId);
+      const localMarsTime = convertEarthToMarsTime(DateTime.fromJSDate(roundedLocal), timezoneId);
+      // Compare formatted time strings (HH:mm) as a simple way to check equality for the list display
+      const slotFormatted = formatMarsTime(slotMarsTime).split(' ')[0];
+      const localFormatted = formatMarsTime(localMarsTime).split(' ')[0];
+      return slotFormatted === localFormatted;
+    } else {
+      // Earth Timezone Logic (existing)
+      const timeInZone = DateTime.fromJSDate(time).setZone(timezoneId);
+      const localInZone = DateTime.fromJSDate(roundedLocal).setZone(timezoneId);
+      return timeInZone.hasSame(localInZone, 'minute');
+    }
   }, [localTime, roundToNearestIncrement, timezoneId]);
 
   const isHighlighted = useCallback((time: Date): boolean => {
@@ -128,8 +141,15 @@ const MobileTimeList: React.FC<MobileTimeListProps> = ({
   }, []);
 
   const formatTime = useCallback((time: Date, tzId: string): string => {
-    return DateTime.fromJSDate(time).setZone(tzId).toFormat('h:mm a');
-  }, []);
+    const earthDateTime = DateTime.fromJSDate(time);
+    if (tzId.startsWith('Mars/')) {
+      const marsDateTime = convertEarthToMarsTime(earthDateTime, tzId);
+      // We only want the time part (e.g., "14:30") for the list items
+      return formatMarsTime(marsDateTime).split(' ')[0];
+    } else {
+      return earthDateTime.setZone(tzId).toFormat('h:mm a');
+    }
+  }, []); // Dependencies remain empty as functions are pure based on inputs
 
   // --- Scroll to Current/Selected Time (Only Once on Mount/Relevant Prop Change) ---
   useEffect(() => {
@@ -148,7 +168,19 @@ const MobileTimeList: React.FC<MobileTimeListProps> = ({
     // If no highlighted time, scroll to current time
     else if (localTime) {
       const roundedLocal = roundToNearestIncrement(localTime, 30);
-      targetIndex = timeSlots.findIndex(t => t.getTime() === roundedLocal.getTime());
+      if (timezoneId.startsWith('Mars/')) {
+        // Mars Timezone: Find index by comparing formatted Mars times
+        const localMarsTime = convertEarthToMarsTime(DateTime.fromJSDate(roundedLocal), timezoneId);
+        const localFormatted = formatMarsTime(localMarsTime).split(' ')[0];
+        targetIndex = timeSlots.findIndex(t => {
+          const slotMarsTime = convertEarthToMarsTime(DateTime.fromJSDate(t), timezoneId);
+          const slotFormatted = formatMarsTime(slotMarsTime).split(' ')[0];
+          return slotFormatted === localFormatted;
+        });
+      } else {
+        // Earth Timezone: Find index by comparing JS Date timestamps (existing logic)
+        targetIndex = timeSlots.findIndex(t => t.getTime() === roundedLocal.getTime());
+      }
     }
 
     if (targetIndex !== -1) {

@@ -24,14 +24,7 @@ const ExplanationContent = () => (
       </p>
       {/* Removed Sol Count and NASA fact for brevity */}
       
-      {/* Time increments explanation */}
-      <div className="mt-3 p-2 bg-blue-50 dark:bg-blue-900/30 rounded border border-blue-200 dark:border-blue-700/40 flex items-start gap-2"> {/* Reduced margin/padding */}
-        <Info size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" /> {/* Reduced size */}
-        <div className="text-xs text-blue-800 dark:text-blue-200"> {/* Kept text-xs for this box */}
-          <p className="font-medium">Why Time Slots Match</p>
-          <p className="mt-1">Mars days are longer. This clock simulates Mars time using Earth's 30-min increments, so slots may look the same.</p> {/* Further simplified copy */}
-        </div>
-      </div>
+      {/* Removed the explanation about time slot matching as the underlying issue is fixed. */}
       {/* Removed Call to action */}
     </div>
   </div>
