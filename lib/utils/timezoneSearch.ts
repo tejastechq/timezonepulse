@@ -161,6 +161,7 @@ export function getTimezoneContext(timezone: Timezone, userTimezone: string): {
     mission: string;
     landingDate: string;
   } | null;
+  isMarsDaytime: boolean;
 } {
   try {
     // Special handling for Mars timezones
@@ -183,8 +184,13 @@ export function getTimezoneContext(timezone: Timezone, userTimezone: string): {
         offsetStr = `${sign}${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
       }
       
-      // Business hours are always set to true for Mars (it's an April Fools feature)
-      const isBusinessHours = true;
+      // Determine if it's daytime on Mars (7 AM to 7 PM Mars time)
+      // This is simplified as Mars has similar day/night cycles to Earth
+      const marsHour = marsTime.hour;
+      const isMarsDaytime = marsHour >= 7 && marsHour < 19;
+      
+      // For Mars, we'll use isBusinessHours to indicate daylight hours
+      const isBusinessHours = isMarsDaytime;
       
       return {
         offset: offsetStr,
@@ -195,7 +201,8 @@ export function getTimezoneContext(timezone: Timezone, userTimezone: string): {
           name: roverInfo.name,
           mission: roverInfo.mission,
           landingDate: roverInfo.landingDate
-        } : null
+        } : null,
+        isMarsDaytime
       };
     }
     
@@ -258,6 +265,7 @@ export function getTimezoneContext(timezone: Timezone, userTimezone: string): {
       offset: 'Unknown',
       isBusinessHours: false,
       currentTime: 'Unavailable',
+      isMarsDaytime: false
     };
   }
 }

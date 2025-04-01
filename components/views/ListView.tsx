@@ -1189,11 +1189,25 @@ const TimezoneColumn = memo(({
           </div>
           {timezone.id === 'Mars/Jezero' && (
             <div className="mt-2 text-xs bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/20">
-              <p className="font-medium text-red-700 dark:text-red-300">Perseverance Rover</p>
+              <div className="flex justify-between items-center">
+                <p className="font-medium text-red-700 dark:text-red-300">Perseverance Rover</p>
+                <p className="font-medium text-amber-500 dark:text-amber-400">
+                  {localTime && formatTime(localTime, timezone.id).includes('Sol') ? 
+                    formatTime(localTime, timezone.id).split('MTC')[1].trim() : 
+                    'Sol'}
+                </p>
+              </div>
               <p className="text-red-600/80 dark:text-red-400/80 mt-1">NASA Mars 2020 Mission</p>
               <p className="text-red-600/70 dark:text-red-400/70">
                 <span className="inline-block">Location: Jezero Crater</span>
                 <span className="inline-block ml-2">18.38°N, 77.58°E</span>
+              </p>
+              <p className="mt-1 flex items-center">
+                {localTime && formatTime(localTime, timezone.id).includes('a') ? 
+                  (formatTime(localTime, timezone.id).includes('am') ? 
+                    <span className="text-amber-500 dark:text-amber-400 flex items-center"><span className="mr-1">☀️</span> Mars Morning</span> : 
+                    <span className="text-indigo-500 dark:text-indigo-400 flex items-center"><span className="mr-1">🌙</span> Mars Evening</span>)
+                  : null}
               </p>
             </div>
           )}

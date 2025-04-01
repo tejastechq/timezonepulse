@@ -40,6 +40,8 @@ interface TimezoneState {
   localTimezone: string;
   appVersion: typeof APP_VERSION;
   selectedDate: Date;
+  showMarsExplanation: boolean;
+  hasMarsTimezone: boolean;
   addTimezone: (timezone: Timezone) => void;
   removeTimezone: (id: string) => void;
   setViewMode: (mode: ViewMode) => void;
@@ -49,6 +51,7 @@ interface TimezoneState {
   reorderTimezones: (fromIndex: number, toIndex: number) => void;
   hydrate: () => void;
   resetStore: () => void;
+  hideMarsExplanation: () => void;
 }
 
 // Get a storage key that's unique to the current origin to prevent cross-port persistence issues
@@ -146,28 +149,33 @@ export const useTimezoneStore = create<TimezoneState>()(
         localTimezone: localTz,
         selectedDate: new Date(), // Default to today
         appVersion: { ...APP_VERSION, timestamp: Date.now() },
+        showMarsExplanation: false,
+        hasMarsTimezone: false,
       });
       
       return {
         ...getInitialState(),
         
         // Actions
-        addTimezone: (timezone: Timezone) => 
-          set((state) => {
-            // Check if the timezone already exists in the state
-            const exists = state.timezones.some(tz => tz.id === timezone.id);
-            
-            // If it exists, don't add it again
-            if (exists) {
-              return { timezones: state.timezones };
-            }
-            
-            // Otherwise add the new timezone
-            return {
-              timezones: [...state.timezones, timezone]
-            };
-          }),
+        addTimezone: (timezone: Timezone) => set((state) => {
+          // Check if the timezone ID already exists in the list
+          if (state.timezones.some(tz => tz.id === timezone.id)) {
+            return state; // Don't add duplicates
+          }
           
+          const isMarsTimezone = timezone.id.startsWith('Mars/');
+          
+          // If it's a Mars timezone and the user hasn't added one before, show the explanation
+          const shouldShowExplanation = isMarsTimezone && !state.hasMarsTimezone;
+          
+          // Return updated state
+          return {
+            timezones: [...state.timezones, timezone],
+            showMarsExplanation: shouldShowExplanation,
+            hasMarsTimezone: state.hasMarsTimezone || isMarsTimezone
+          };
+        }),
+        
         removeTimezone: (id: string) => 
           set((state) => ({
             timezones: state.timezones.filter((timezone) => timezone.id !== id)
@@ -205,7 +213,10 @@ export const useTimezoneStore = create<TimezoneState>()(
         resetStore: () => {
           // This completely resets the store to initial values
           set(getInitialState());
-        }
+        },
+        
+        // Add an action to hide the Mars explanation
+        hideMarsExplanation: () => set({ showMarsExplanation: false }),
       };
     },
     {

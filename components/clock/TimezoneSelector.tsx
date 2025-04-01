@@ -269,6 +269,21 @@ export default function TimezoneSelector({
                     <span className="text-xs whitespace-nowrap">Business hours</span>
                   </div>
                 )}
+                {timezone.id.startsWith('Mars/') && (
+                  <div className="flex items-center space-x-1">
+                    {context.isMarsDaytime ? (
+                      <div className="flex items-center space-x-1 text-amber-500 dark:text-amber-400">
+                        <span className="text-xs">☀️</span>
+                        <span className="text-xs whitespace-nowrap">Mars Daytime</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-1 text-indigo-500 dark:text-indigo-400">
+                        <span className="text-xs">🌙</span>
+                        <span className="text-xs whitespace-nowrap">Mars Night</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
             
@@ -497,6 +512,21 @@ export default function TimezoneSelector({
                                         <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
                                           <Briefcase className="w-4 h-4 flex-shrink-0" />
                                           <span className="text-xs whitespace-nowrap">Business hours</span>
+                                        </div>
+                                      )}
+                                      {timezone.id.startsWith('Mars/') && (
+                                        <div className="flex items-center space-x-1">
+                                          {context.isMarsDaytime ? (
+                                            <div className="flex items-center space-x-1 text-amber-500 dark:text-amber-400">
+                                              <span className="text-xs">☀️</span>
+                                              <span className="text-xs whitespace-nowrap">Mars Daytime</span>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center space-x-1 text-indigo-500 dark:text-indigo-400">
+                                              <span className="text-xs">🌙</span>
+                                              <span className="text-xs whitespace-nowrap">Mars Night</span>
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                     </div>

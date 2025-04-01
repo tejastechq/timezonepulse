@@ -7,6 +7,10 @@ const MARS_HOUR_IN_EARTH_SECONDS = 3699.37; // Mars hour = 1h 1m 39.37s
 const MARS_MINUTE_IN_EARTH_SECONDS = 61.6562; // Mars minute = 61.6562 Earth seconds
 const MARS_SECOND_IN_EARTH_SECONDS = 1.0276; // Mars second = 1.0276 Earth seconds
 
+// Add constants for calculating Mars Sol count
+const PERSEVERANCE_LANDING_DATE = DateTime.fromISO('2021-02-18T20:55:00Z'); // Landing time in UTC
+const SOL_DURATION_MS = MARS_SOL_TO_EARTH_DAY_RATIO * 24 * 60 * 60 * 1000; // Duration of one Mars sol in milliseconds
+
 /**
  * Mars settlement/location information
  */
@@ -94,22 +98,31 @@ export function getCurrentMarsTime(location: string): DateTime {
     return DateTime.now();
   }
 
-  // Current Earth time
+  // Current Earth time in UTC
   const now = DateTime.now().toUTC();
   
-  // First, apply the Mars sol duration factor
+  // First, apply the Mars sol duration factor to get Mars "UTC" (Coordinated Mars Time)
   // This stretches Earth time to match Mars sol duration
+  // This gives us a baseline Mars time at the Mars prime meridian (longitude 0)
   const earthTimestamp = now.toMillis();
   const marsTimestamp = earthTimestamp * MARS_SOL_TO_EARTH_DAY_RATIO;
   
-  // Adjust for Mars longitude (15° = 1 hour, just like Earth)
-  // But using Mars hours which are longer
-  const longitudeOffset = (marsLocation.longitude / 15) * MARS_HOUR_IN_EARTH_SECONDS;
-  const adjustedMarsTimestamp = marsTimestamp + (longitudeOffset * 1000);
+  // Now we need to adjust for the location's longitude on Mars
+  // On Mars, just like Earth, every 15 degrees of longitude = 1 hour time difference
+  // But Mars hours are longer than Earth hours
+  // First convert longitude to hours (15° = 1 hour)
+  const longitudeHours = marsLocation.longitude / 15;
+  
+  // Now adjust the timestamp by the hours offset
+  // Need to convert Mars hours to milliseconds (1 Mars hour = 3699.37 seconds = 3699370 ms)
+  const hourOffsetMs = longitudeHours * MARS_HOUR_IN_EARTH_SECONDS * 1000;
+  
+  // Add the offset to the Mars timestamp
+  const localMarsTimestamp = marsTimestamp + hourOffsetMs;
   
   // Convert back to DateTime
-  // We use UTC to avoid timezone adjustments, since we're handling time differently
-  return DateTime.fromMillis(adjustedMarsTimestamp).toUTC();
+  // We use UTC to avoid any Earth timezone adjustments
+  return DateTime.fromMillis(localMarsTimestamp).toUTC();
 }
 
 /**
@@ -118,8 +131,13 @@ export function getCurrentMarsTime(location: string): DateTime {
  * @returns Formatted time string with appropriate Mars indicators
  */
 export function formatMarsTime(marsTime: DateTime): string {
-  // Format using standard Earth time format but with Mars as prefix
-  return `${marsTime.toFormat('h:mm a')} MTC`;
+  // Calculate the current Mars sol (number of days since Perseverance landing)
+  const earthTimeSinceLanding = marsTime.toMillis() - PERSEVERANCE_LANDING_DATE.toMillis();
+  // Convert to Mars sols and round to nearest integer
+  const currentSol = Math.floor(earthTimeSinceLanding / SOL_DURATION_MS);
+  
+  // Format using standard Earth time format but with Mars as prefix and sol count
+  return `${marsTime.toFormat('h:mm a')} MTC (Sol ${currentSol})`;
 }
 
 /**
