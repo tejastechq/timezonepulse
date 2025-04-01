@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
   responseHeaders.set('X-Content-Type-Options', 'nosniff');
   responseHeaders.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   responseHeaders.set('X-Permitted-Cross-Domain-Policies', 'none');
-  responseHeaders.set('X-XSS-Protection', '1; mode=block');
+  // responseHeaders.set('X-XSS-Protection', '1; mode=block'); // Removed: Deprecated, rely on CSP
   responseHeaders.set(
     'Permissions-Policy',
     'accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()'
@@ -59,8 +59,11 @@ export async function middleware(request: NextRequest) {
 
   // Use a unique key for rate limiting (IP + general path category)
   // Using the full pathname might exhaust memory if there are many unique paths
-  const rateLimitKey = `${clientIp}-${endpoint}`; 
+  const rateLimitKey = `${clientIp}-${endpoint}`;
 
+  // --- TEMPORARILY DISABLED RATE LIMITING ---
+  // TODO: Re-enable rate limiting before production deployment
+  /*
   // Check rate limit
   const rateLimitResult = await checkRateLimit(rateLimitKey, endpoint);
 
@@ -77,12 +80,17 @@ export async function middleware(request: NextRequest) {
       headers: responseHeaders, // Use the headers object
     });
   }
+  */
+  // --- END TEMPORARILY DISABLED RATE LIMITING ---
 
-  // Add rate limit status headers to the successful response
-  const limiter = rateLimiters[endpoint];
-  responseHeaders.set('X-RateLimit-Limit', limiter.points.toString());
+
+  // Add rate limit status headers to the successful response (commented out as part of disabling)
+  /*
+  // Use the limit value returned from checkRateLimit
+  responseHeaders.set('X-RateLimit-Limit', (rateLimitResult.limit ?? 0).toString());
   responseHeaders.set('X-RateLimit-Remaining', (rateLimitResult.remaining ?? 0).toString());
   responseHeaders.set('X-RateLimit-Reset', rateLimitResult.resetTime?.toISOString() || new Date().toISOString());
+  */
   
   // Proceed with the request, applying all headers
   return NextResponse.next({

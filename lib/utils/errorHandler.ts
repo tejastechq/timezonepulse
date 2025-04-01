@@ -1,7 +1,9 @@
 'use client';
 
 /**
- * Global error handling utilities to catch, log and handle errors across the application
+ * Global error handling utilities to catch, log and handle errors across the application.
+ * Note: Log rotation, size limits, and long-term storage are typically managed by the
+ * deployment platform (e.g., Vercel Log Drains) or a dedicated logging service.
  */
 
 interface ErrorLogData {
@@ -135,14 +137,24 @@ export function safeExecute<T>(fn: () => T, defaultValue: T): T {
 }
 
 /**
- * Format an error for display, ensuring no sensitive data is exposed
+ * Format an error for display, ensuring no sensitive data is exposed to the client, especially in production.
  */
 export function formatError(error: unknown): string {
-  if (error instanceof Error) {
-    return sanitizeErrorData(error.message) as string;
+  const isProduction = process.env.NODE_ENV === 'production';
+  const genericErrorMessage = 'An unexpected error occurred. Please try again later.';
+
+  if (isProduction) {
+    // In production, always return a generic message to the client
+    return genericErrorMessage;
+  } else {
+    // In development, provide more details (but still sanitized)
+    let detailedMessage = genericErrorMessage; // Default
+    if (error instanceof Error) {
+      detailedMessage = sanitizeErrorData(error.message) as string;
+    } else if (typeof error === 'string') {
+      detailedMessage = sanitizeErrorData(error) as string;
+    }
+    // Ensure we don't return an empty string
+    return detailedMessage || genericErrorMessage;
   }
-  if (typeof error === 'string') {
-    return sanitizeErrorData(error) as string;
-  }
-  return 'An unknown error occurred';
 }

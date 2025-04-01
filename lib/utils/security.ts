@@ -22,11 +22,13 @@ export function generateNonce(): string {
 export function getCspWithNonce(nonce: string): string {
   const isDevelopment = process.env.NODE_ENV === 'development';
   const statuspageDomains = 'https://*.statuspage.io https://timezonepulse1.statuspage.io';
+  const vercelAnalyticsDomains = 'https://va.vercel-analytics.com https://vitals.vercel-insights.com';
 
-  // Allow Statuspage scripts and maintain existing rules
+  // Strict CSP for scripts using nonce and strict-dynamic
+  // In development, 'unsafe-eval' might be needed for some tooling (e.g., React DevTools). Keep it conditional.
   const scriptSrcDirective = isDevelopment
-    ? `script-src 'self' 'unsafe-eval' 'unsafe-inline' https: ${statuspageDomains}`
-    : `script-src 'self' 'unsafe-eval' 'unsafe-inline' https: ${statuspageDomains}`;
+    ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'unsafe-eval' ${statuspageDomains} ${vercelAnalyticsDomains}`
+    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${statuspageDomains} ${vercelAnalyticsDomains}`;
 
   // In development, we need to be more permissive with trusted types
   const trustedTypesDirective = isDevelopment
@@ -46,23 +48,26 @@ export function getCspWithNonce(nonce: string): string {
 
   // Media and font security
   const mediaSrc = `media-src 'self'`;
-  const fontSrc = `font-src 'self' data: https:`;
+  // Allow self-hosted fonts and data URIs. Add specific CDNs if needed.
+  const fontSrc = `font-src 'self' data:`;
 
-  // Image security with strict sources, allow Statuspage images
-  const imgSrc = `img-src 'self' data: https: blob: ${statuspageDomains} ${isDevelopment ? 'http://localhost:* http://127.0.0.1:*' : ''}`;
+  // Image security with strict sources, allow Statuspage images, data, blobs, and localhost in dev
+  const imgSrc = `img-src 'self' data: blob: ${statuspageDomains} ${isDevelopment ? 'http://localhost:* http://127.0.0.1:*' : ''}`;
 
-  // Style security - Keep unsafe-inline, allow Statuspage styles
-  const styleSrc = isDevelopment
-    ? `style-src 'self' 'unsafe-inline' ${statuspageDomains}`
-    : `style-src 'self' 'unsafe-inline' ${statuspageDomains}`;
+  // Style security - Remove 'unsafe-inline'. If needed, use hashes or nonces for specific inline styles.
+  // Allow Statuspage styles.
+  const styleSrc = `style-src 'self' ${statuspageDomains}`;
 
-  // Connect sources including development needs and Statuspage
+  // Connect sources including development needs, Vercel Analytics, and Statuspage
   const connectSrc = isDevelopment
-    ? `connect-src 'self' https://va.vercel-analytics.com https://*.vercel-analytics.com https://*.vercel.com ws: http://localhost:* http://127.0.0.1:* ${statuspageDomains}`
-    : `connect-src 'self' https://va.vercel-analytics.com https://*.vercel-analytics.com https://*.vercel.com ${statuspageDomains}`;
+    ? `connect-src 'self' ${vercelAnalyticsDomains} https://*.vercel.com ws: http://localhost:* http://127.0.0.1:* ${statuspageDomains}`
+    : `connect-src 'self' ${vercelAnalyticsDomains} https://*.vercel.com ${statuspageDomains}`;
 
   // Manifest security
   const manifestSrc = `manifest-src 'self'`;
+
+  // Reporting directive
+  const reportUri = `report-uri /api/csp-report`;
 
   // Create a single-line CSP with proper spacing between directives
   const directives = [
@@ -79,7 +84,8 @@ export function getCspWithNonce(nonce: string): string {
     frameSrc,
     frameAncestors,
     formAction,
-    trustedTypesDirective
+    trustedTypesDirective,
+    reportUri // Add the reporting directive
   ];
 
   // Join all directives with semicolons and proper spacing
