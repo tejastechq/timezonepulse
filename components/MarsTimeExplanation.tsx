@@ -33,22 +33,25 @@ const MarsTimeExplanation = ({
       const timezoneHeaders = document.querySelectorAll('h3');
       
       timezoneHeaders.forEach(header => {
-        // Look for Mars timezone headers - check for emoji, Mars text, or Mars image
-        if (
-          header.textContent?.includes('🔴') || 
-          header.textContent?.includes('Mars') ||
-          header.querySelector('img[src="/mars.png"]')
-        ) {
+         // Look for Mars timezone headers - check for emoji, Mars text, or Mars image
+         const headerText = header.textContent; // Check for null first
+         if (
+           headerText && (
+             headerText.includes('🔴') || 
+             headerText.includes('Mars') ||
+             header.querySelector('img[src="/mars.png"]')
+           )
+         ) {
           // Find the closest parent card
           const card = header.closest('[class*="glass-card"]');
-          
-          if (card) {
-            // Extract the Mars timezone id from the text content
-            const timezoneName = header.textContent
-              .replace('🔴', '')
-              .replace('🤖', '')
-              .trim();
-            const cardText = card.textContent || '';
+           
+           if (card && headerText) { // Ensure headerText is not null here too
+             // Extract the Mars timezone id from the text content
+             const timezoneName = headerText
+               .replace('🔴', '')
+               .replace('🤖', '')
+               .trim();
+             const cardText = card.textContent || '';
             
             // Try to find which Mars timezone this is
             let timezoneId = '';
@@ -170,14 +173,17 @@ const MarsTimeExplanation = ({
 // Separate component for the tooltip content to avoid duplication
 const TooltipContent = ({ onClose }: { onClose: () => void }) => (
   <>
-    {/* Close button */}
-    <button 
+    {/* Close button (using div to avoid nesting issues) */}
+    <div 
       onClick={onClose} 
-      className="absolute top-2 right-2 p-1 rounded-full hover:bg-red-200/50 dark:hover:bg-red-800/30 text-red-500 dark:text-red-300"
+      className="absolute top-2 right-2 p-1 rounded-full hover:bg-red-200/50 dark:hover:bg-red-800/30 text-red-500 dark:text-red-300 cursor-pointer"
       aria-label="Close explanation"
+      role="button" // Add role for accessibility
+      tabIndex={0} // Make it focusable
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClose(); }} // Keyboard accessibility
     >
       <X size={16} />
-    </button>
+    </div>
     
     {/* Title */}
     <h3 className="text-red-700 dark:text-red-300 font-medium mb-2 pr-6">About Mars Time</h3>
@@ -210,4 +216,4 @@ const TooltipContent = ({ onClose }: { onClose: () => void }) => (
   </>
 );
 
-export default MarsTimeExplanation; 
+export default MarsTimeExplanation;

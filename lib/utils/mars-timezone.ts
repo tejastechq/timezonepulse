@@ -126,6 +126,37 @@ export function getCurrentMarsTime(location: string): DateTime {
 }
 
 /**
+ * Convert an Earth DateTime object to the equivalent Mars DateTime for a specific location
+ * @param earthDateTime The Earth DateTime object to convert
+ * @param location The Mars location ID
+ * @returns Mars DateTime object representing the equivalent time on Mars
+ */
+export function convertEarthToMarsTime(earthDateTime: DateTime, location: string): DateTime {
+  // Find the location info
+  const marsLocation = MARS_LOCATIONS.find(loc => loc.id === location);
+  if (!marsLocation) {
+    console.error(`Unknown Mars location: ${location}`);
+    // Return the original time if location is unknown, though formatting might still fail
+    return earthDateTime; 
+  }
+
+  // Convert input Earth time to UTC milliseconds
+  const earthTimestamp = earthDateTime.toUTC().toMillis();
+  
+  // Apply the Mars sol duration factor
+  const marsTimestamp = earthTimestamp * MARS_SOL_TO_EARTH_DAY_RATIO;
+  
+  // Adjust for longitude offset
+  const longitudeHours = marsLocation.longitude / 15;
+  const hourOffsetMs = longitudeHours * MARS_HOUR_IN_EARTH_SECONDS * 1000;
+  const localMarsTimestamp = marsTimestamp + hourOffsetMs;
+  
+  // Return as DateTime in UTC
+  return DateTime.fromMillis(localMarsTimestamp).toUTC();
+}
+
+
+/**
  * Format Mars time string with "MTC" to indicate Mars Time Coordinated
  * @param marsTime DateTime for Mars
  * @returns Formatted time string with appropriate Mars indicators
@@ -212,4 +243,4 @@ export function getRoverInfo(locationId: string): {
     latitude: location.latitude,
     longitude: location.longitude
   };
-} 
+}

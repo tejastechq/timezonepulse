@@ -4,6 +4,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { DateTime } from 'luxon';
 import { Timezone, useTimezoneStore } from '@/store/timezoneStore'; // Import useTimezoneStore
 import { motion, AnimatePresence, Variants } from 'framer-motion'; // Import Variants
+import { convertEarthToMarsTime, formatMarsTime, getMarsTimezoneOffset } from '@/lib/utils/mars-timezone'; // Import Mars utilities
 import { ChevronDown, ChevronUp, X } from 'lucide-react'; // Icons for expand/collapse, Added X icon
 import MobileTimeList from './MobileTimeList'; // Integrated
 
@@ -54,28 +55,49 @@ const MobileTimezoneCard: React.FC<MobileTimezoneCardProps> = ({
 
   // --- Time Formatting Logic (adapted from ListView/page) ---
 
+  const isMarsTimezone = useMemo(() => timezone.id.startsWith('Mars/'), [timezone.id]);
+
   const formatTime = useCallback((date: Date | null, format: string = 'h:mm a'): string => {
     if (!date) return '--:--';
-    return DateTime.fromJSDate(date).setZone(timezone.id).toFormat(format);
-  }, [timezone.id]);
+    const earthDateTime = DateTime.fromJSDate(date);
+    if (isMarsTimezone) {
+      const marsDateTime = convertEarthToMarsTime(earthDateTime, timezone.id);
+      // Use a simplified format for Mars time, as formatMarsTime adds MTC/Sol
+      return marsDateTime.toFormat('h:mm a'); 
+    } else {
+      return earthDateTime.setZone(timezone.id).toFormat(format);
+    }
+  }, [timezone.id, isMarsTimezone]);
 
   const currentTimeFormatted = useMemo(() => formatTime(localTime), [localTime, formatTime]);
 
   const selectedTimeFormatted = useMemo(() => {
     if (!highlightedTime) return '--:--';
-    // Calculate the equivalent selected time in this card's timezone
-    const highlightedDateTime = DateTime.fromJSDate(highlightedTime); // Already in system time (effectively UTC internally for Luxon)
-    return highlightedDateTime.setZone(timezone.id).toFormat('h:mm a');
-  }, [highlightedTime, timezone.id]);
+    const highlightedDateTime = DateTime.fromJSDate(highlightedTime);
+    if (isMarsTimezone) {
+      const marsDateTime = convertEarthToMarsTime(highlightedDateTime, timezone.id);
+      return marsDateTime.toFormat('h:mm a');
+    } else {
+      return highlightedDateTime.setZone(timezone.id).toFormat('h:mm a');
+    }
+  }, [highlightedTime, timezone.id, isMarsTimezone]);
 
 
   const timezoneOffset = useMemo(() => {
-    return DateTime.now().setZone(timezone.id).toFormat('ZZZZ'); // e.g., GMT+1
-  }, [timezone.id]);
+    if (isMarsTimezone) {
+      return getMarsTimezoneOffset(timezone.id); // Use Mars specific offset
+    } else {
+      return DateTime.now().setZone(timezone.id).toFormat('ZZZZ'); // e.g., GMT+1
+    }
+  }, [timezone.id, isMarsTimezone]);
 
   const timezoneAbbreviation = useMemo(() => {
-     return DateTime.now().setZone(timezone.id).toFormat('ZZ'); // e.g., CDT
-  }, [timezone.id]);
+    if (isMarsTimezone) {
+      return 'MTC'; // Mars Time Coordinated
+    } else {
+      return DateTime.now().setZone(timezone.id).toFormat('ZZ'); // e.g., CDT
+    }
+  }, [timezone.id, isMarsTimezone]);
 
 
   // --- Render Logic ---
