@@ -36,6 +36,7 @@ import {
   rectSortingStrategy, // More appropriate for grid layout
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { formatTimeForTimezone } from '@/lib/timezone-utils';
 
 
 interface ListViewProps {
@@ -115,7 +116,18 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
           handleTimeSelectionFn(time);
         }}
       >
-        <span className={`${isHighlight ? 'text-white font-semibold' : ''} ${isCurrent && !isHighlight ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}`}>{formatted}</span>
+        <span 
+          className={`
+            ${isHighlight ? 'text-white font-semibold' : ''}
+            ${isCurrent && !isHighlight ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}
+            ${timezone.startsWith('Mars/') && !isHighlight ? 'text-red-600 dark:text-red-400 font-medium' : ''}
+          `}
+        >
+          {timezone.startsWith('Mars/') && !isHighlight && (
+            <span className="mr-1 text-red-600 dark:text-red-400" title="Mars Time">🔴</span>
+          )}
+          {formatted}
+        </span>
         <div className="flex items-center space-x-1 pointer-events-none">
           {isCurrent && !isHighlight && <span className="absolute left-0 top-0 h-full w-2 bg-blue-500 rounded-l-md animate-pulse" />}
           {isNight && !isHighlight && <span className="text-xs text-indigo-400 dark:text-indigo-300" title="Night time"><Moon className="h-3 w-3" /></span>}
@@ -488,7 +500,10 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     };
   }, [mounted, highlightedTime, throttledUserInteraction]);
 
-  const formatTimeFunction = useMemo(() => (date: Date, timezone: string) => DateTime.fromJSDate(date).setZone(timezone).toFormat('h:mm a'), []);
+  const formatTimeFunction = useMemo(() => (date: Date, timezone: string) => {
+    // Use our timezone utility that already handles Mars timezones
+    return formatTimeForTimezone(date, timezone, 'h:mm a');
+  }, []);
   const formatTime = useCallback((date: Date, timezone: string) => formatTimeFunction(date, timezone), [formatTimeFunction]);
   
   // Removed isLocalTime function as it's no longer needed
@@ -1149,9 +1164,21 @@ const TimezoneColumn = memo(({
       {/* Added relative positioning to card */}
       <div className="flex justify-between items-center mb-3 md:mb-4 relative z-[2]">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}</h3>
-          <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center space-x-2"><span>{DateTime.now().setZone(timezone.id).toFormat('ZZZZ')}</span><span>({getTimezoneOffset(timezone.id)})</span>{isDST && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100">DST</span>}</div>
-          <div className="text-sm font-medium text-primary-600 dark:text-primary-400 mt-1">{localTime && DateTime.fromJSDate(localTime).setZone(timezone.id).toFormat('h:mm a')}</div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+            {timezone.id.startsWith('Mars/') && (
+              <span className="inline-block mr-1 text-red-600 dark:text-red-400" title="Mars Time">🔴</span>
+            )}
+            {timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}
+          </h3>
+          <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center space-x-2">
+            <span>{timezone.id.startsWith('Mars/') ? 'MTC' : DateTime.now().setZone(timezone.id).toFormat('ZZZZ')}</span>
+            <span>({getTimezoneOffset(timezone.id)})</span>
+            {isDST && !timezone.id.startsWith('Mars/') && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100">DST</span>}
+            {timezone.id.startsWith('Mars/') && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-300">MARS</span>}
+          </div>
+          <div className={`text-sm font-medium mt-1 ${timezone.id.startsWith('Mars/') ? 'text-red-600 dark:text-red-400' : 'text-primary-600 dark:text-primary-400'}`}>
+            {localTime && formatTime(localTime, timezone.id)}
+          </div>
         </div>
         {/* Only show controls for non-local timezones */}
         {!isLocal && (

@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { getMarsSiteTimezones } from './mars-timezone';
 
 /**
  * Interface for a timezone with display information
@@ -152,6 +153,7 @@ export function getAllTimezones(): TimezoneInfo[] {
       if (id.startsWith('Australia/')) return 'Australia & Pacific';
       if (id.startsWith('Pacific/')) return 'Australia & Pacific';
       if (id.startsWith('Etc/')) return 'UTC & Global';
+      if (id.startsWith('Mars/')) return 'Mars';
       return 'Other';
     };
     
@@ -202,6 +204,16 @@ export function getAllTimezones(): TimezoneInfo[] {
       }
     }).filter(Boolean);
     
+    // Check if it's April 1st (April Fools' Day)
+    const now = DateTime.now();
+    const isAprilFools = now.month === 4 && now.day === 1;
+    
+    // If it's April Fools' Day, add Mars timezones
+    if (isAprilFools) {
+      const marsTimezones = getMarsSiteTimezones();
+      timezones.push(...marsTimezones);
+    }
+    
     // Define the region order
     const regionOrder = [
       'North America',
@@ -210,6 +222,7 @@ export function getAllTimezones(): TimezoneInfo[] {
       'Australia & Pacific',
       'Africa',
       'UTC & Global',
+      'Mars',
       'Other'
     ];
     

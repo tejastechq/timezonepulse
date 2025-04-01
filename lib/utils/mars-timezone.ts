@@ -1,0 +1,149 @@
+import { DateTime } from 'luxon';
+import { TimezoneInfo } from './timezone';
+
+// Constants for Mars time calculations
+const MARS_SOL_TO_EARTH_DAY_RATIO = 1.0274912517; // Mars sol is 24h 39m 35.244s
+const MARS_HOUR_IN_EARTH_SECONDS = 3699.37; // Mars hour = 1h 1m 39.37s
+const MARS_MINUTE_IN_EARTH_SECONDS = 61.6562; // Mars minute = 61.6562 Earth seconds
+const MARS_SECOND_IN_EARTH_SECONDS = 1.0276; // Mars second = 1.0276 Earth seconds
+
+/**
+ * Mars settlement/location information
+ */
+interface MarsLocation {
+  id: string;
+  name: string;
+  city: string;
+  longitude: number; // Degrees from Mars Prime Meridian (Airy-0 crater)
+  description: string;
+}
+
+/**
+ * Define notable locations on Mars (real landing sites or fictional settlements)
+ */
+const MARS_LOCATIONS: MarsLocation[] = [
+  {
+    id: 'Mars/Jezero',
+    name: 'Jezero Crater',
+    city: 'Jezero Crater',
+    longitude: 77.43, // East longitude
+    description: 'Perseverance Rover landing site (2021)'
+  },
+  {
+    id: 'Mars/Elysium',
+    name: 'Elysium Planitia',
+    city: 'Elysium Planitia',
+    longitude: 135.97, // East longitude
+    description: 'InSight landing site (2018)'
+  },
+  {
+    id: 'Mars/Gale',
+    name: 'Gale Crater',
+    city: 'Gale Crater',
+    longitude: 137.44, // East longitude
+    description: 'Curiosity Rover landing site (2012)'
+  },
+  {
+    id: 'Mars/Olympus',
+    name: 'Olympus City',
+    city: 'Olympus Mons',
+    longitude: 226.31, // East longitude (Olympus Mons)
+    description: 'Future settlement at the base of the largest volcano in the solar system'
+  },
+  {
+    id: 'Mars/Marineris',
+    name: 'Marineris Colony',
+    city: 'Valles Marineris',
+    longitude: 70.00, // East longitude (near Valles Marineris)
+    description: 'Future settlement in the largest canyon system in the solar system'
+  },
+  {
+    id: 'Mars/Airy',
+    name: 'Airy Prime',
+    city: 'Airy-0 (Prime Meridian)',
+    longitude: 0, // Prime Meridian
+    description: 'Mars Prime Meridian settlement (Airy-0 crater)'
+  }
+];
+
+/**
+ * Calculate the current Mars time for a specific Mars location
+ * @param location The Mars location ID
+ * @returns Current Earth DateTime adjusted for Mars time
+ */
+export function getCurrentMarsTime(location: string): DateTime {
+  // Find the location info
+  const marsLocation = MARS_LOCATIONS.find(loc => loc.id === location);
+  if (!marsLocation) {
+    console.error(`Unknown Mars location: ${location}`);
+    return DateTime.now();
+  }
+
+  // Current Earth time
+  const now = DateTime.now().toUTC();
+  
+  // First, apply the Mars sol duration factor
+  // This stretches Earth time to match Mars sol duration
+  const earthTimestamp = now.toMillis();
+  const marsTimestamp = earthTimestamp * MARS_SOL_TO_EARTH_DAY_RATIO;
+  
+  // Adjust for Mars longitude (15° = 1 hour, just like Earth)
+  // But using Mars hours which are longer
+  const longitudeOffset = (marsLocation.longitude / 15) * MARS_HOUR_IN_EARTH_SECONDS;
+  const adjustedMarsTimestamp = marsTimestamp + (longitudeOffset * 1000);
+  
+  // Convert back to DateTime
+  // We use UTC to avoid timezone adjustments, since we're handling time differently
+  return DateTime.fromMillis(adjustedMarsTimestamp).toUTC();
+}
+
+/**
+ * Format Mars time string with "MTC" to indicate Mars Time Coordinated
+ * @param marsTime DateTime for Mars
+ * @returns Formatted time string with appropriate Mars indicators
+ */
+export function formatMarsTime(marsTime: DateTime): string {
+  // Format using standard Earth time format but with Mars as prefix
+  return `${marsTime.toFormat('h:mm a')} MTC`;
+}
+
+/**
+ * Get Mars timezone offset from Earth UTC
+ * @param location Mars location ID
+ * @returns Offset string in format suitable for display
+ */
+export function getMarsTimezoneOffset(location: string): string {
+  // Mars offset always changes relative to Earth because of the length of Mars sol
+  const marsLocation = MARS_LOCATIONS.find(loc => loc.id === location);
+  if (!marsLocation) {
+    return 'MTC+0';
+  }
+  
+  // Approximate offset in Mars hours
+  const longitudeHours = marsLocation.longitude / 15;
+  const sign = longitudeHours >= 0 ? '+' : '-';
+  const hours = Math.floor(Math.abs(longitudeHours));
+  const minutes = Math.floor((Math.abs(longitudeHours) - hours) * 60);
+  
+  return `MTC${sign}${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Get list of available Mars timezones
+ * @returns Array of Mars timezone information objects
+ */
+export function getMarsSiteTimezones(): TimezoneInfo[] {
+  return MARS_LOCATIONS.map(location => {
+    const offset = getMarsTimezoneOffset(location.id);
+    
+    return {
+      id: location.id,
+      name: `${location.name} (${offset})`,
+      offset,
+      city: location.city,
+      country: 'Mars',
+      abbreviation: 'MTC',
+      region: 'Mars'
+    };
+  });
+} 

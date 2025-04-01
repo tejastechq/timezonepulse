@@ -8,6 +8,7 @@
 
 import { DateTime } from 'luxon';
 import type { Timezone } from '@/store/timezoneStore';
+import { getCurrentMarsTime, formatMarsTime, getMarsTimezoneOffset } from './utils/mars-timezone';
 
 /**
  * Format a time for a specific timezone
@@ -17,6 +18,14 @@ import type { Timezone } from '@/store/timezoneStore';
  */
 export function formatTimeForTimezone(time = new Date(), timezone: string, format = 'hh:mm a'): string {
   try {
+    // Handle Mars timezones
+    if (timezone.startsWith('Mars/')) {
+      // For Mars timezones, use the special Mars time calculation
+      const marsTime = getCurrentMarsTime(timezone);
+      return formatMarsTime(marsTime);
+    }
+    
+    // Normal Earth timezone
     return DateTime.fromJSDate(time).setZone(timezone).toFormat(format);
   } catch (error) {
     console.error(`Error formatting time for timezone ${timezone}:`, error);
@@ -72,7 +81,21 @@ export function getTimezoneAbbreviation(timezone: string): string {
  */
 export function getTimezoneOffset(timezone: string): number {
   try {
-    // Luxon stores offset in minutes, convert to hours
+    // Handle Mars timezones differently
+    if (timezone.startsWith('Mars/')) {
+      // Extract the numeric offset from MTC+XX:XX format
+      const marsOffset = getMarsTimezoneOffset(timezone);
+      const match = marsOffset.match(/MTC([+-])(\d+):(\d+)/);
+      if (match) {
+        const sign = match[1] === '+' ? 1 : -1;
+        const hours = parseInt(match[2], 10);
+        const minutes = parseInt(match[3], 10);
+        return sign * (hours + minutes / 60);
+      }
+      return 0;
+    }
+    
+    // Normal Earth timezone
     return DateTime.now().setZone(timezone).offset / 60;
   } catch (error) {
     console.error(`Error getting offset for timezone ${timezone}:`, error);

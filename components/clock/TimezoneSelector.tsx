@@ -8,6 +8,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search, X, Clock, Briefcase } from 'lucide-react';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
+import { DateTime } from 'luxon';
 
 // Define our own useDebounce hook that we'll use consistently
 const useDebounce = <T,>(value: T, delay: number): T => {
@@ -299,6 +300,15 @@ export default function TimezoneSelector({
                 >
                   Select Timezone or Region
                 </Dialog.Title>
+
+                {DateTime.now().month === 4 && DateTime.now().day === 1 && (
+                  <div className="mt-2 px-3 py-2 bg-red-100 dark:bg-red-900/30 rounded-md border border-red-200 dark:border-red-800/50 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-red-600 dark:text-red-400 font-semibold">April Fools!</span>
+                      <span className="text-red-600/90 dark:text-red-400/90">Mars timezones now available! 🚀</span>
+                    </div>
+                  </div>
+                )}
 
                 <Dialog.Close 
                   className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 
