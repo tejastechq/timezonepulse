@@ -38,7 +38,7 @@ const MARS_LOCATIONS: MarsLocation[] = [
     longitude: 77.58, // East longitude (updated to match Perseverance's actual location)
     latitude: 18.38, // North latitude
     description: 'Perseverance Rover landing site (2021)',
-    roverPresent: true,
+    roverPresent: false,
     roverName: 'Perseverance',
     roverMission: 'NASA Mars 2020 Mission',
     roverLandingDate: 'February 18, 2021'
