@@ -38,6 +38,11 @@ const ExplanationContent = () => (
       <p className="text-xs mt-4 text-red-500/80 dark:text-red-400/80 italic"> 
         NASA mission teams actually work on "Mars time" during critical mission phases, shifting their Earth schedules by ~40 minutes each day!
       </p>
+      
+      {/* Call to action */}
+      <p className="mt-4 font-medium">
+        Want to see it in action? Add a Mars timezone like "Mars/Jezero" (Perseverance Rover) to compare its time with Earth!
+      </p>
     </div>
   </div>
 );
