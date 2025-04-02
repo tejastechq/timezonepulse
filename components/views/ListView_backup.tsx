@@ -557,11 +557,9 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     scrollToIndex(filtered.length > 0 ? timeSlots.findIndex(t => t.getTime() === filtered[0].getTime()) : getCurrentTimeIndex(), 'center');
   }, [timeSlots, userLocalTimezone, scrollToIndex, getCurrentTimeIndex]);
 
-  useEffect(() => { if (searchTerm) handleSearch(searchTerm); }, [timeSlots, searchTerm, handleSearch]);
-
   const handleClearSearch = useCallback(() => {
     scrollToIndex(getCurrentTimeIndex(), 'center');
-  }, [scrollToIndex, getCurrentTimeIndex]);
+  }, [timeSlots, userLocalTimezone, scrollToIndex, getCurrentTimeIndex]);
 
   const renderTimeColumns = useCallback(() => {
     if (!mounted) return null;
@@ -634,7 +632,27 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         </div>
       </>
     );
-  }, [mounted, userLocalTimezone, storeTimezones, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, handleReplaceTimezone, editingTimezoneId, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, isSearching, filteredTimeSlots, highlightAutoClear, highlightDuration, getHighlightClass, getHighlightAnimationClass, handleUserScroll]); // Added missing dependencies
+  }, [
+    mounted, 
+    userLocalTimezone, 
+    storeTimezones,
+    timeSlots,
+    isHighlighted,
+    checkNightHours,
+    isDateBoundary,
+    isDSTTransition,
+    isCurrentTime,
+    isWeekend,
+    getTimezoneOffset,
+    formatTime,
+    handleTimeSelection,
+    getCurrentTimeIndex,
+    handleRemoveTimezone,
+    resolvedTheme,
+    getHighlightClass,
+    getHighlightAnimationClass,
+    handleUserScroll
+  ]);
 
   useEffect(() => {
     if (!mounted || !highlightedTime) return;

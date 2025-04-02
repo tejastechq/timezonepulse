@@ -719,7 +719,31 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
         </div>
       </>
     );
-  }, [mounted, userLocalTimezone, storeTimezones, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, handleReplaceTimezone, editingTimezoneId, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, getHighlightClass, handleTouchStart, handleTouchEndOrCancel, getHighlightAnimationClass, handleUserScroll]); // Added missing dependencies
+  }, [
+    mounted, 
+    userLocalTimezone, 
+    storeTimezones, 
+    timeSlots,
+    isHighlighted,
+    checkNightHours,
+    isDateBoundary,
+    isDSTTransition,
+    isCurrentTime,
+    isWeekend,
+    getTimezoneOffset,
+    formatTime,
+    handleTimeSelection,
+    getCurrentTimeIndex,
+    handleRemoveTimezone,
+    setSelectorOpen,
+    setEditingTimezoneId,
+    resolvedTheme,
+    getHighlightClass,
+    handleTouchStart,
+    handleTouchEndOrCancel,
+    getHighlightAnimationClass,
+    handleUserScroll
+  ]);
 
   useEffect(() => {
     if (!mounted || !highlightedTime) return;

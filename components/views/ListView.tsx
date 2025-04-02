@@ -643,7 +643,31 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         </div>
       </>
     );
-  }, [mounted, userLocalTimezone, storeTimezones, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, handleReplaceTimezone, editingTimezoneId, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, isSearching, filteredTimeSlots, highlightAutoClear, highlightDuration, getHighlightClass, getHighlightAnimationClass, handleUserScroll]); // Added missing dependencies
+  }, [
+    mounted, 
+    userLocalTimezone, 
+    storeTimezones,
+    timeSlots,
+    isHighlighted,
+    checkNightHours, 
+    isDateBoundary,
+    isDSTTransition,
+    isCurrentTime,
+    isWeekend,
+    getTimezoneOffset,
+    formatTime,
+    handleTimeSelection,
+    getCurrentTimeIndex,
+    handleRemoveTimezone,
+    setSelectorOpen,
+    setEditingTimezoneId,
+    resolvedTheme,
+    getHighlightClass,
+    getHighlightAnimationClass,
+    handleUserScroll,
+    filteredTimeSlots,
+    isSearching
+  ]);
 
   useEffect(() => {
     if (!mounted || !highlightedTime) return;
