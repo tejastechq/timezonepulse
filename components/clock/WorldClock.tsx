@@ -10,13 +10,21 @@ import dynamic from 'next/dynamic';
 import { ListView, ClocksView, DigitalView } from '../views';
 import MobileTimezoneCard from '../mobile/MobileTimezoneCard'; // Import MobileTimezoneCard
 import DraggableTimezoneCard from '../mobile/DraggableTimezoneCard'; // Import DraggableTimezoneCard
-import MobileMarsExplanationCard from '../mobile/MobileMarsExplanationCard'; // Import the mobile Mars explanation card
-import DesktopMarsExplanationCard from './DesktopMarsExplanationCard'; // Import the new desktop Mars explanation card
 import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
 import { MobileMenu } from '@/components/MobileMenu'; // Import MobileMenu for the header
 import { CalendarDays, ArrowLeftCircle, Plus, Calendar, X } from 'lucide-react'; // Removed Menu icon, added MobileMenu component instead
+import TimezoneTile from './TimezoneTile';
+import { PulseViews } from '@/types/timezone';
+import ViewSwitcher from './ViewSwitcher';
+import DatePicker from './DatePicker';
+import AnalogClockView from './AnalogClockView';
+import DigitalClockView from './DigitalClockView';
+import { OptimizedListView, OptimizedClocksView, OptimizedDigitalView } from './OptimizedViews';
+import AnalogClock from './AnalogClock';
+import OptimizedTimezoneBar from '../OptimizedTimezoneBar';
+import { useCounterTimeStore } from '@/store/counterTimeStore';
 
 // Define interfaces for the view components based on their implementations
 interface ListViewProps {
@@ -319,8 +327,6 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
       ) : (
         // Desktop Header Controls
         <>
-          {/* Add the persistent Desktop Mars Explanation Card */}
-          <DesktopMarsExplanationCard /> 
           <div className="flex justify-between items-center mb-4 h-12">
             <ViewSwitcher />
             <div className="flex items-center space-x-2">
@@ -387,7 +393,6 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
           ) : isConsideredMobile ? (
             // --- Standard Mobile View (Draggable Cards) ---
             <div className="w-full space-y-4 pb-20">
-              <MobileMarsExplanationCard key="mars-explanation" />
               <AnimatePresence initial={false}>
                 {timezones.map((tz: Timezone) => (
                   <DraggableTimezoneCard
