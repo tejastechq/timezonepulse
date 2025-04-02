@@ -354,3 +354,47 @@ body::after {
     margin-right: auto;
   }
 }
+
+/* Mobile V2 Styles - Added from mobilev2/styles.css */
+/* Basic overrides to improve readability of desktop components on mobile */
+
+/* Make the container scrollable horizontally if needed */
+.mobile-desktop-container {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 0.5rem;
+}
+
+/* Adjust the opacity of the Mars explanation card to save space */
+.mobile-desktop-container :global(.desktop-mars-explanation) {
+  opacity: 0.8;
+  transform: scale(0.9);
+  transform-origin: top right;
+}
+
+/* Ensure content doesn't overflow the screen */
+@media (max-width: 640px) {
+  .time-columns-container {
+    overflow-x: auto;
+    padding-bottom: 1rem;
+  }
+  
+  /* Add a hint to scroll horizontally */
+  .time-columns-container::after {
+    content: "← Scroll →";
+    display: block;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--foreground);
+    opacity: 0.7;
+    padding: 0.5rem 0;
+  }
+}
+
+/* Ensure buttons in ViewSwitcher are properly sized */
+@media (max-width: 430px) {
+  .view-switcher button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+  }
+}

@@ -1,74 +1,22 @@
-'use client'; // Convert to Client Component
+'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import dynamic from 'next/dynamic';
-import { Metadata } from 'next'; // Keep for potential future use, though metadata is usually static
+import React, { useState, useEffect } from 'react';
 import { JsonLd } from '@/components/seo/JsonLd';
-import HeadingMCP from './HeadingMCP'; // Keep for desktop view
+import dynamic from 'next/dynamic';
+import TimeZonePulse from '@/components/clock/WorldClock';
+import { ViewProvider } from '@/app/contexts/ViewContext';
+import { IntegrationsProvider } from '@/app/contexts/IntegrationsContext';
+import { useTimezoneStore } from '@/store/timezoneStore';
 
-// --- Mobile View Imports ---
-import { DateTime } from 'luxon';
-import { useTimezoneStore } from '@/store/timezoneStore'; // Remove direct import of removeTimezone
-import { getLocalTimezone } from '@/lib/utils/timezone';
-import { useMediaQuery } from '@/lib/hooks/useMediaQuery'; // Import the hook
-// Mobile components are now primarily handled within TimeZonePulse
-import TimeZonePulse from '@/components/clock/WorldClock'; // Import the main component
-// Removed import for the old MarsTimeExplanation tooltip
-// import MarsTimeExplanation from '@/components/MarsTimeExplanation'; 
-
-// Define mobile breakpoint (adjust as needed, e.g., Tailwind's 'md' breakpoint)
-const MOBILE_BREAKPOINT = '(max-width: 768px)'; // Keep this for the top-level switch
-
-// Load WorldClockWrapper dynamically (for desktop view)
-const WorldClockWrapper = dynamic(
-  () => import('@/components/clock/WorldClockWrapper'),
-  {
-    ssr: true, // Keep SSR for desktop initial load if possible
-    loading: () => {
-      // Need to check for landscape mode here since we're outside the component
-      const isMobileLandscapeCheck = typeof window !== 'undefined' ? 
-        window.matchMedia('(max-width: 932px) and (max-height: 430px)').matches : false;
-      
-      return (
-        <div className="min-h-screen p-8">
-          {!isMobileLandscapeCheck && <HeadingMCP />}
-          <div className="flex items-center justify-center pt-8">
-            <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        </div>
-      );
-    }
-  }
-);
-
-// Note: Static metadata export might not work as expected in Client Components.
-// Consider moving metadata to layout.tsx or using dynamic metadata generation if needed.
-// export const metadata: Metadata = { ... };
+// No need for separate wrapper component, we'll include that functionality directly
+// in this main page component
 
 export default function Home() {
-  // --- State and Logic (Most mobile logic is now within TimeZonePulse) ---
-  const [isMounted, setIsMounted] = useState(false); // Keep for hydration check
-  
-  // Re-enable mobile detection
-  const isMobile = useMediaQuery(MOBILE_BREAKPOINT); // Keep for top-level switch
-  
-  const isMobileLandscape = useMediaQuery('(max-width: 932px) and (max-height: 430px)'); // Keep for loading state
+  const [isMounted, setIsMounted] = useState(false);
+  const { hydrate } = useTimezoneStore();
 
-  // Removed state fetching for the old MarsTimeExplanation tooltip
-  // const { 
-  //   showMarsExplanation, 
-  //   hideMarsExplanation, 
-  //   marsExplanationPosition, 
-  //   lastAddedMarsTimezoneId 
-  // } = useTimezoneStore();
-
-  useEffect(() => {
-    setIsMounted(true); // Set mounted state
-  }, []);
-  // --- Removed mobile-specific logic (time, slots, handlers, etc.) ---
-
-  // JSON-LD for SEO (remains the same)
-  const jsonLd = { // Keep SEO data
+  // JSON-LD for SEO
+  const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'WebApplication',
     name: 'TimezonePulse',
@@ -80,13 +28,15 @@ export default function Home() {
     aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.8', ratingCount: '1256', bestRating: '5', worstRating: '1' },
   };
 
-  // Render loading state or null until mounted to prevent hydration mismatch
+  // Hydrate the store on client-side
+  useEffect(() => {
+    hydrate();
+    setIsMounted(true);
+  }, [hydrate]);
+
   if (!isMounted) {
-    // Render a basic loading state consistent with dynamic import loading
     return (
       <div className="min-h-screen p-8">
-        {/* Conditionally render HeadingMCP based on landscape */}
-        {!isMobileLandscape && <HeadingMCP />}
         <div className="flex items-center justify-center pt-8">
           <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
         </div>
@@ -94,22 +44,15 @@ export default function Home() {
     );
   }
 
-  // --- Simplified Conditional Rendering ---
+  // Force the MobileV2 view for all users
   return (
-    <main className="min-h-screen"> {/* Apply min-h-screen to the main container */}
-      <JsonLd data={jsonLd} /> {/* Keep SEO */}
-      {isMobile ? (
-        // Render TimeZonePulse directly for mobile view
-        // TimeZonePulse now handles its own header and content based on isConsideredMobile internally
-        <TimeZonePulse />
-      ) : (
-        // Render Desktop View (includes HeadingMCP via WorldClockWrapper loading or directly)
-        <>
-          {!isMobileLandscape && <HeadingMCP />} {/* Render heading if not landscape */}
-          <WorldClockWrapper />
-        </>
-      )}
-      {/* Removed the old Mars Time Explanation Popup rendering */}
+    <main className="min-h-screen mobile-desktop-container">
+      <JsonLd data={jsonLd} />
+      <ViewProvider>
+        <IntegrationsProvider>
+          <TimeZonePulse skipHeading={true} forceMobileV2View={true} /> 
+        </IntegrationsProvider>
+      </ViewProvider>
     </main>
   );
 }
