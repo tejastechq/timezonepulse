@@ -120,12 +120,16 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
   const cellClasses = clsx(
     'flex justify-between items-center px-3 py-2 cursor-pointer transition-all duration-150 relative',
     'hover:bg-accent/30',
-    isHighlight ? 'bg-primary-500/90 text-white font-medium' : 'text-foreground font-normal',
-    isCurrent && !isHighlight ? 'border-l-2 border-primary-400 bg-primary-100/10 dark:bg-primary-900/10' : '',
+    // Apply bright background and animation to current time if not selected
+    isHighlight ? 'bg-primary-500/90 text-white font-medium' : 
+    // Use pink for current time highlight
+    isCurrent ? 'bg-pink-500/90 dark:bg-pink-600/90 text-white font-medium highlight-item-optimized highlight-pulse-effect' : 
+    'text-foreground font-normal',
+    // Keep day/night/boundary borders only if not current or highlighted
     isDay && !isHighlight && !isCurrent ? 'border-l border-amber-300/50 dark:border-amber-500/30 bg-amber-50/10 dark:bg-amber-900/5' : '',
     isNight && !isHighlight && !isCurrent ? 'border-l border-indigo-300/50 dark:border-indigo-500/30 bg-indigo-50/5 dark:bg-indigo-900/5' : '',
-    isBoundary && !isHighlight ? 'border-t border-t-border/30' : '',
-    animClass
+    isBoundary && !isHighlight && !isCurrent ? 'border-t border-t-border/30' : '', // Also hide border if current
+    animClass // This applies highlight animation if selected (isHighlight is true)
   );
   
   return (
@@ -147,11 +151,12 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
       
       {/* Time display with minimal styling */}
       <span className={clsx(
-        'font-mono text-sm tracking-tight', 
-        isHighlight ? 'text-white' : isCurrent ? 'text-primary-700 dark:text-primary-300 font-medium' : 'text-foreground',
-        timezone.startsWith('Mars/') && !isHighlight ? 'text-red-600/90 dark:text-red-400/90' : ''
+        'font-mono text-sm tracking-tight',
+        // Make text white if highlighted OR current time
+        isHighlight || isCurrent ? 'text-white' : 'text-foreground', 
+        timezone.startsWith('Mars/') && !isHighlight && !isCurrent ? 'text-red-600/90 dark:text-red-400/90' : '' // Keep Mars red only if not highlighted/current
       )}>
-        {timezone.startsWith('Mars/') && !isHighlight && (
+        {timezone.startsWith('Mars/') && !isHighlight && !isCurrent && ( // Keep Mars icon only if not highlighted/current
           <span className="mr-1 text-red-600/80 dark:text-red-400/80 inline-flex items-center opacity-80" title="Mars Time">
             <span className="text-xs">♂︎</span>
           </span>
@@ -164,12 +169,13 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
         {/* Show "Selected" when highlighted */}
         {isHighlight && <span className="text-xs font-medium text-white">Selected</span>}
         
-        {/* Keep other indicators, but ensure they don't show when highlighted */}
-        {isNight && !isHighlight && <span title="Night hours">●</span>}
-        {isDay && !isHighlight && <span title="Day hours">○</span>}
-        {isCurrent && !isHighlight && <span className="text-xs font-medium text-primary-500">now</span>}
-        {isDST && !isHighlight && <span className="text-xs text-amber-500/80" title="DST transition">⊙</span>}
-        {isWknd && !isHighlight && <span className="text-xs text-purple-500/80" title="Weekend">⌇</span>}
+        {/* Keep other indicators, but ensure they don't show when highlighted OR current */}
+        {isNight && !isHighlight && !isCurrent && <span title="Night hours">●</span>}
+        {isDay && !isHighlight && !isCurrent && <span title="Day hours">○</span>}
+        {/* Make "now" indicator white */}
+        {isCurrent && !isHighlight && <span className="text-xs font-medium text-white">now</span>} 
+        {isDST && !isHighlight && !isCurrent && <span className="text-xs text-amber-500/80" title="DST transition">⊙</span>}
+        {isWknd && !isHighlight && !isCurrent && <span className="text-xs text-purple-500/80" title="Weekend">⌇</span>}
       </div>
     </div>
   );
@@ -710,7 +716,8 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
       return;
     }
     const targetIndex = getCurrentTimeIndex();
-    scrollToIndex(targetIndex, 'center');
+    // Scroll current time to the top on initial load
+    scrollToIndex(targetIndex, 'start'); 
   }, [mounted, localTime, highlightedTime, timeSlots, getCurrentTimeIndex, scrollToIndex]);
 
   useEffect(() => {
