@@ -65,8 +65,9 @@ const useConsolidatedTimerHook = (
 
     animationFrameRef.current = requestAnimationFrame(timerLoop);
 
+    const frameRef = animationFrameRef.current; // Copy ref value
     return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (frameRef) cancelAnimationFrame(frameRef); // Use copied value
     };
   }, [mounted, highlightedTime, highlightAutoClear, highlightDuration, handleTimeSelection, timeRemainingRef, setTimeRemaining]);
 };
@@ -270,14 +271,20 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         setSelectedDateInfo(null);
       }
     }
+    // Copy refs for cleanup
+    const timeoutId = timeoutRef.current;
+    const intervalId = countdownIntervalRef.current;
+    const frameId = animationFrameRef.current;
+    const scrollSyncId = scrollSyncTimeoutRef.current;
+    const scrollTimeoutId = scrollTimeoutRef.current;
+
     return () => {
       markRender('unmount');
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      const intervalId = countdownIntervalRef.current;
+      if (timeoutId) clearTimeout(timeoutId);
       if (intervalId) clearInterval(intervalId);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      if (scrollSyncTimeoutRef.current) clearTimeout(scrollSyncTimeoutRef.current);
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      if (frameId) cancelAnimationFrame(frameId);
+      if (scrollSyncId) clearTimeout(scrollSyncId);
+      if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
     };
   }, [markRender, timeSlots, currentDate]);
 
@@ -655,7 +662,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         </div>
       </>
     );
-  }, [mounted, userLocalTimezone, storeTimezones, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, handleReplaceTimezone, editingTimezoneId, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, isSearching, filteredTimeSlots, highlightAutoClear, highlightDuration, getHighlightClass]);
+  }, [mounted, userLocalTimezone, storeTimezones, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, handleReplaceTimezone, editingTimezoneId, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, isSearching, filteredTimeSlots, highlightAutoClear, highlightDuration, getHighlightClass, getHighlightAnimationClass, handleUserScroll]); // Added missing dependencies
 
   useEffect(() => {
     if (!mounted || !highlightedTime) return;

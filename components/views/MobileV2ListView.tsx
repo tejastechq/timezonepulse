@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState, useCallback, useMemo, memo, forwardRef, useImperativeHandle, startTransition } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo, memo, forwardRef, useImperativeHandle } from 'react';
 import Image from 'next/image';
 import { DateTime } from 'luxon';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -65,8 +65,9 @@ const useConsolidatedTimerHook = (
 
     animationFrameRef.current = requestAnimationFrame(timerLoop);
 
+    const frameRef = animationFrameRef.current; // Copy ref value
     return () => {
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (frameRef) cancelAnimationFrame(frameRef); // Use copied value
     };
   }, [mounted, highlightedTime, highlightAutoClear, highlightDuration, handleTimeSelection, timeRemainingRef, setTimeRemaining]);
 };
@@ -241,6 +242,7 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
   const lastRenderTimeRef = useRef<number>(Date.now());
   const scrollSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null); // Ref for 5s auto-scroll timer
+  const touchEndTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for short delay after touch ends
 
   const { resolvedTheme } = useTheme();
   const { weekendHighlightColor, highlightAutoClear, highlightDuration } = useSettingsStore();
@@ -284,15 +286,24 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
         setSelectedDateInfo(null);
       }
     }
+    // Copy refs for cleanup
+    const timeoutId = timeoutRef.current;
+    const intervalId = countdownIntervalRef.current;
+    const frameId = animationFrameRef.current;
+    const scrollSyncId = scrollSyncTimeoutRef.current;
+    const scrollTimeoutId = scrollTimeoutRef.current;
+    const autoScrollId = autoScrollTimerRef.current;
+    const touchEndId = touchEndTimeoutRef.current;
+
     return () => {
       markRender('unmount');
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      const intervalId = countdownIntervalRef.current;
+      if (timeoutId) clearTimeout(timeoutId);
       if (intervalId) clearInterval(intervalId);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      if (scrollSyncTimeoutRef.current) clearTimeout(scrollSyncTimeoutRef.current);
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current); // Clear auto-scroll timer on unmount
+      if (frameId) cancelAnimationFrame(frameId);
+      if (scrollSyncId) clearTimeout(scrollSyncId);
+      if (scrollTimeoutId) clearTimeout(scrollTimeoutId);
+      if (autoScrollId) clearTimeout(autoScrollId); // Clear auto-scroll timer on unmount
+      if (touchEndId) clearTimeout(touchEndId); // Clear touch end timer on unmount
     };
   }, [markRender, timeSlots, currentDate]);
 
@@ -358,52 +369,7 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [mounted, highlightedTime, handleTimeSelection]);
 
-  const handleUserScroll = useCallback((event: { scrollOffset: number; scrollUpdateWasRequested: boolean }) => {
-    if (!event.scrollUpdateWasRequested) {
-        setUserIsScrolling(true);
-        userIsScrollingRef.current = true;
-        lastScrollTimeRef.current = Date.now();
-        setCurrentScrollOffset(event.scrollOffset);
-
-        // Clear any existing timers when scrolling starts/continues
-        if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-        if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current);
-
-        // Set the timeout to detect when scrolling has stopped (500ms)
-        scrollTimeoutRef.current = setTimeout(() => {
-            setUserIsScrolling(false);
-            userIsScrollingRef.current = false;
-
-            // NOW that scrolling has stopped for 500ms, start the 5-second auto-scroll timer
-            autoScrollTimerRef.current = setTimeout(() => {
-              // No need to check userIsScrollingRef here, as this only runs after inactivity
-              const targetTime = highlightedTimeRef.current;
-              let targetIndex = -1;
-
-              if (targetTime && timeSlots.length > 0) {
-                const targetTimeUTC = DateTime.fromJSDate(targetTime).toUTC();
-                targetIndex = timeSlots.findIndex(t => {
-                  const slotTimeUTC = DateTime.fromJSDate(t).toUTC();
-                  return slotTimeUTC.hasSame(targetTimeUTC, 'minute');
-                });
-              } else if (timeSlots.length > 0) {
-                targetIndex = getCurrentTimeIndex();
-              }
-
-              if (targetIndex !== -1) {
-                scrollToIndex(targetIndex, 'start'); // Scroll to highlighted or current time
-              }
-            }, 5000); // 5 seconds delay
-
-        }, 500); // 500ms delay to detect scroll stop
-
-        if (highlightedTimeRef.current) resetInactivityTimer();
-        
-        // We no longer synchronize scrolling between timezone lists
-        // Each list scrolls independently
-    }
-  }, [resetInactivityTimer]);
-
+  // Define these earlier to fix TS errors related to declaration order
   const getCurrentTimeIndex = useCallback(() => {
     if (!localTime || !timeSlots.length) return 0;
     const roundedLocalTime = roundToNearestIncrement(localTime, 30);
@@ -425,7 +391,106 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
         }
       });
     });
-  }, []);
+  }, []); // Removed dependencies that caused issues, rely on closure
+
+  const handleUserScroll = useCallback((event: { scrollOffset: number; scrollUpdateWasRequested: boolean }) => {
+    // Ignore programmatic scrolls and scrolls triggered by touch
+    if (event.scrollUpdateWasRequested || userIsScrollingRef.current) {
+        return;
+    }
+
+    // Handle non-touch scroll (e.g., mouse wheel)
+    setUserIsScrolling(true); // Temporarily set for this scroll event sequence
+    lastScrollTimeRef.current = Date.now();
+    setCurrentScrollOffset(event.scrollOffset);
+
+    // Clear any existing timers
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current);
+    if (touchEndTimeoutRef.current) clearTimeout(touchEndTimeoutRef.current);
+
+    // Set the timeout to detect when non-touch scrolling has stopped (500ms)
+    scrollTimeoutRef.current = setTimeout(() => {
+        // Check if a touch didn't take over in the meantime
+        if (!userIsScrollingRef.current) {
+            setUserIsScrolling(false); // Reset state for UI if needed
+
+            // Start the 5-second auto-scroll timer
+            if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current);
+            autoScrollTimerRef.current = setTimeout(() => {
+                const targetTime = highlightedTimeRef.current;
+                let targetIndex = -1;
+
+                if (targetTime && timeSlots.length > 0) {
+                    const targetTimeUTC = DateTime.fromJSDate(targetTime).toUTC();
+                    targetIndex = timeSlots.findIndex(t => {
+                        const slotTimeUTC = DateTime.fromJSDate(t).toUTC();
+                        return slotTimeUTC.hasSame(targetTimeUTC, 'minute');
+                    });
+                } else if (timeSlots.length > 0) {
+                    targetIndex = getCurrentTimeIndex();
+                }
+
+                if (targetIndex !== -1) {
+                    scrollToIndex(targetIndex, 'start'); // Scroll to highlighted or current time
+                }
+            }, 5000); // 5 seconds delay
+        } else {
+            // If touch took over, just reset the UI state if needed
+            setUserIsScrolling(false);
+        }
+    }, 500); // 500ms delay to detect scroll stop
+
+    if (highlightedTimeRef.current) resetInactivityTimer();
+
+  }, [resetInactivityTimer, timeSlots, getCurrentTimeIndex, scrollToIndex]); // Added dependencies back
+
+  // --- Touch Event Handlers ---
+  const handleTouchStart = useCallback(() => {
+    // User started touching - definitely scrolling
+    setUserIsScrolling(true);
+    userIsScrollingRef.current = true;
+    lastScrollTimeRef.current = Date.now(); // Update last interaction time
+
+    // Clear any pending timers immediately
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current);
+    if (touchEndTimeoutRef.current) clearTimeout(touchEndTimeoutRef.current);
+
+    if (highlightedTimeRef.current) resetInactivityTimer();
+  }, [resetInactivityTimer]);
+
+  const handleTouchEndOrCancel = useCallback(() => {
+    // User stopped touching. Wait a brief moment for scroll momentum to potentially stop
+    // before declaring scrolling finished and starting the inactivity timer.
+    if (touchEndTimeoutRef.current) clearTimeout(touchEndTimeoutRef.current);
+
+    touchEndTimeoutRef.current = setTimeout(() => {
+        setUserIsScrolling(false); // Update state for UI if needed
+        userIsScrollingRef.current = false; // Mark scrolling as stopped
+
+        // Now start the 5-second auto-scroll timer
+        if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current); // Clear just in case
+        autoScrollTimerRef.current = setTimeout(() => {
+            const targetTime = highlightedTimeRef.current;
+            let targetIndex = -1;
+
+            if (targetTime && timeSlots.length > 0) {
+                const targetTimeUTC = DateTime.fromJSDate(targetTime).toUTC();
+                targetIndex = timeSlots.findIndex(t => {
+                    const slotTimeUTC = DateTime.fromJSDate(t).toUTC();
+                    return slotTimeUTC.hasSame(targetTimeUTC, 'minute');
+                });
+            } else if (timeSlots.length > 0) {
+                targetIndex = getCurrentTimeIndex();
+            }
+
+            if (targetIndex !== -1) {
+                scrollToIndex(targetIndex, 'start'); // Scroll to highlighted or current time
+            }
+        }, 5000); // 5 seconds delay
+    }, 100); // 100ms delay after touch ends
+  }, [timeSlots, getCurrentTimeIndex, scrollToIndex]); // Added dependencies
 
   useImperativeHandle(ref, () => ({
     scrollToTime: (time: Date, alignment: 'start' | 'center' | 'end' | 'smart' | 'auto' = 'center') => {
@@ -581,12 +646,13 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
     setSearchTerm(term);
     if (!term.trim()) {
       setFilteredTimeSlots([]);
-      setIsSearching(false);
-      if (isSearching) {
-        requestAnimationFrame(() => {
-          scrollToIndex(getCurrentTimeIndex(), 'center');
-        });
-      }
+    setIsSearching(false);
+    if (isSearching) {
+      // Scroll to current time at the start after clearing search
+      requestAnimationFrame(() => {
+        scrollToIndex(getCurrentTimeIndex(), 'start');
+      });
+    }
       return;
     }
     setIsSearching(true);
@@ -603,12 +669,13 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
     setFilteredTimeSlots(filtered);
     if (filtered.length > 0) {
       const wasScrolling = userIsScrollingRef.current;
-      userIsScrollingRef.current = false;
+      userIsScrollingRef.current = false; // Temporarily disable scroll checking
       const targetIndex = timeSlots.findIndex(t => t.getTime() === filtered[0].getTime());
       if (targetIndex !== -1) {
+        // Scroll search result to the start
         requestAnimationFrame(() => {
-          scrollToIndex(targetIndex, 'center');
-          userIsScrollingRef.current = wasScrolling;
+          scrollToIndex(targetIndex, 'start');
+          userIsScrollingRef.current = wasScrolling; // Restore scroll checking state
         });
       } else {
         userIsScrollingRef.current = wasScrolling;
@@ -622,7 +689,8 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
     setSearchTerm('');
     setFilteredTimeSlots([]);
     setIsSearching(false);
-    scrollToIndex(getCurrentTimeIndex(), 'center');
+    // Scroll to current time at the start after clearing search
+    scrollToIndex(getCurrentTimeIndex(), 'start');
   }, [scrollToIndex, getCurrentTimeIndex]);
 
   const renderTimeColumns = useCallback(() => {
@@ -675,7 +743,7 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
               getHighlightAnimationClass={getHighlightAnimationClass}
               handleTimeSelection={handleTimeSelection}
               listRefs={listRefs}
-              handleUserScroll={handleUserScroll}
+              handleUserScroll={handleUserScroll} // Keep for non-touch scrolls
               resolvedTheme={resolvedTheme}
               getTimezoneOffset={getTimezoneOffset}
               handleRemoveTimezone={handleRemoveTimezone}
@@ -684,6 +752,10 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
               userLocalTimezone={userLocalTimezone}
               localTime={localTime}
               getHighlightClass={getHighlightClass}
+              // Pass touch handlers down
+              handleTouchStart={handleTouchStart}
+              handleTouchEnd={handleTouchEndOrCancel} // Use same handler for end/cancel
+              handleTouchCancel={handleTouchEndOrCancel}
             />
           ))}
           {canAddMore && (
@@ -696,7 +768,7 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
         </div>
       </>
     );
-  }, [mounted, userLocalTimezone, storeTimezones, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, handleReplaceTimezone, editingTimezoneId, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, isSearching, filteredTimeSlots, highlightAutoClear, highlightDuration, getHighlightClass]);
+  }, [mounted, userLocalTimezone, storeTimezones, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, handleReplaceTimezone, editingTimezoneId, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, isSearching, filteredTimeSlots, highlightAutoClear, highlightDuration, getHighlightClass, handleTouchStart, handleTouchEndOrCancel, getHighlightAnimationClass, handleUserScroll]); // Added missing dependencies
 
   useEffect(() => {
     if (!mounted || !highlightedTime) return;
@@ -780,8 +852,9 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
           listRef.forceUpdate();
         }
       });
+      // Also scroll to current time (start) on half-hour updates if no time is highlighted
       if (!highlightedTime) {
-        scrollToIndex(getCurrentTimeIndex(), 'center');
+        scrollToIndex(getCurrentTimeIndex(), 'start');
       }
     }
   }, [localTime, mounted, highlightedTime, scrollToIndex, getCurrentTimeIndex]);
@@ -914,7 +987,9 @@ MobileV2ListView.displayName = 'MobileV2ListView';
 const TimezoneColumn = memo(({
   timezone,
   isLocal,
-  isSearching, filteredTimeSlots, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, formatTime, getHighlightAnimationClass, handleTimeSelection, listRefs, handleUserScroll, resolvedTheme, getTimezoneOffset, handleRemoveTimezone, setEditingTimezoneId, setSelectorOpen, userLocalTimezone, localTime, getHighlightClass
+  isSearching, filteredTimeSlots, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, formatTime, getHighlightAnimationClass, handleTimeSelection, listRefs, handleUserScroll, resolvedTheme, getTimezoneOffset, handleRemoveTimezone, setEditingTimezoneId, setSelectorOpen, userLocalTimezone, localTime, getHighlightClass,
+  // Add touch handlers to props
+  handleTouchStart, handleTouchEnd, handleTouchCancel
 }: {
   timezone: Timezone;
   isLocal: boolean;
@@ -940,6 +1015,10 @@ const TimezoneColumn = memo(({
   userLocalTimezone: string;
   localTime: Date | null;
   getHighlightClass: (isWeekend: boolean) => string;
+  // Define types for touch handlers
+  handleTouchStart: () => void;
+  handleTouchEnd: () => void;
+  handleTouchCancel: () => void;
 }) => {
   const isDST = isInDST(timezone.id);
   const isMars = timezone.id.startsWith('Mars/');
@@ -1113,6 +1192,10 @@ const TimezoneColumn = memo(({
         }}
         role="listbox" 
         aria-label={`Time selection list for ${timezone.name}`}
+        // Attach touch handlers here
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchCancel}
         onWheel={(e) => {
           // Handle wheel events for the timezone's time list when cursor is over it
           e.stopPropagation(); // Stop wheel event from propagating to parent elements

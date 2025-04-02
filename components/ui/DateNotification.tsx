@@ -14,17 +14,18 @@ const DateNotification: React.FC<DateNotificationProps> = ({
   selectedDateInfo,
   resolvedTheme,
 }) => {
-  if (!selectedDateInfo) {
-    return null;
-  }
-
-  // For client-side only code
+  // Hooks must be called at the top level
   const [isMounted, setIsMounted] = React.useState(false);
   
   React.useEffect(() => {
     setIsMounted(true);
     return () => setIsMounted(false);
   }, []);
+
+  // Early return if no date info
+  if (!selectedDateInfo) {
+    return null;
+  }
 
   const notificationClasses = `fixed bottom-4 right-4 z-[90] w-72 hidden md:block`;
 
@@ -57,4 +58,4 @@ const DateNotification: React.FC<DateNotificationProps> = ({
   return isMounted ? createPortal(notificationContent, document.body) : null;
 };
 
-export default DateNotification; 
+export default DateNotification;

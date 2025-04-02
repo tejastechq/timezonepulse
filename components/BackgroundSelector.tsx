@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 type BackgroundOption = {
   id: string;
@@ -53,7 +53,11 @@ export default function BackgroundSelector() {
     if (savedBackground) {
       setSelectedBackground(savedBackground);
       loadBackground(savedBackground, false);
-      setPreloadedBackgrounds(prev => new Set([...prev, savedBackground]));
+      setPreloadedBackgrounds(prev => {
+        const next = new Set(prev);
+        next.add(savedBackground);
+        return next;
+      });
     } else {
       // Default to clock if nothing saved
       loadBackground('clock', false);
@@ -61,23 +65,30 @@ export default function BackgroundSelector() {
     
     // Preload common backgrounds
     preloadBackgrounds(['clock', 'day-night-cycle']);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps 
+  }, []); // <-- Remove preloadBackgrounds, it's stable due to useCallback([])
 
   // Preload backgrounds to improve switching experience
-  const preloadBackgrounds = (backgroundIds: string[]) => {
+  const preloadBackgrounds = useCallback((backgroundIds: string[]) => {
     backgroundIds.forEach(id => {
-      if (!preloadedBackgrounds.has(id)) {
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.href = `/styles/backgrounds/${id}.css`;
-        link.as = 'style';
-        link.setAttribute('data-background-preload', id);
-        document.head.appendChild(link);
-        
-        setPreloadedBackgrounds(prev => new Set([...prev, id]));
-      }
+      // Use functional update to access previous state without adding dependencies
+      setPreloadedBackgrounds(prev => {
+        if (!prev.has(id)) {
+          const link = document.createElement('link');
+          link.rel = 'preload';
+          link.href = `/styles/backgrounds/${id}.css`;
+          link.as = 'style';
+          link.setAttribute('data-background-preload', id);
+          document.head.appendChild(link);
+          
+          const next = new Set(prev);
+          next.add(id);
+          return next;
+        }
+        return prev; // Return previous state if already preloaded
+      });
     });
-  };
+  }, []); // Empty dependency array is correct here
 
   const loadBackground = (backgroundId: string, animate = true) => {
     if (animate) {
@@ -215,4 +226,4 @@ export default function BackgroundSelector() {
       )}
     </div>
   );
-} 
+}

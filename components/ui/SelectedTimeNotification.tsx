@@ -25,11 +25,7 @@ const SelectedTimeNotification: React.FC<SelectedTimeNotificationProps> = ({
   highlightDuration,
   resetInactivityTimer,
 }) => {
-  if (!highlightedTime) {
-    return null;
-  }
-
-  // For client-side only code
+  // Hooks must be called at the top level
   const [isMounted, setIsMounted] = React.useState(false);
   const [timeAgo, setTimeAgo] = React.useState('');
   
@@ -66,6 +62,11 @@ const SelectedTimeNotification: React.FC<SelectedTimeNotificationProps> = ({
     
     return () => clearInterval(interval);
   }, [highlightedTime]);
+
+  // Early return if no time is highlighted
+  if (!highlightedTime) {
+    return null;
+  }
 
   // Apply notification styling here (Step 3 & 4)
   // Using md: prefix for desktop-only behavior
