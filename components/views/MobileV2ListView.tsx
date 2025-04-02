@@ -1020,6 +1020,7 @@ const TimezoneColumn = memo(({
   handleTouchEnd: () => void;
   handleTouchCancel: () => void;
 }) => {
+  const itemSize = 40; // Define item size for height calculation
   const isDST = isInDST(timezone.id);
   const isMars = timezone.id.startsWith('Mars/');
 
@@ -1068,6 +1069,7 @@ const TimezoneColumn = memo(({
   };
 
   const displaySlots = isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots : timeSlots;
+  const listHeight = displaySlots.length * itemSize; // Calculate height based on filtered items
 
   return (
     <motion.div
@@ -1185,8 +1187,9 @@ const TimezoneColumn = memo(({
       </div>
       
       <div 
-        className="h-60 overflow-hidden scrollbar-hide"
+        className="overflow-hidden scrollbar-hide" // Removed h-60
         style={{ 
+          height: isSearching && displaySlots.length > 0 ? `${Math.max(listHeight, itemSize)}px` : '15rem', // Dynamic height, ensure min height of one item
           scrollbarWidth: 'none', /* Firefox */
           msOverflowStyle: 'none', /* IE/Edge */
         }}
@@ -1231,7 +1234,7 @@ const TimezoneColumn = memo(({
               height={height}
               width={width}
               itemCount={displaySlots.length}
-              itemSize={40} // Reduced from 48
+              itemSize={itemSize} // Use defined itemSize
               overscanCount={10}
               ref={(ref) => { listRefs.current[timezone.id] = ref; }}
               className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md scrollbar-hide"
