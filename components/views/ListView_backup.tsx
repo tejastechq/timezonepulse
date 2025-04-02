@@ -247,6 +247,9 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
   const [currentScrollOffset, setCurrentScrollOffset] = useState(0);
 
   const [selectedDateInfo, setSelectedDateInfo] = useState<string | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [filteredTimeSlots, setFilteredTimeSlots] = useState<Date[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const markRender = useCallback((name: string) => {
     if (typeof performance !== 'undefined' && process.env.NODE_ENV === 'development') {
