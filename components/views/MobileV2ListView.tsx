@@ -240,6 +240,7 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
   const animationFrameRef = useRef<number | null>(null);
   const lastRenderTimeRef = useRef<number>(Date.now());
   const scrollSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoScrollTimerRef = useRef<NodeJS.Timeout | null>(null); // Ref for 5s auto-scroll timer
 
   const { resolvedTheme } = useTheme();
   const { weekendHighlightColor, highlightAutoClear, highlightDuration } = useSettingsStore();
@@ -291,6 +292,7 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       if (scrollSyncTimeoutRef.current) clearTimeout(scrollSyncTimeoutRef.current);
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+      if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current); // Clear auto-scroll timer on unmount
     };
   }, [markRender, timeSlots, currentDate]);
 
@@ -363,11 +365,37 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
         lastScrollTimeRef.current = Date.now();
         setCurrentScrollOffset(event.scrollOffset);
 
+        // Clear any existing timers when scrolling starts/continues
         if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+        if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current);
+
+        // Set the timeout to detect when scrolling has stopped (500ms)
         scrollTimeoutRef.current = setTimeout(() => {
             setUserIsScrolling(false);
             userIsScrollingRef.current = false;
-        }, 500);
+
+            // NOW that scrolling has stopped for 500ms, start the 5-second auto-scroll timer
+            autoScrollTimerRef.current = setTimeout(() => {
+              // No need to check userIsScrollingRef here, as this only runs after inactivity
+              const targetTime = highlightedTimeRef.current;
+              let targetIndex = -1;
+
+              if (targetTime && timeSlots.length > 0) {
+                const targetTimeUTC = DateTime.fromJSDate(targetTime).toUTC();
+                targetIndex = timeSlots.findIndex(t => {
+                  const slotTimeUTC = DateTime.fromJSDate(t).toUTC();
+                  return slotTimeUTC.hasSame(targetTimeUTC, 'minute');
+                });
+              } else if (timeSlots.length > 0) {
+                targetIndex = getCurrentTimeIndex();
+              }
+
+              if (targetIndex !== -1) {
+                scrollToIndex(targetIndex, 'start'); // Scroll to highlighted or current time
+              }
+            }, 5000); // 5 seconds delay
+
+        }, 500); // 500ms delay to detect scroll stop
 
         if (highlightedTimeRef.current) resetInactivityTimer();
         
