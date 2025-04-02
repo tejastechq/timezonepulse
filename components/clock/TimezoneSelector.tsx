@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import Image from 'next/image';
 import { getAllTimezones } from '@/lib/utils/timezone';
+// Using react-use for IntersectionObserver hook for simplicity
+// Ensure you have installed it: npm install react-use
+import { useIntersection } from 'react-use'; 
 import { sortTimezonesByRelevance, getTimezoneContext } from '@/lib/utils/timezoneSearch';
 import { Timezone } from '@/store/timezoneStore';
 import * as Dialog from '@radix-ui/react-dialog';
@@ -52,12 +55,16 @@ export default function TimezoneSelector({
 }: TimezoneSelectorProps) {
   const [search, setSearch] = useState('');
   
-  // Fix: Use useLocalDebounce directly instead of conditionally selecting between hooks
-  // This ensures hooks are always called in the same order
-  const debouncedSearch = useDebounce(search, 150); // Reduced delay for faster suggestions
+  // Fix: Use useDebounce directly
+  const debouncedSearch = useDebounce(search, 150); 
   
-  const [timezones, setTimezones] = useState<Timezone[]>([]);
-  const [filteredTimezones, setFilteredTimezones] = useState<Timezone[]>([]);
+  const BATCH_SIZE = 50; // Number of timezones to load per batch
+  const [allTimezones, setAllTimezones] = useState<Timezone[]>([]); // Renamed from timezones
+  const [filteredTimezones, setFilteredTimezones] = useState<Timezone[]>([]); // List currently displayed
+  const [displayCount, setDisplayCount] = useState(BATCH_SIZE); // Count for progressive loading
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // Loading indicator state
+  const loadMoreRef = useRef<HTMLDivElement>(null); // Ref for the intersection observer trigger
+
   const [recentTimezones] = useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem('recentTimezones');
@@ -73,9 +80,10 @@ export default function TimezoneSelector({
       return 'UTC';
     }
   });
-  const [searchResultsCount, setSearchResultsCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [searchResultsCount, setSearchResultsCount] = useState(0); // Total count or search result count
+  const [isLoading, setIsLoading] = useState(true); // Initial loading state
   const [error, setError] = useState<string | null>(null);
+  const searchCache = useRef(new Map<string, Timezone[]>()); // Cache for search results
 
   // Check for reduced motion preference
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
@@ -145,53 +153,63 @@ export default function TimezoneSelector({
     setError(null);
     
     try {
-      const allTimezones = getAllTimezones();
-       let availableTimezones = allTimezones.filter(tz => 
-         !excludeTimezones.includes(tz.id)
-       );
+      const fetchedTimezones = getAllTimezones()
+       .filter(tz => !excludeTimezones.includes(tz.id));
 
-      // Sort the initial list to put Mars timezones first
-      availableTimezones.sort((a, b) => {
+      // Sort the initial list (e.g., Mars first)
+      fetchedTimezones.sort((a, b) => {
         const aIsMars = a.id.startsWith('Mars/');
         const bIsMars = b.id.startsWith('Mars/');
         if (aIsMars && !bIsMars) return -1; // a (Mars) comes before b
         if (!aIsMars && bIsMars) return 1;  // b (Mars) comes before a
         // Keep original alphabetical/regional order for non-Mars timezones (or apply another sort if needed)
         // For now, let's assume the original `getAllTimezones` provides a reasonable default sort
-        return 0; 
+        return 0;
       });
 
-      setTimezones(availableTimezones);
-      setFilteredTimezones(availableTimezones); // Initial filtered list is the full sorted list
-      setSearchResultsCount(availableTimezones.length);
+      setAllTimezones(fetchedTimezones);
+      // Initially display only the first batch
+      setFilteredTimezones(fetchedTimezones.slice(0, BATCH_SIZE));
+      setDisplayCount(BATCH_SIZE); // Reset display count
+      setSearchResultsCount(fetchedTimezones.length); // Keep total count for context
+      searchCache.current.clear(); // Clear cache when base timezones change
     } catch (err) {
       setError('Error loading timezones. Please try again.');
       console.error('Error loading timezones:', err);
-      setTimezones([]);
+      setAllTimezones([]);
       setFilteredTimezones([]);
     } finally {
       setIsLoading(false);
     }
-  }, [excludeTimezones]);
+  }, [excludeTimezones]); // Dependency array
 
-  // Memoize filtered timezones to prevent unnecessary re-renders
+  // Memoize search results (only runs when searching)
   const memoizedFilteredTimezones = useMemo(() => {
-    try {
-      if (!debouncedSearch.trim()) {
-        return timezones;
-      }
+    const searchTerm = debouncedSearch.trim();
+    
+    // Only perform search/cache logic if there's a search term
+    if (!searchTerm) {
+      return []; // Return empty, progressive loading handles non-search display
+    }
 
-      const searchLower = debouncedSearch.toLowerCase();
-      const filtered = timezones.filter(tz => 
-        tz.name.toLowerCase().includes(searchLower) || 
+    // Check cache first
+    if (searchCache.current.has(searchTerm)) {
+      return searchCache.current.get(searchTerm) as Timezone[];
+    }
+
+    // If not in cache, perform filtering and sorting on the *full* list
+    try {
+      const searchLower = searchTerm.toLowerCase();
+      const filtered = allTimezones.filter(tz => // Use allTimezones here
+        tz.name.toLowerCase().includes(searchLower) ||
         tz.id.toLowerCase().includes(searchLower) ||
         (tz.city && tz.city.toLowerCase().includes(searchLower)) ||
         (tz.country && tz.country.toLowerCase().includes(searchLower)) ||
-         (tz.abbreviation && tz.abbreviation.toLowerCase().includes(searchLower))
-       );
+        (tz.abbreviation && tz.abbreviation.toLowerCase().includes(searchLower))
+      );
 
-      // Temporarily boost Mars timezones to the top during search
-      const sortedFiltered = filtered.sort((a, b) => {
+      // Boost Mars timezones
+      const boostedFiltered = filtered.sort((a, b) => {
         const aIsMars = a.id.startsWith('Mars/');
         const bIsMars = b.id.startsWith('Mars/');
         if (aIsMars && !bIsMars) return -1; // a comes first
@@ -199,19 +217,66 @@ export default function TimezoneSelector({
         return 0; // Keep original relative order otherwise
       });
 
-      // Apply relevance sorting after boosting Mars timezones
-      return sortTimezonesByRelevance(sortedFiltered, debouncedSearch, recentTimezones);
+      // Apply relevance sorting
+      const result = sortTimezonesByRelevance(boostedFiltered, searchTerm, recentTimezones);
+
+      // Store result in cache
+      searchCache.current.set(searchTerm, result);
+
+      return result;
     } catch (err) {
       console.error('Error filtering or sorting timezones:', err);
-      return [];
+      // Optionally clear cache on error or handle differently
+      // searchCache.current.delete(searchTerm);
+      return []; // Return empty on error
     }
-  }, [debouncedSearch, timezones, recentTimezones]);
+  }, [debouncedSearch, allTimezones, recentTimezones]); // Use allTimezones
 
-  // Update filtered timezones and search results count when memoized value changes
+  // Effect to update displayed list based on search term or progressive loading
   useEffect(() => {
-    setFilteredTimezones(memoizedFilteredTimezones);
-    setSearchResultsCount(memoizedFilteredTimezones.length);
-  }, [memoizedFilteredTimezones]);
+    const searchTerm = debouncedSearch.trim();
+    if (searchTerm) {
+      // Use cached search results for the virtualized list
+      setFilteredTimezones(memoizedFilteredTimezones);
+      setSearchResultsCount(memoizedFilteredTimezones.length);
+      setIsLoadingMore(false); // Not loading more when searching
+    } else {
+      // Use progressively loaded subset for the grouped list
+      // Ensure loading state is brief if slicing is fast
+      setIsLoadingMore(true); 
+      const timer = setTimeout(() => {
+        setFilteredTimezones(allTimezones.slice(0, displayCount));
+        setSearchResultsCount(allTimezones.length); // Show total count in background
+        setIsLoadingMore(false);
+      }, 50); // Short delay
+       return () => clearTimeout(timer);
+    }
+  }, [debouncedSearch, memoizedFilteredTimezones, allTimezones, displayCount]);
+
+  // Intersection Observer Logic
+  const intersection = useIntersection(loadMoreRef, {
+    root: null, // viewport
+    rootMargin: '200px', // Load when 200px away from viewport bottom
+    threshold: 0,
+  });
+
+  useEffect(() => {
+    const searchTerm = debouncedSearch.trim();
+    // Trigger load more only when:
+    // 1. Not searching
+    // 2. Observer is intersecting
+    // 3. Not already loading more
+    // 4. There are more items to load
+    if (!searchTerm && intersection?.isIntersecting && !isLoadingMore && displayCount < allTimezones.length) {
+      setIsLoadingMore(true);
+      const newDisplayCount = Math.min(displayCount + BATCH_SIZE, allTimezones.length);
+      // Update displayCount after a short delay to allow loading indicator to show
+      // The other useEffect will handle updating filteredTimezones and setting isLoadingMore back to false
+      setTimeout(() => {
+          setDisplayCount(newDisplayCount);
+      }, 300); // Adjust delay as needed
+    }
+  }, [intersection, debouncedSearch, isLoadingMore, displayCount, allTimezones.length, BATCH_SIZE]); // Added BATCH_SIZE
 
   // Handle timezone selection
   const handleSelect = useCallback((timezone: Timezone) => {
@@ -345,10 +410,10 @@ export default function TimezoneSelector({
         
         {/* Flex container for perfect centering */}
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Content container with animation */}
+          {/* Content container with animation & glassmorphism */}
           <Dialog.Content 
-            className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl 
-                      border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden
+            className="bg-white/70 dark:bg-gray-800/70 backdrop-blur-lg p-6 rounded-lg shadow-xl 
+                      border border-white/20 dark:border-gray-700/50 flex flex-col overflow-hidden
                       w-full max-w-md"
             style={{ 
               maxHeight: 'min(600px, calc(100vh - 2rem))'
@@ -460,23 +525,22 @@ export default function TimezoneSelector({
                     itemSize={100} // Increased item size to accommodate Mars info
                     className="timezone-list focus:outline-none"
                     overscanCount={5}
+                    itemKey={index => filteredTimezones[index]?.id || index} // Add itemKey
                   >
                     {renderListItem}
                   </List>
                 </div>
               )}
               
-              {/* Show grouped regions when not searching */}
-              {!isLoading && !error && filteredTimezones.length > 0 && !debouncedSearch.trim() && (
-                // When not searching, display grouped by region with proper scrolling
+              {/* Show grouped regions when not searching (Progressive Loading) */}
+              {!isLoading && !error && !debouncedSearch.trim() && (
                 <div 
                   className="h-[320px] overflow-y-auto pr-1 overscroll-contain" 
                   role="listbox" 
                   aria-label="Available timezone regions"
                 >
-                  {/* Group timezones by continent extracted from the ID */}
-                  {Array.from(new Set(filteredTimezones.map(tz => {
-                    // Extract continent from timezone ID (first part before the /)
+                  {/* Group the *currently displayed* timezones */}
+                  {Array.from(new Set(filteredTimezones.map(tz => { 
                     const parts = tz.id.split('/');
                     return parts[0] || 'Other';
                   }))).map(continent => (
@@ -588,6 +652,22 @@ export default function TimezoneSelector({
                       </div>
                     </div>
                   ))}
+                  {/* Sentinel element for Intersection Observer */}
+                  { !isLoadingMore && displayCount < allTimezones.length && (
+                     <div ref={loadMoreRef} className="h-1"></div>
+                  )}
+                  {/* Loading Indicator */}
+                  { isLoadingMore && (
+                    <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                      Loading more...
+                    </div>
+                  )}
+                   {/* Message when all loaded */}
+                   { !isLoadingMore && displayCount >= allTimezones.length && filteredTimezones.length > BATCH_SIZE && (
+                     <div className="p-4 text-center text-sm text-gray-400 dark:text-gray-500">
+                       All timezones loaded.
+                     </div>
+                   )}
                 </div>
               )}
             </div>
