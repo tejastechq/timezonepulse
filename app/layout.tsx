@@ -18,9 +18,8 @@ import { Providers } from './providers';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import GlassmorphismAnimation from '@/components/GlassmorphismAnimation';
-import DevInfo from '@/components/DevInfo';
 import '@/lib/utils/trusted-types'; // Import trusted-types configuration
-import { Inter } from 'next/font/google';
+import { Inter, Roboto_Mono, Poppins, Montserrat, Oswald } from 'next/font/google';
 import Script from 'next/script';
 
 // Export metadata and viewport configurations
@@ -55,7 +54,6 @@ export default function RootLayout({
           />
           <SpeedInsights />
           <GlassmorphismAnimation />
-          <DevInfo />
 
           {/* Footer Section */}
           <footer className="w-full mt-auto py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">

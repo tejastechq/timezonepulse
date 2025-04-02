@@ -69,7 +69,7 @@ const SelectedTimeNotification: React.FC<SelectedTimeNotificationProps> = ({
 
   // Apply notification styling here (Step 3 & 4)
   // Using md: prefix for desktop-only behavior
-  const notificationClasses = `fixed bottom-4 right-4 z-[100] w-auto max-w-xs hidden md:block`;
+  const notificationClasses = `fixed bottom-20 right-4 z-[100] w-72 hidden md:block`;
 
   const notificationContent = (
     <motion.div
@@ -82,8 +82,10 @@ const SelectedTimeNotification: React.FC<SelectedTimeNotificationProps> = ({
         isolation: 'isolate', 
         backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.2)' : 'rgba(255, 255, 255, 0.15)',
         position: 'fixed',
-        bottom: '1rem',
-        right: '1rem'
+        bottom: '5rem',
+        right: '1rem',
+        zIndex: 100,
+        width: '18rem'
       }}
     >
       <div className="flex items-center justify-between mb-2 relative z-[2]">

@@ -39,17 +39,18 @@ export function DatePicker({
         <button
           type="button"
           className="flex items-center gap-2 px-3 py-2 rounded-md border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-          aria-label="Select date"
+          aria-label="Jump to specific date"
+          title="Navigate to a different date"
         >
           <CalendarIcon className="h-4 w-4" />
-          <span className="text-sm">{formattedDate}</span>
+          <span className="text-sm">Select Date</span>
         </button>
       </Dialog.Trigger>
       
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/25 z-30 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <Dialog.Content className="fixed left-[50%] top-[50%] z-40 translate-x-[-50%] translate-y-[-50%] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]">
-          <Dialog.Title className="sr-only">Date Picker - Select a Date</Dialog.Title>
+          <Dialog.Title className="sr-only">Date Navigator - View times for a specific date</Dialog.Title>
           <Calendar
             selectedDate={selectedDate}
             onDateSelect={handleDateSelect}
