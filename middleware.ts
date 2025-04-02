@@ -13,6 +13,11 @@ const dummyRateLimiter = {
  * Middleware function for Next.js
  */
 export async function middleware(request: NextRequest) {
+  // Redirect /mobilev2 and /list-view routes to the homepage
+  if (request.nextUrl.pathname.startsWith('/mobilev2') || request.nextUrl.pathname.startsWith('/list-view')) {
+    return NextResponse.redirect(new URL('/', request.url));
+  }
+
   // Generate a secure nonce value for CSP
   const nonce = generateNonce();
   
