@@ -28,7 +28,7 @@ export interface Timezone {
 /**
  * Interface for the view mode
  */
-export type ViewMode = 'analog' | 'digital' | 'list';
+export type ViewMode = 'list';
 
 /**
  * Interface for the timezone store state
