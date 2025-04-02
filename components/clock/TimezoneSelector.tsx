@@ -54,7 +54,7 @@ export default function TimezoneSelector({
   
   // Fix: Use useLocalDebounce directly instead of conditionally selecting between hooks
   // This ensures hooks are always called in the same order
-  const debouncedSearch = useDebounce(search, 300);
+  const debouncedSearch = useDebounce(search, 150); // Reduced delay for faster suggestions
   
   const [timezones, setTimezones] = useState<Timezone[]>([]);
   const [filteredTimezones, setFilteredTimezones] = useState<Timezone[]>([]);
