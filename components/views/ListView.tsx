@@ -395,6 +395,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         return slotTimeUTC.hasSame(targetTimeUTC, 'minute');
       });
       if (targetIndex !== -1) {
+        // Restore original requestAnimationFrame here
         requestAnimationFrame(() => {
           const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
           Object.values(listRefs.current).forEach(listRef => {
@@ -669,7 +670,8 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         if (targetIndex !== -1) {
           Object.values(listRefs.current).forEach(listRef => {
             if (listRef) {
-              listRef.scrollToItem(targetIndex, 'center');
+              // Apply the 'start' alignment change here in syncAfterScrolling
+              listRef.scrollToItem(targetIndex, 'start');
             }
           });
         }
@@ -684,16 +686,15 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
       return slotDateTime.hasSame(highlightedDateTime, 'minute');
     });
     if (targetIndex !== -1) {
-      requestAnimationFrame(() => {
-        Object.values(listRefs.current).forEach(listRef => {
-          if (listRef) {
-            const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            listRef.scrollToItem(targetIndex, prefersReducedMotion ? 'start' : 'center');
-          }
-        });
+      // Remove requestAnimationFrame to attempt more immediate scrolling
+      Object.values(listRefs.current).forEach(listRef => {
+        if (listRef) {
+          // Always scroll to the start (top) when a time is highlighted
+          listRef.scrollToItem(targetIndex, 'start');
+        }
       });
     }
-  }, [highlightedTime, timeSlots, mounted]);
+  }, [highlightedTime, timeSlots, mounted]); // Ensure dependencies are correct
 
   useEffect(() => {
     if (!mounted || !localTime || highlightedTime || !timeSlots.length) return;
