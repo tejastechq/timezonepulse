@@ -15,7 +15,6 @@ import DateNotification from '../ui/DateNotification';
 import * as Dialog from '@radix-ui/react-dialog';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import TimezoneSelector from '../clock/TimezoneSelector';
-import TimeSearch from '../ui/TimeSearch';
 import { useTheme } from 'next-themes';
 import clsx from 'clsx';
 import { useSettingsStore, getWeekendHighlightClass } from '@/store/settingsStore';
@@ -262,9 +261,6 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
   const lastScrollTimeRef = useRef<number>(0);
   const [currentScrollOffset, setCurrentScrollOffset] = useState(0);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filteredTimeSlots, setFilteredTimeSlots] = useState<Date[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
   const [selectedDateInfo, setSelectedDateInfo] = useState<string | null>(null);
 
   const markRender = useCallback((name: string) => {
@@ -642,59 +638,6 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
 
   const getHighlightClass = useCallback((isWeekend: boolean) => isWeekend ? getWeekendHighlightClass(weekendHighlightColor) : '', [weekendHighlightColor]);
 
-  const handleSearch = useCallback((term: string) => {
-    setSearchTerm(term);
-    if (!term.trim()) {
-      setFilteredTimeSlots([]);
-    setIsSearching(false);
-    if (isSearching) {
-      // Scroll to current time at the start after clearing search
-      requestAnimationFrame(() => {
-        scrollToIndex(getCurrentTimeIndex(), 'start');
-      });
-    }
-      return;
-    }
-    setIsSearching(true);
-    const searchLower = term.toLowerCase().trim();
-    const filtered = timeSlots.filter(timeSlot => {
-      const timeInLocalZone = DateTime.fromJSDate(timeSlot).setZone(userLocalTimezone);
-      const hour12 = timeInLocalZone.toFormat('h');
-      const hour24 = timeInLocalZone.toFormat('HH');
-      const fullTime12 = timeInLocalZone.toFormat('h:mm a').toLowerCase();
-      const fullTime24 = timeInLocalZone.toFormat('HH:mm').toLowerCase();
-      if (searchLower.includes(':')) return fullTime12.startsWith(searchLower) || fullTime24.startsWith(searchLower);
-       else return hour12 === searchLower || hour24 === searchLower;
-      });
-      setFilteredTimeSlots(filtered);
-      // Resetting will now happen in TimezoneColumn's useEffect
-      if (filtered.length > 0) {
-        const wasScrolling = userIsScrollingRef.current;
-        userIsScrollingRef.current = false; // Temporarily disable scroll checking
-      const targetIndex = timeSlots.findIndex(t => t.getTime() === filtered[0].getTime());
-      if (targetIndex !== -1) {
-        // Scroll search result to the start
-        requestAnimationFrame(() => {
-          scrollToIndex(targetIndex, 'start');
-          userIsScrollingRef.current = wasScrolling; // Restore scroll checking state
-        });
-      } else {
-        userIsScrollingRef.current = wasScrolling;
-      }
-    }
-  }, [timeSlots, userLocalTimezone, isSearching, scrollToIndex, getCurrentTimeIndex]);
-
-  useEffect(() => { if (searchTerm) handleSearch(searchTerm); else setFilteredTimeSlots([]); }, [timeSlots, searchTerm, handleSearch]);
-
-  const handleClearSearch = useCallback(() => {
-    setSearchTerm('');
-      setFilteredTimeSlots([]);
-      setIsSearching(false);
-      // Resetting will now happen in TimezoneColumn's useEffect
-      // Scroll to current time at the start after clearing search
-      scrollToIndex(getCurrentTimeIndex(), 'start');
-    }, [scrollToIndex, getCurrentTimeIndex]);
-
   const renderTimeColumns = useCallback(() => {
     if (!mounted) return null;
 
@@ -732,8 +675,8 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
               key={timezone.id}
               timezone={timezone}
               isLocal={timezone.id === userLocalTimezone}
-              isSearching={isSearching}
-              filteredTimeSlots={filteredTimeSlots}
+              isSearching={false}
+              filteredTimeSlots={[]}
               timeSlots={timeSlots}
               isHighlighted={isHighlighted}
               checkNightHours={checkNightHours}
@@ -770,7 +713,7 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
         </div>
       </>
     );
-  }, [mounted, userLocalTimezone, storeTimezones, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, handleReplaceTimezone, editingTimezoneId, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, isSearching, filteredTimeSlots, highlightAutoClear, highlightDuration, getHighlightClass, handleTouchStart, handleTouchEndOrCancel, getHighlightAnimationClass, handleUserScroll]); // Added missing dependencies
+  }, [mounted, userLocalTimezone, storeTimezones, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, getTimezoneOffset, formatTime, handleTimeSelection, getCurrentTimeIndex, handleRemoveTimezone, handleReplaceTimezone, editingTimezoneId, timeRemaining, resetInactivityTimer, resolvedTheme, weekendHighlightColor, highlightedTime, localTime, currentDate, getHighlightClass, handleTouchStart, handleTouchEndOrCancel, getHighlightAnimationClass, handleUserScroll]); // Added missing dependencies
 
   useEffect(() => {
     if (!mounted || !highlightedTime) return;
@@ -925,30 +868,7 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
       </div>
 
       <div className="mb-4 w-full sm:w-80 ml-0 pt-3">
-        <TimeSearch
-          onSearch={handleSearch}
-          onClear={handleClearSearch}
-          className="w-full"
-          autoFormatTime={true}
-          earlyFormattingDelay={100}
-        />
-        <AnimatePresence>
-          {(filteredTimeSlots.length > 0 || (searchTerm && filteredTimeSlots.length === 0)) && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className={clsx('mt-2 py-1 px-3 text-xs', filteredTimeSlots.length > 0 ? 'text-gray-300' : 'text-amber-300')}
-            >
-              {filteredTimeSlots.length > 0 ? (
-                <div className="flex items-center"><span>Found {filteredTimeSlots.length} time{filteredTimeSlots.length === 1 ? '' : 's'} matching {searchTerm.includes(':') ? `"${searchTerm}"` : `${searchTerm} o'clock`}</span></div>
-              ) : (
-                <div className="flex items-center"><span>No results found</span></div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* TimeSearch component is removed */}
       </div>
 
       <DateNotification 
