@@ -310,3 +310,47 @@ body::after {
 .animate-pulse-slow {
   animation: pulse-slow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Mobile V2 specific utilities */
+.mobilev2-container {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Make desktop components more mobile-friendly */
+@media (max-width: 768px) {
+  .mobilev2-compact-header {
+    padding: 0.5rem !important;
+    height: auto !important;
+  }
+
+  .mobilev2-compact-card {
+    padding: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .mobilev2-stack {
+    flex-direction: column !important;
+  }
+  
+  .mobilev2-full-width {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .mobilev2-smaller-text {
+    font-size: 0.875rem !important;
+  }
+  
+  .mobilev2-smaller-controls {
+    scale: 0.85;
+    transform-origin: left;
+  }
+  
+  .mobilev2-center-controls {
+    justify-content: center !important;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}

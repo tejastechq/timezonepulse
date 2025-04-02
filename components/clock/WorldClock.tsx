@@ -76,9 +76,10 @@ const ViewPlaceholder = () => (
 // Define the props interface for TimeZonePulse
 interface TimeZonePulseProps {
   skipHeading?: boolean;
+  disableMobileDetection?: boolean;
 }
 
-export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProps) {
+export default function TimeZonePulse({ skipHeading = false, disableMobileDetection = false }: TimeZonePulseProps) {
   // Hydration safe rendering
   const [isClient, setIsClient] = useState(false);
   
@@ -124,7 +125,8 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
   // Detect mobile dimensions based on user feedback (iPhone-like or smaller)
   const isMobilePortraitOrSmaller = useMediaQuery('(max-width: 430px) and (max-height: 932px)');
   const isMobileLandscapeOrSmaller = useMediaQuery('(max-width: 932px) and (max-height: 430px)');
-  const isConsideredMobile = isMobilePortraitOrSmaller || isMobileLandscapeOrSmaller;
+  // Allow bypassing mobile detection if disableMobileDetection is true
+  const isConsideredMobile = disableMobileDetection ? false : (isMobilePortraitOrSmaller || isMobileLandscapeOrSmaller);
   
   // Refs for animation and layout stability
   const clockContainerRef = useRef<HTMLDivElement>(null);
