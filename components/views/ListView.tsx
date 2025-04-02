@@ -361,6 +361,9 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         }, 500);
 
         if (highlightedTimeRef.current) resetInactivityTimer();
+        
+        // We no longer synchronize scrolling between timezone lists
+        // Each list scrolls independently
     }
   }, [resetInactivityTimer]);
 
@@ -374,6 +377,10 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
   const scrollToIndex = useCallback((index: number, alignment: 'start' | 'center' | 'end' | 'smart' | 'auto' = 'center') => {
     if (userIsScrollingRef.current) return;
     const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    
+    // When manually invoking scrollToIndex (like for initial position),
+    // we still want to synchronize all timezones for the first view
+    // But after that, each timezone scrolls independently
     requestAnimationFrame(() => {
       Object.values(listRefs.current).forEach(listRef => {
         if (listRef) {
@@ -944,10 +951,39 @@ const TimezoneColumn = memo(({
           </div>
         )}
       </div>
-      <div className="h-72 md:h-80 lg:h-96 rounded-md border border-border/50 overflow-hidden mt-4 backdrop-blur-[2px]" 
+      <div 
+        className="h-72 md:h-80 lg:h-96 rounded-md border border-border/50 overflow-hidden mt-4 backdrop-blur-[2px]"
         style={{ backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.05)' : 'rgba(255, 255, 255, 0.05)' }}
         role="listbox" 
         aria-label={`Time selection list for ${timezone.name}`}
+        onWheel={(e) => {
+          // Handle wheel events for the timezone's time list when cursor is over it
+          e.stopPropagation(); // Stop wheel event from propagating to parent elements
+          
+          // Get the list reference for this timezone
+          const listRef = listRefs.current[timezone.id];
+          if (!listRef) return;
+          
+          // Calculate scroll direction and amount
+          const delta = e.deltaY;
+          
+          // Safely access scrollOffset or use direct scrollTo with a delta
+          let currentOffset = 0;
+          
+          // Check if state and scrollOffset exist on listRef
+          if (listRef.state && 'scrollOffset' in listRef.state) {
+            currentOffset = (listRef.state as any).scrollOffset;
+          }
+          
+          const itemSize = 48; // This should match the itemSize in FixedSizeList
+          
+          // Smooth scroll calculation
+          const scrollAmount = delta > 0 ? itemSize : -itemSize;
+          const newOffset = Math.max(0, currentOffset + scrollAmount);
+          
+          // Scroll to the new position
+          listRef.scrollTo(newOffset);
+        }}
       >
         <AutoSizer>
           {({ height, width }) => (
