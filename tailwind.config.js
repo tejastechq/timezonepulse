@@ -66,6 +66,17 @@ module.exports = {
           montserrat: ['var(--font-montserrat)', 'sans-serif'],
           oswald: ['var(--font-oswald)', 'sans-serif'], // Added Oswald
         },
+        animation: {
+          'clock-second': 'clockhand 60s linear infinite',
+          'clock-minute': 'clockhand 3600s linear infinite',
+          'pulse-slow': 'pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        },
+        keyframes: {
+          clockhand: {
+            '0%': { transform: 'translate(-50%, 0) rotate(0deg)' },
+            '100%': { transform: 'translate(-50%, 0) rotate(360deg)' },
+          },
+        },
       },
    },
   plugins: [

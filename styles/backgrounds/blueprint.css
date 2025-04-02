@@ -1,0 +1,52 @@
+/* Tech Blueprint Pattern Background */
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  z-index: -2;
+  pointer-events: none;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 25% 25%, transparent 40px, rgba(59, 130, 246, 0.04) 41px, rgba(59, 130, 246, 0.04) 43px, transparent 44px),
+    radial-gradient(circle at 75% 75%, transparent 40px, rgba(59, 130, 246, 0.04) 41px, rgba(59, 130, 246, 0.04) 43px, transparent 44px),
+    radial-gradient(circle at 75% 25%, transparent 30px, rgba(59, 130, 246, 0.04) 31px, rgba(59, 130, 246, 0.04) 33px, transparent 34px),
+    radial-gradient(circle at 25% 75%, transparent 30px, rgba(59, 130, 246, 0.04) 31px, rgba(59, 130, 246, 0.04) 33px, transparent 34px),
+    linear-gradient(45deg, transparent 49.5%, rgba(59, 130, 246, 0.08) 50%, transparent 50.5%),
+    linear-gradient(-45deg, transparent 49.5%, rgba(59, 130, 246, 0.08) 50%, transparent 50.5%);
+  background-size: 100px 100px, 100px 100px, 100px 100px, 100px 100px, 100px 100px, 100px 100px;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* Dark mode adjustments */
+.dark body::before {
+  background: 
+    linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+}
+
+.dark body::after {
+  background-image: 
+    radial-gradient(circle at 25% 25%, transparent 40px, rgba(56, 189, 248, 0.05) 41px, rgba(56, 189, 248, 0.05) 43px, transparent 44px),
+    radial-gradient(circle at 75% 75%, transparent 40px, rgba(56, 189, 248, 0.05) 41px, rgba(56, 189, 248, 0.05) 43px, transparent 44px),
+    radial-gradient(circle at 75% 25%, transparent 30px, rgba(56, 189, 248, 0.05) 31px, rgba(56, 189, 248, 0.05) 33px, transparent 34px),
+    radial-gradient(circle at 25% 75%, transparent 30px, rgba(56, 189, 248, 0.05) 31px, rgba(56, 189, 248, 0.05) 33px, transparent 34px),
+    linear-gradient(45deg, transparent 49.5%, rgba(56, 189, 248, 0.1) 50%, transparent 50.5%),
+    linear-gradient(-45deg, transparent 49.5%, rgba(56, 189, 248, 0.1) 50%, transparent 50.5%);
+} 

@@ -114,15 +114,15 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
   const formatted = formattedTimeStr;
   const animClass = getHighlightAnimationClassFn(isHighlight);
   
-  // Simplified styling inspired by mobile view
+  // Minimalistic styling
   const cellClasses = clsx(
-    'flex justify-between items-center px-4 py-3 border-b border-border/50 cursor-pointer transition-colors duration-200 relative',
-    'hover:bg-accent',
-    isHighlight ? 'bg-blue-500 dark:bg-blue-600 text-white font-medium' : 'text-foreground font-normal',
-    isCurrent && !isHighlight ? 'bg-blue-900/50 border-l-2 border-blue-400' : '',
-    isDay && !isHighlight && !isCurrent ? 'bg-yellow-400/20 dark:bg-yellow-500/20 border-l-2 border-yellow-500 dark:border-yellow-600' : '',
-    isNight && !isHighlight && !isCurrent ? 'bg-muted/60' : '',
-    isBoundary && !isHighlight ? 'border-t border-t-border' : '',
+    'flex justify-between items-center px-3 py-2 cursor-pointer transition-all duration-150 relative',
+    'hover:bg-accent/30',
+    isHighlight ? 'bg-primary-500/90 text-white font-medium' : 'text-foreground font-normal',
+    isCurrent && !isHighlight ? 'border-l-2 border-primary-400 bg-primary-100/10 dark:bg-primary-900/10' : '',
+    isDay && !isHighlight && !isCurrent ? 'border-l border-amber-300/50 dark:border-amber-500/30 bg-amber-50/10 dark:bg-amber-900/5' : '',
+    isNight && !isHighlight && !isCurrent ? 'border-l border-indigo-300/50 dark:border-indigo-500/30 bg-indigo-50/5 dark:bg-indigo-900/5' : '',
+    isBoundary && !isHighlight ? 'border-t border-t-border/30' : '',
     animClass
   );
   
@@ -141,33 +141,29 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
       className={cellClasses}
       tabIndex={0}
     >
-      {isBoundary && <div className="absolute top-0 left-0 w-full text-xs text-gray-500 dark:text-gray-400 pt-0.5 px-3 font-medium">{DateTime.fromJSDate(time).setZone(timezone).toFormat('EEE, MMM d')}</div>}
+      {isBoundary && <div className="absolute top-0 left-0 w-full text-xs text-gray-500/90 dark:text-gray-400/90 pt-0.5 px-2 font-medium">{DateTime.fromJSDate(time).setZone(timezone).toFormat('EEE, MMM d')}</div>}
       
-      {/* Time display with simplified styling */}
+      {/* Time display with minimal styling */}
       <span className={clsx(
-        'text-sm', 
-        isHighlight ? 'text-white' : isCurrent ? 'text-primary-700 dark:text-primary-300' : 'text-foreground',
-        timezone.startsWith('Mars/') && !isHighlight ? 'text-red-600 dark:text-red-400 font-medium' : ''
+        'font-mono text-sm tracking-tight', 
+        isHighlight ? 'text-white' : isCurrent ? 'text-primary-700 dark:text-primary-300 font-medium' : 'text-foreground',
+        timezone.startsWith('Mars/') && !isHighlight ? 'text-red-600/90 dark:text-red-400/90' : ''
       )}>
         {timezone.startsWith('Mars/') && !isHighlight && (
-          <span className="mr-1 text-red-600 dark:text-red-400 inline-flex items-center" title="Mars Time">
-            {timezone === 'Mars/Jezero' ? (
-              <Image src="/perseverance.png" alt="Perseverance Rover" width={16} height={16} className="inline-block w-4 h-4 align-text-bottom" />
-            ) : (
-              <Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 align-text-bottom" />
-            )}
+          <span className="mr-1 text-red-600/80 dark:text-red-400/80 inline-flex items-center opacity-80" title="Mars Time">
+            <span className="text-xs">♂︎</span>
           </span>
         )}
         {formatted}
       </span>
       
-      {/* Indicators with simplified styling */}
-      <div className="flex items-center space-x-1.5">
-        {isNight && !isHighlight && <Moon className="h-3.5 w-3.5 text-indigo-400 dark:text-indigo-300" />}
-        {isDay && !isHighlight && <Sun className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />}
-        {isCurrent && !isHighlight && <span className="text-xs font-medium text-blue-500">(Now)</span>}
-        {isDST && !isHighlight && <span className="text-xs text-amber-500 ml-1" title="DST transition soon">⚠️</span>}
-        {isWknd && !isHighlight && <span className="text-xs text-purple-500 ml-1" title="Weekend">🏖️</span>}
+      {/* Simplified indicators */}
+      <div className="flex items-center space-x-1.5 opacity-70">
+        {isNight && !isHighlight && <span title="Night hours">●</span>}
+        {isDay && !isHighlight && <span title="Day hours">○</span>}
+        {isCurrent && !isHighlight && <span className="text-xs font-medium text-primary-500">now</span>}
+        {isDST && !isHighlight && <span className="text-xs text-amber-500/80" title="DST transition">⊙</span>}
+        {isWknd && !isHighlight && <span className="text-xs text-purple-500/80" title="Weekend">⌇</span>}
       </div>
     </div>
   );
@@ -618,35 +614,35 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     };
     return (
       <>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3 gap-1 md:gap-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
           {displayTimezones.map((timezone) => (
-             <TimezoneColumn
-               key={timezone.id}
-               timezone={timezone}
-               isLocal={timezone.id === userLocalTimezone}
-               isSearching={isSearching}
-               filteredTimeSlots={filteredTimeSlots}
-               timeSlots={timeSlots}
-               isHighlighted={isHighlighted}
-               checkNightHours={checkNightHours}
-               isDateBoundary={isDateBoundary}
-               isDSTTransition={isDSTTransition}
-               isCurrentTime={isCurrentTime}
-               isWeekend={isWeekend}
-               formatTime={formatTime}
-               getHighlightAnimationClass={getHighlightAnimationClass}
-               handleTimeSelection={handleTimeSelection}
-               listRefs={listRefs}
-               handleUserScroll={handleUserScroll}
-               resolvedTheme={resolvedTheme}
-               getTimezoneOffset={getTimezoneOffset}
-               handleRemoveTimezone={handleRemoveTimezone}
-               setEditingTimezoneId={setEditingTimezoneId}
-               setSelectorOpen={setSelectorOpen}
-               userLocalTimezone={userLocalTimezone}
-               localTime={localTime}
-               getHighlightClass={getHighlightClass}
-             />
+            <TimezoneColumn
+              key={timezone.id}
+              timezone={timezone}
+              isLocal={timezone.id === userLocalTimezone}
+              isSearching={isSearching}
+              filteredTimeSlots={filteredTimeSlots}
+              timeSlots={timeSlots}
+              isHighlighted={isHighlighted}
+              checkNightHours={checkNightHours}
+              isDateBoundary={isDateBoundary}
+              isDSTTransition={isDSTTransition}
+              isCurrentTime={isCurrentTime}
+              isWeekend={isWeekend}
+              formatTime={formatTime}
+              getHighlightAnimationClass={getHighlightAnimationClass}
+              handleTimeSelection={handleTimeSelection}
+              listRefs={listRefs}
+              handleUserScroll={handleUserScroll}
+              resolvedTheme={resolvedTheme}
+              getTimezoneOffset={getTimezoneOffset}
+              handleRemoveTimezone={handleRemoveTimezone}
+              setEditingTimezoneId={setEditingTimezoneId}
+              setSelectorOpen={setSelectorOpen}
+              userLocalTimezone={userLocalTimezone}
+              localTime={localTime}
+              getHighlightClass={getHighlightClass}
+            />
           ))}
           {canAddMore && (
             <motion.button initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.2 }} onClick={() => setSelectorOpen(true)} className={`glass-card backdrop-blur-fix ${resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'} rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 p-5 md:p-6 lg:p-7 h-full min-h-[300px] md:min-h-[320px] flex flex-col items-center justify-center hover:border-primary-500 dark:hover:border-primary-500 transition-all duration-200 cursor-pointer`} style={{ isolation: 'isolate', backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.2)' : 'rgba(255, 255, 255, 0.15)', minWidth: '280px' }} aria-label="Add Timezone or Region - Track time for another region">
@@ -764,8 +760,52 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="w-full max-w-screen-xl mx-auto px-2 sm:px-4 lg:px-6 relative"
-      style={{ isolation: 'isolate' }}
+      style={{ 
+        isolation: 'isolate',
+        position: 'relative',
+        zIndex: 1
+      }}
     >
+      {/* Beautiful time-themed background */}
+      <div 
+        className="absolute inset-0 -z-10 bg-gradient-to-br from-transparent via-primary-50/5 to-accent/5 dark:from-transparent dark:via-primary-900/5 dark:to-accent/10 overflow-hidden rounded-xl"
+        style={{
+          backgroundImage: resolvedTheme === 'dark' ? 
+            'radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.03) 0%, transparent 50%), radial-gradient(circle at 90% 90%, rgba(252, 165, 165, 0.03) 0%, transparent 50%)' : 
+            'radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.05) 0%, transparent 50%), radial-gradient(circle at 90% 90%, rgba(252, 165, 165, 0.05) 0%, transparent 50%)'
+        }}
+      >
+        {/* Add clock hand animation */}
+        <div className="absolute top-[5%] right-[5%] w-40 h-40 opacity-5">
+          <div className="relative w-full h-full rounded-full border border-gray-400/20">
+            <div className="absolute top-1/2 left-1/2 w-[1px] h-[40%] bg-primary-500/40 origin-bottom animate-clock-second"></div>
+            <div className="absolute top-1/2 left-1/2 w-[2px] h-[30%] bg-accent/40 origin-bottom animate-clock-minute"></div>
+          </div>
+        </div>
+        
+        {/* Subtle circles representing clock faces/world map dots */}
+        <div className="absolute w-full h-full opacity-5">
+          <div className="absolute top-[10%] left-[15%] w-20 h-20 rounded-full border border-primary-400/20 animate-pulse-slow"></div>
+          <div className="absolute top-[35%] right-[25%] w-32 h-32 rounded-full border border-accent/20"></div>
+          <div className="absolute bottom-[20%] left-[35%] w-40 h-40 rounded-full border border-primary-400/20"></div>
+          <div className="absolute top-[60%] right-[10%] w-16 h-16 rounded-full border border-accent/20 animate-pulse-slow"></div>
+        </div>
+        
+        {/* Subtle grid pattern to represent timelines */}
+        <div className="absolute w-full h-full opacity-5">
+          <div className="grid grid-cols-12 h-full">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="border-l border-gray-400/20 dark:border-gray-400/10 h-full"></div>
+            ))}
+          </div>
+          <div className="grid grid-rows-12 w-full">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <div key={i} className="border-t border-gray-400/20 dark:border-gray-400/10 w-full"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       <div className="mb-4 w-full sm:w-80 ml-0 pt-3">
         <TimeSearch
           onSearch={handleSearch}
@@ -912,58 +952,118 @@ const TimezoneColumn = memo(({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className={`glass-card backdrop-blur-fix ${resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'} rounded-lg p-4 md:p-5 border border-border/50 transition-all duration-200 hover:shadow-md relative`}
+      className="bg-white/10 dark:bg-black/10 backdrop-blur-md rounded-lg overflow-hidden shadow-lg border border-white/10 dark:border-white/5"
       style={{ 
         isolation: 'isolate', 
-        backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.2)' : 'rgba(255, 255, 255, 0.15)', 
-        minWidth: '280px' 
+        minWidth: '280px',
+        transition: 'all 0.3s ease',
+        backgroundImage: timezone.id.startsWith('Mars/') ? 
+          'linear-gradient(to bottom right, rgba(239, 68, 68, 0.03), transparent)' : 
+          'linear-gradient(to bottom right, rgba(var(--color-primary-500), 0.03), transparent)'
       }}
       data-timezone-id={timezone.id}
+      onMouseOver={(e) => {
+        e.currentTarget.style.transform = 'translateY(-3px)';
+        e.currentTarget.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.08)';
+        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+      }}
+      onMouseOut={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '';
+        e.currentTarget.style.borderColor = '';
+      }}
     >
-      <div className="flex justify-between items-center mb-3 relative z-[2]">
-        <div>
-          <h3 className={`text-lg font-medium ${timezone.id === 'Mars/Jezero' ? 'text-red-600 dark:text-red-400' : 'text-foreground'} inline-flex items-center`}>
-            {timezone.id.startsWith('Mars/') && (<span className="inline-block mr-1.5" title="Mars Time"><Image src="/mars.png" alt="Mars" width={20} height={20} className="inline-block w-5 h-5 align-text-bottom" /></span>)}
-            {timezone.id === 'Mars/Jezero' && (<span className="inline-block mr-1.5" title="Perseverance Rover Location"><Image src="/perseverance.png" alt="Perseverance Rover" width={20} height={20} className="inline-block w-5 h-5 align-text-bottom" /></span>)}
-            <span className="truncate">{timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}</span>
-            {timezone.id === 'Mars/Jezero' && (<span className="ml-2 text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded animate-pulse"></span>)}
-          </h3>
-          <div className="text-xs text-muted-foreground flex items-center space-x-2">
-            <span>{timezone.id.startsWith('Mars/') ? timezone.id === 'Mars/Jezero' ? '(MTC+05:10)' : 'MTC' : DateTime.now().setZone(timezone.id).toFormat('ZZZZ')}</span>
-            {!timezone.id.startsWith('Mars/') && <span>({getTimezoneOffset(timezone.id)})</span>}
-            {timezone.id === 'Mars/Jezero' && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-300">Perseverance</span>}
-            {isDST && !timezone.id.startsWith('Mars/') && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-800 dark:text-amber-100">DST</span>}
+      <div className="p-3 border-b border-border/10 flex justify-between items-center relative overflow-hidden">
+        {/* Day/night indicator for visual context */}
+        {localTime && (
+          <div className="absolute inset-0 -z-10 opacity-10">
+            {(() => {
+              const dt = DateTime.fromJSDate(localTime).setZone(timezone.id);
+              const hour = dt.hour;
+              
+              if (hour >= 5 && hour < 8) {
+                return <div className="absolute inset-0 bg-gradient-to-r from-amber-300/20 to-blue-300/20" />; // Dawn
+              } else if (hour >= 8 && hour < 16) {
+                return <div className="absolute inset-0 bg-gradient-to-r from-yellow-300/20 to-sky-300/20" />; // Day
+              } else if (hour >= 16 && hour < 19) {
+                return <div className="absolute inset-0 bg-gradient-to-r from-orange-300/20 to-purple-300/20" />; // Dusk
+              } else {
+                return <div className="absolute inset-0 bg-gradient-to-r from-blue-900/20 to-indigo-900/20" />; // Night
+              }
+            })()}
           </div>
-          <div className={`text-sm font-medium mt-1 ${timezone.id.startsWith('Mars/') ? 'text-red-600 dark:text-red-400' : 'text-primary-600 dark:text-primary-400'}`}>
+        )}
+
+        <div>
+          <div className="flex items-baseline">
+            <h3 className={`text-base font-medium ${timezone.id === 'Mars/Jezero' ? 'text-red-600 dark:text-red-400' : 'text-foreground'} flex items-center`}>
+              {timezone.id.startsWith('Mars/') && (<span className="inline-block mr-1.5" title="Mars Time"><Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 align-text-bottom" /></span>)}
+              <span className="truncate">{timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}</span>
+            </h3>
+            <span className="ml-2 text-xs text-muted-foreground">
+              {timezone.id.startsWith('Mars/') ? timezone.id === 'Mars/Jezero' ? '(MTC+05:10)' : '(MTC)' : `(${getTimezoneOffset(timezone.id)})`}
+            </span>
+          </div>
+          <div className={`text-xl font-mono tracking-tight ${timezone.id.startsWith('Mars/') ? 'text-red-600 dark:text-red-400' : 'text-primary-600 dark:text-primary-400'}`}>
             {localTime && formatTime(localTime, timezone.id)}
           </div>
-          {/* Shortened Mars info panel */}
+          
+          {/* Time of day visual indicator */}
+          {localTime && (
+            <div className="mt-1 flex items-center">
+              {(() => {
+                const dt = DateTime.fromJSDate(localTime).setZone(timezone.id);
+                const hour = dt.hour;
+                const minutePercentage = dt.minute / 60;
+                const dayProgress = ((hour + minutePercentage) / 24) * 100;
+                
+                return (
+                  <>
+                    <div className="h-1 flex-grow rounded bg-gray-200/30 dark:bg-gray-700/30 overflow-hidden">
+                      <div 
+                        className="h-full transition-all duration-1000 ease-in-out" 
+                        style={{ 
+                          width: `${dayProgress}%`,
+                          background: hour >= 5 && hour < 8 ? 'linear-gradient(to right, #fbbf24, #60a5fa)' : // Dawn
+                                    hour >= 8 && hour < 16 ? 'linear-gradient(to right, #fcd34d, #38bdf8)' : // Day
+                                    hour >= 16 && hour < 19 ? 'linear-gradient(to right, #fb923c, #c084fc)' : // Dusk
+                                    'linear-gradient(to right, #1e3a8a, #4f46e5)' // Night
+                        }}
+                      ></div>
+                    </div>
+                    <span className="ml-2 text-xs text-muted-foreground/80">
+                      {hour >= 5 && hour < 8 ? 'Dawn' : 
+                       hour >= 8 && hour < 16 ? 'Day' : 
+                       hour >= 16 && hour < 19 ? 'Dusk' : 'Night'}
+                    </span>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+          
+          {/* Mars mini info - simplified */}
           {timezone.id === 'Mars/Jezero' && (
-            <div className="mt-2 text-xs bg-red-50 dark:bg-red-900/5 p-2 rounded border border-red-100/50 dark:border-red-900/10">
-              <p className="text-red-600/80 dark:text-red-400/80">Perseverance Rover • Jezero Crater</p>
-              <p className="text-red-600/70 dark:text-red-400/70 flex justify-between">
-                <span>18.38°N, 77.58°E</span>
-                <span>{localTime && formatTime(localTime, timezone.id).includes('Sol') ? formatTime(localTime, timezone.id).split('MTC')[1].trim() : 'Sol'}</span>
-              </p>
+            <div className="text-xs text-red-600/80 dark:text-red-400/80 mt-1">
+              Perseverance • Jezero Crater • {localTime && formatTime(localTime, timezone.id).includes('Sol') ? formatTime(localTime, timezone.id).split('MTC')[1].trim() : 'Sol'}
             </div>
           )}
         </div>
+        
         {!isLocal && (
-          <div className="flex items-center space-x-1 relative z-[2]">
-            <button 
-              onClick={() => handleRemoveTimezone(timezone.id)} 
-              className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none" 
-              aria-label="Remove timezone"
-            >
-              <X className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            </button>
-          </div>
+          <button 
+            onClick={() => handleRemoveTimezone(timezone.id)} 
+            className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none opacity-50 hover:opacity-100" 
+            aria-label="Remove timezone"
+          >
+            <X className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+          </button>
         )}
       </div>
+      
       <div 
-        className="h-72 md:h-80 lg:h-96 rounded-md border border-border/50 overflow-hidden mt-4 backdrop-blur-[2px] scrollbar-hide"
+        className="h-60 overflow-hidden scrollbar-hide"
         style={{ 
-          backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.05)' : 'rgba(255, 255, 255, 0.05)',
           scrollbarWidth: 'none', /* Firefox */
           msOverflowStyle: 'none', /* IE/Edge */
         }}
@@ -988,7 +1088,7 @@ const TimezoneColumn = memo(({
             currentOffset = (listRef.state as any).scrollOffset;
           }
           
-          const itemSize = 48; // This should match the itemSize in FixedSizeList
+          const itemSize = 40; // Reduced from 48 for a more compact look
           
           // Smooth scroll calculation
           const scrollAmount = delta > 0 ? itemSize : -itemSize;
@@ -1004,7 +1104,7 @@ const TimezoneColumn = memo(({
               height={height}
               width={width}
               itemCount={displaySlots.length}
-              itemSize={48}
+              itemSize={40} // Reduced from 48
               overscanCount={10}
               ref={(ref) => { listRefs.current[timezone.id] = ref; }}
               className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md scrollbar-hide"

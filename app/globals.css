@@ -4,6 +4,7 @@
 
 :root {
   --background: #f8f8f8;
+  --background-rgb: 248, 248, 248;
   --foreground: #333333;
   --glass-light: rgba(255, 255, 255, 0.25);
   --glass-dark: rgba(15, 15, 25, 0.35);
@@ -17,18 +18,24 @@
 
 .dark {
   --background: #121212;
+  --background-rgb: 18, 18, 18;
   --foreground: #f8f8f8;
 }
 
-body {
-  font-family: var(--font-inter); /* Explicitly set base font */
-  color: var(--foreground);
-  background-color: var(--background);
-  overflow-x: hidden;
-  position: relative;
+/* Day-Night Cycle Gradient Background */
+@keyframes dayCycle {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
 }
 
-/* Dynamic background with gradient and shapes for glassmorphism effect */
+body {
+  font-family: var(--font-inter);
+  color: var(--foreground);
+  position: relative;
+  overflow-x: hidden;
+  background-color: var(--background);
+}
+
 body::before {
   content: "";
   position: fixed;
@@ -36,16 +43,21 @@ body::before {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
-    radial-gradient(circle at 20% 30%, rgba(41, 84, 163, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(138, 43, 226, 0.1) 0%, transparent 40%),
-    radial-gradient(circle at 40% 80%, rgba(0, 128, 128, 0.1) 0%, transparent 40%),
-    radial-gradient(circle at 75% 60%, rgba(255, 145, 0, 0.05) 0%, transparent 40%);
+  background: linear-gradient(120deg, 
+    rgba(25, 25, 112, 0.15) 0%, /* Midnight blue */
+    rgba(70, 130, 180, 0.15) 15%, /* Steel blue - pre-dawn */
+    rgba(135, 206, 235, 0.15) 30%, /* Sky blue - morning */
+    rgba(64, 224, 208, 0.15) 45%, /* Turquoise - midday */
+    rgba(240, 128, 128, 0.15) 60%, /* Light coral - sunset */
+    rgba(75, 0, 130, 0.15) 75%, /* Indigo - dusk */
+    rgba(25, 25, 112, 0.15) 100% /* Midnight blue again */
+  );
+  background-size: 200% 200%;
+  animation: dayCycle 30s linear infinite alternate;
   z-index: -2;
   pointer-events: none;
 }
 
-/* Floating colored shapes for visual interest */
 body::after {
   content: "";
   position: fixed;
@@ -54,33 +66,36 @@ body::after {
   right: 0;
   bottom: 0;
   background-image: 
-    radial-gradient(circle at 10% 10%, rgba(25, 118, 210, 0.03) 0%, rgba(25, 118, 210, 0.03) 8%, transparent 8.5%),
-    radial-gradient(circle at 90% 5%, rgba(106, 27, 154, 0.03) 0%, rgba(106, 27, 154, 0.03) 4%, transparent 4.5%),
-    radial-gradient(circle at 80% 80%, rgba(0, 150, 136, 0.03) 0%, rgba(0, 150, 136, 0.03) 6%, transparent 6.5%),
-    radial-gradient(circle at 20% 60%, rgba(255, 87, 34, 0.03) 0%, rgba(255, 87, 34, 0.03) 5%, transparent 5.5%),
-    radial-gradient(circle at 50% 30%, rgba(41, 121, 255, 0.03) 0%, rgba(41, 121, 255, 0.03) 7%, transparent 7.5%),
-    radial-gradient(circle at 70% 50%, rgba(233, 30, 99, 0.03) 0%, rgba(233, 30, 99, 0.03) 4%, transparent 4.5%);
+    radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 20% 25%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 30% 15%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 60% 10%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 70% 25%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 80% 15%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 90% 20%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%);
   z-index: -1;
   pointer-events: none;
+  opacity: 0.3;
 }
 
-/* Dark mode modifications for background */
+/* Dark mode adjustments */
 .dark body::before {
-  background: 
-    radial-gradient(circle at 20% 30%, rgba(56, 189, 248, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(167, 139, 250, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 40% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 75% 60%, rgba(251, 146, 60, 0.05) 0%, transparent 40%);
+  background: linear-gradient(120deg, 
+    rgba(25, 25, 112, 0.25) 0%, /* Midnight blue - darker */
+    rgba(70, 130, 180, 0.25) 15%, /* Steel blue - pre-dawn */
+    rgba(135, 206, 235, 0.25) 30%, /* Sky blue - morning */
+    rgba(64, 224, 208, 0.25) 45%, /* Turquoise - midday */
+    rgba(240, 128, 128, 0.25) 60%, /* Light coral - sunset */
+    rgba(75, 0, 130, 0.25) 75%, /* Indigo - dusk */
+    rgba(25, 25, 112, 0.25) 100% /* Midnight blue again */
+  );
+  opacity: 0.7;
 }
 
 .dark body::after {
-  background-image: 
-    radial-gradient(circle at 10% 10%, rgba(56, 189, 248, 0.04) 0%, rgba(56, 189, 248, 0.04) 8%, transparent 8.5%),
-    radial-gradient(circle at 90% 5%, rgba(167, 139, 250, 0.04) 0%, rgba(167, 139, 250, 0.04) 4%, transparent 4.5%),
-    radial-gradient(circle at 80% 80%, rgba(16, 185, 129, 0.04) 0%, rgba(16, 185, 129, 0.04) 6%, transparent 6.5%),
-    radial-gradient(circle at 20% 60%, rgba(251, 146, 60, 0.04) 0%, rgba(251, 146, 60, 0.04) 5%, transparent 5.5%),
-    radial-gradient(circle at 50% 30%, rgba(59, 130, 246, 0.04) 0%, rgba(59, 130, 246, 0.04) 7%, transparent 7.5%),
-    radial-gradient(circle at 70% 50%, rgba(236, 72, 153, 0.04) 0%, rgba(236, 72, 153, 0.04) 4%, transparent 4.5%);
+  opacity: 0.5;
 }
 
 /* Custom utility classes */
@@ -88,6 +103,16 @@ body::after {
   .text-balance {
     text-wrap: balance;
   }
+}
+
+/* Scrollbar hiding utility class */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 
 /* Enhanced Glassmorphism effects */
@@ -141,6 +166,18 @@ body::after {
   100% {
     left: 100%;
   }
+}
+
+/* Clock hand animations */
+@keyframes clockhand {
+  0% { transform: translate(-50%, 0) rotate(0deg); }
+  100% { transform: translate(-50%, 0) rotate(360deg); }
+}
+
+/* Slow pulse animation */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.7; }
 }
 
 /* Class to be added via JS, with animation-iteration-count: 1 to ensure it only runs once */
@@ -249,207 +286,27 @@ body::after {
   animation: pulse 1.5s ease-in-out;
 }
 
-.auto-scroll-transition {
-  animation: highlight 1.2s ease-in-out;
-}
-
 @keyframes pulse {
   0% {
-    background-color: rgba(var(--primary-500), 0.2);
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
   }
-  50% {
-    background-color: rgba(var(--primary-500), 0.5);
-  }
-  100% {
-    background-color: transparent;
-  }
-}
-
-@keyframes highlight {
-  0% {
-    background-color: transparent;
-  }
-  30% {
-    background-color: rgba(var(--primary-500), 0.3);
+  70% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
   }
   100% {
-    background-color: transparent;
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
   }
 }
 
-/* Improved Scrollbar styling */
-.scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
+/* Animation classes */
+.animate-clock-second {
+  animation: clockhand 60s linear infinite;
 }
 
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: rgba(229, 231, 235, 0.5);
-  border-radius: 3px;
+.animate-clock-minute {
+  animation: clockhand 3600s linear infinite;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: rgba(156, 163, 175, 0.5);
-  border-radius: 3px;
-}
-
-.dark .scrollbar-thin::-webkit-scrollbar-track {
-  background: rgba(55, 65, 81, 0.5);
-}
-
-.dark .scrollbar-thin::-webkit-scrollbar-thumb {
-  background-color: rgba(107, 114, 128, 0.5);
-}
-
-/* Enhanced hover effects */
-@keyframes shimmer {
-  0% {
-    left: -100%;
-  }
-  100% {
-    left: 100%;
-  }
-}
-
-/* Disable the conflicting hover-shimmer animation */
-.glass-card:hover::before {
-  /* Remove the infinite animation that might be conflicting */
-  animation: none !important;
-  transform: none !important;
-  transition: none !important;
-}
-
-/* Ensure the shimmer effect for loading states doesn't interfere with our hover animation */
-.shimmer {
-  /* Use a different class name for the loading animation to avoid conflicts */
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0),
-    rgba(255, 255, 255, 0.2),
-    rgba(255, 255, 255, 0)
-  );
-  background-size: 200% 100%;
-  background-position: -100% 0;
-  animation: shimmer-loading 1.5s infinite;
-}
-
-@keyframes shimmer-loading {
-  to {
-    background-position: 200% 0;
-  }
-}
-
-/* Use a more explicit name for the loading animation */
-@keyframes shimmer {
-  to {
-    background-position: 200% 0;
-  }
-}
-
-/* Make card contents visible above the background */
-.glass-card > * {
-  position: relative;
-  z-index: 2;
-}
-
-/* Ensure proper isolation for backdrop-filter */
-@supports (backdrop-filter: blur(8px)) {
-  .glass-card {
-    isolation: isolate;
-  }
-}
-
-/* Handle reduced motion preferences with CSS */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  
-  /* Specifically disable our shine animation */
-  .glass-card.animate-shine::before {
-    animation: none !important;
-  }
-}
-
-/* Use the data attribute for components that need to access this preference */
-html[data-prefers-reduced-motion="true"] .view-transition-enter-active,
-html[data-prefers-reduced-motion="true"] .view-transition-exit-active,
-html[data-prefers-reduced-motion="true"] .dashboard-enter-active,
-html[data-prefers-reduced-motion="true"] .dashboard-exit-active {
-  transition: none !important;
-}
-
-html[data-prefers-reduced-motion="true"] .glass-card::before,
-html[data-prefers-reduced-motion="true"] .glass-card.animate-shine::before {
-  animation: none !important;
-}
-
-/* Font loading optimization with data attributes */
-html[data-fonts-loaded="true"] {
-  /* Apply any styles needed for loaded fonts */
-  font-display: swap;
-}
-
-/* BFCache restoration handling */
-html[data-bfcache-restored="true"] {
-  /* Styles for restored pages if needed */
-}
-
-/* Override vaul drawer background blur/scale effect */
-[data-vaul-drawer-visible="true"] > :not([vaul-drawer]) {
-  filter: none !important;
-  transform: none !important;
-}
-
-/* Fix the accessibility issue with aria-hidden */
-[data-vaul-drawer-visible="true"] #main-content {
-  pointer-events: none; /* Prevent interaction with main content when drawer is open */
-}
-
-/* Instead of using aria-hidden which can cause focus issues, use inert when supported */
-@supports (inert: auto) {
-  [data-vaul-drawer-visible="true"] #main-content {
-    inert: auto; /* Use inert instead of aria-hidden which properly prevents focus */
-  }
-}
-
-/* Ensure focus indicators are visible for keyboard navigation */
-:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-/* Fix blurry text in Vaul drawer by removing any blur effects */
-[vaul-drawer-content],
-[vaul-drawer-content] *,
-[data-drawer-content],
-[data-drawer-content] * {
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
-  filter: none !important;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* Target the specific drawer element to ensure no blur is applied */
-[vaul-drawer] {
-  filter: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
-}
-
-/* Ensure transformations don't affect text rendering */
-[vaul-drawer-content] {
-  transform-style: flat !important;
-  will-change: auto !important;
-}
-
-/* Target the drawer wrapper to prevent background blurring */
-[data-vaul-drawer-wrapper] {
-  filter: none !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+.animate-pulse-slow {
+  animation: pulse-slow 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }

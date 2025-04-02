@@ -1,0 +1,68 @@
+/* Day-Night Cycle Gradient Background */
+
+@keyframes dayCycle {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(120deg, 
+    rgba(25, 25, 112, 0.15) 0%, /* Midnight blue */
+    rgba(70, 130, 180, 0.15) 15%, /* Steel blue - pre-dawn */
+    rgba(135, 206, 235, 0.15) 30%, /* Sky blue - morning */
+    rgba(64, 224, 208, 0.15) 45%, /* Turquoise - midday */
+    rgba(240, 128, 128, 0.15) 60%, /* Light coral - sunset */
+    rgba(75, 0, 130, 0.15) 75%, /* Indigo - dusk */
+    rgba(25, 25, 112, 0.15) 100% /* Midnight blue again */
+  );
+  background-size: 200% 200%;
+  animation: dayCycle 30s linear infinite alternate;
+  z-index: -2;
+  pointer-events: none;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    radial-gradient(circle at 10% 10%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 20% 25%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 30% 15%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 60% 10%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 70% 25%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 80% 15%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%),
+    radial-gradient(circle at 90% 20%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.2) 0.05%, transparent 0.1%);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+/* Dark mode adjustments */
+.dark body::before {
+  background: linear-gradient(120deg, 
+    rgba(25, 25, 112, 0.25) 0%, /* Midnight blue - darker */
+    rgba(70, 130, 180, 0.25) 15%, /* Steel blue - pre-dawn */
+    rgba(135, 206, 235, 0.25) 30%, /* Sky blue - morning */
+    rgba(64, 224, 208, 0.25) 45%, /* Turquoise - midday */
+    rgba(240, 128, 128, 0.25) 60%, /* Light coral - sunset */
+    rgba(75, 0, 130, 0.25) 75%, /* Indigo - dusk */
+    rgba(25, 25, 112, 0.25) 100% /* Midnight blue again */
+  );
+  opacity: 0.7;
+}
+
+.dark body::after {
+  opacity: 0.5;
+} 
