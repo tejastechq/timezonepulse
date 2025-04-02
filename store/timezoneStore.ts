@@ -97,12 +97,12 @@ export const useTimezoneStore = create<TimezoneState>()(
             city: 'London',
             country: 'United Kingdom',
           },
-          // Add Mars/Jezero (moved from position 2 to position 4)
+          // Replace Mars/Jezero with Tokyo
           {
-            id: 'Mars/Jezero',
-            name: '🔴 Jezero Crater (Mars)', // Added emoji
-            city: 'Jezero Crater',
-            country: 'Mars',
+            id: 'Asia/Tokyo',
+            name: 'Tokyo (Asia/Tokyo)',
+            city: 'Tokyo',
+            country: 'Japan',
           },
           // The rest of the conditional logic is kept for additional timezones
           // but won't be used in the initial 4 timezones
@@ -186,7 +186,7 @@ export const useTimezoneStore = create<TimezoneState>()(
         appVersion: { ...APP_VERSION, timestamp: Date.now() },
         // Removed initial state for old tooltip
         // showMarsExplanation: false,
-        hasMarsTimezone: true, // Set to true as Mars is added by default
+        hasMarsTimezone: false, // Changed to false since Mars is no longer added by default
         // marsExplanationPosition: 'right' as 'left' | 'right',
         // lastAddedMarsTimezoneId: null,
       };
