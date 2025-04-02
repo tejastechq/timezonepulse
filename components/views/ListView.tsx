@@ -474,6 +474,15 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         .bg-primary-100, .bg-primary-500, .bg-blue-500, .bg-blue-600, .bg-primary-900\\/30 { transition: none !important; }
         :root { --primary-500-rgb: 99, 102, 241; --time-item-bg: transparent; --time-item-text: inherit; }
         .dark { --primary-500-rgb: 129, 140, 248; --time-item-bg: rgba(17, 24, 39, 0.4); }
+        /* Hide scrollbars across browsers */
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        /* For Chrome, Safari, and newer Edge */
+        ::-webkit-scrollbar {
+          width: 0px;
+          background: transparent;
+        }
       `;
       document.head.appendChild(style);
     }
@@ -952,8 +961,12 @@ const TimezoneColumn = memo(({
         )}
       </div>
       <div 
-        className="h-72 md:h-80 lg:h-96 rounded-md border border-border/50 overflow-hidden mt-4 backdrop-blur-[2px]"
-        style={{ backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.05)' : 'rgba(255, 255, 255, 0.05)' }}
+        className="h-72 md:h-80 lg:h-96 rounded-md border border-border/50 overflow-hidden mt-4 backdrop-blur-[2px] scrollbar-hide"
+        style={{ 
+          backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.05)' : 'rgba(255, 255, 255, 0.05)',
+          scrollbarWidth: 'none', /* Firefox */
+          msOverflowStyle: 'none', /* IE/Edge */
+        }}
         role="listbox" 
         aria-label={`Time selection list for ${timezone.name}`}
         onWheel={(e) => {
@@ -994,8 +1007,12 @@ const TimezoneColumn = memo(({
               itemSize={48}
               overscanCount={10}
               ref={(ref) => { listRefs.current[timezone.id] = ref; }}
-              className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md"
-              style={{ backgroundColor: 'transparent' }}
+              className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md scrollbar-hide"
+              style={{ 
+                backgroundColor: 'transparent',
+                scrollbarWidth: 'none', /* Firefox */
+                msOverflowStyle: 'none', /* IE/Edge */
+              }}
               itemKey={(index) => `${timezone.id}-${itemData.slots[index].getTime()}`}
               onScroll={handleUserScroll}
               itemData={itemData}
