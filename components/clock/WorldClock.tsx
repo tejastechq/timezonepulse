@@ -46,7 +46,11 @@ interface DigitalViewProps {
  * Using original view components directly
  * Components are optimized using React's built-in memoization techniques
  */
-const OptimizedListView = dynamic(() => import('../views/ListView'), { 
+const OptimizedListView = dynamic(() => import('../views/ListView'), {
+  loading: () => <ViewPlaceholder />
+});
+// Import the new MobileV2ListView
+const MobileV2ListView = dynamic(() => import('../views/MobileV2ListView'), {
   loading: () => <ViewPlaceholder />
 });
 const OptimizedClocksView = ClocksView;
@@ -74,12 +78,14 @@ const ViewPlaceholder = () => (
 );
 
 // Define the props interface for TimeZonePulse
+// Define the props interface for TimeZonePulse
 interface TimeZonePulseProps {
   skipHeading?: boolean;
   disableMobileDetection?: boolean;
+  forceMobileV2View?: boolean; // Add new prop
 }
 
-export default function TimeZonePulse({ skipHeading = false, disableMobileDetection = false }: TimeZonePulseProps) {
+export default function TimeZonePulse({ skipHeading = false, disableMobileDetection = false, forceMobileV2View = false }: TimeZonePulseProps) {
   // Hydration safe rendering
   const [isClient, setIsClient] = useState(false);
   
@@ -354,22 +360,41 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
       {/* Dynamic View Rendering - Using Suspense for better loading experience */}
       <div className="flex justify-center w-full"> {/* Removed redundant mobile controls from here */}
         <Suspense fallback={<ViewPlaceholder />}>
-          {/* Render mobile view or desktop view based on detection */}
-          {isConsideredMobile ? (
-            // Mobile View: List of DraggableTimezoneCards
+          {forceMobileV2View ? (
+            // --- MobileV2 Forced View ---
+            <AnimatePresence mode="wait">
+              <motion.div
+                key="mobilev2-list"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="time-columns-container w-full"
+              >
+                <MobileV2ListView
+                  selectedTimezones={timezones}
+                  userLocalTimezone={localTimezone}
+                  timeSlots={timeSlots}
+                  localTime={currentTime}
+                  highlightedTime={highlightedTime}
+                  handleTimeSelection={handleTimeSelection}
+                  roundToNearestIncrement={roundToNearestIncrement}
+                  removeTimezone={removeTimezone}
+                  currentDate={currentDate}
+                />
+              </motion.div>
+            </AnimatePresence>
+          ) : isConsideredMobile ? (
+            // --- Standard Mobile View (Draggable Cards) ---
             <div className="w-full space-y-4 pb-20">
-              {/* Render the Mars Explanation Card at the top (no longer conditional on removed store state) */}
-              {/* TODO: Decide if this should always show or be conditional based on presence of Mars timezones */}
               <MobileMarsExplanationCard key="mars-explanation" />
-              
-              <AnimatePresence initial={false}> {/* Keep animation wrapper */}
-                {timezones.map((tz: Timezone) => ( // Ensure type is specified
-                  <DraggableTimezoneCard // Use DraggableTimezoneCard for the timezones
-                    key={tz.id} // Keep unique key for timezones
+              <AnimatePresence initial={false}>
+                {timezones.map((tz: Timezone) => (
+                  <DraggableTimezoneCard
+                    key={tz.id}
                     timezone={tz}
-                    isLocal={tz.id === localTimezone} // Pass isLocal prop
-                    onRemove={removeTimezone} // Pass remove function
-                    // Pass down other necessary props
+                    isLocal={tz.id === localTimezone}
+                    onRemove={removeTimezone}
                     localTime={currentTime}
                     highlightedTime={highlightedTime}
                     timeSlots={timeSlots}
@@ -380,7 +405,7 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
                   />
                 ))}
               </AnimatePresence>
-              {timezones.length === 0 && ( // Add empty state message for mobile
+              {timezones.length === 0 && (
                 <div className="text-center text-gray-400 mt-10">
                   <p>No timezones added yet.</p>
                   <button
@@ -394,7 +419,7 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
               )}
             </div>
           ) : (
-            // Desktop View: Switch between List, Analog, Digital with Framer Motion
+            // --- Standard Desktop View (List/Analog/Digital) ---
             <AnimatePresence mode="wait">
               {currentView === 'list' && (
                 <motion.div
@@ -403,8 +428,7 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
-                  ref={timeColumnsContainerRef} // Keep ref if needed, though maybe better on the view itself?
-                  className="time-columns-container w-full" // Removed transition classes
+                  className="time-columns-container w-full"
                 >
                   <OptimizedListView
                     selectedTimezones={timezones}
@@ -412,7 +436,7 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
                     timeSlots={timeSlots}
                     localTime={currentTime}
                     highlightedTime={highlightedTime}
-                    handleTimeSelection={handleTimeSelection} // Use original handler
+                    handleTimeSelection={handleTimeSelection}
                     roundToNearestIncrement={roundToNearestIncrement}
                     removeTimezone={removeTimezone}
                     currentDate={currentDate}
@@ -420,34 +444,34 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
                 </motion.div>
               )}
               {currentView === 'analog' && (
-                  <motion.div
-                    key="analog"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="w-full" // Removed transition classes
-                  >
-                    <OptimizedClocksView
-                      selectedTimezones={timezones}
-                      userLocalTimezone={localTimezone}
-                    />
-                  </motion.div>
+                <motion.div
+                  key="analog"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full"
+                >
+                  <OptimizedClocksView
+                    selectedTimezones={timezones}
+                    userLocalTimezone={localTimezone}
+                  />
+                </motion.div>
               )}
               {currentView === 'digital' && (
-                  <motion.div
-                    key="digital"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="w-full" // Removed transition classes
-                  >
-                    <OptimizedDigitalView
-                      selectedTimezones={timezones}
-                      userLocalTimezone={localTimezone}
-                    />
-                  </motion.div>
+                <motion.div
+                  key="digital"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full"
+                >
+                  <OptimizedDigitalView
+                    selectedTimezones={timezones}
+                    userLocalTimezone={localTimezone}
+                  />
+                </motion.div>
               )}
             </AnimatePresence>
           )}

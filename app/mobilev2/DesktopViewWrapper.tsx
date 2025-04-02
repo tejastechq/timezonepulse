@@ -17,12 +17,12 @@ export default function DesktopViewWrapper() {
     hydrate();
   }, [hydrate]);
 
-  // Force desktop view by setting disableMobileDetection to true
+  // Force the specific MobileV2 list view
   return (
     <ViewProvider>
       <IntegrationsProvider>
-        <TimeZonePulse skipHeading={true} disableMobileDetection={true} /> 
+        <TimeZonePulse skipHeading={true} forceMobileV2View={true} /> 
       </IntegrationsProvider>
     </ViewProvider>
   );
-} 
+}

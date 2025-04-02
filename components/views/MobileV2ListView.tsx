@@ -71,7 +71,8 @@ const useConsolidatedTimerHook = (
   }, [mounted, highlightedTime, highlightAutoClear, highlightDuration, handleTimeSelection, timeRemainingRef, setTimeRemaining]);
 };
 
-interface ListViewProps {
+// Rename interface for clarity
+interface MobileV2ListViewProps {
   selectedTimezones: Timezone[];
   userLocalTimezone: string;
   timeSlots: Date[];
@@ -83,7 +84,8 @@ interface ListViewProps {
   currentDate?: Date | null;
 }
 
-export interface ListViewHandle {
+// Rename interface for clarity
+export interface MobileV2ListViewHandle {
   scrollToTime: (time: Date, alignment?: 'start' | 'center' | 'end' | 'smart' | 'auto') => void;
 }
 
@@ -158,7 +160,11 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
       </span>
       
       {/* Simplified indicators */}
-      <div className="flex items-center space-x-1.5 opacity-70">
+      <div className="flex items-center space-x-1.5 opacity-90"> {/* Increased opacity slightly for visibility on highlight */}
+        {/* Show "Selected" when highlighted */}
+        {isHighlight && <span className="text-xs font-medium text-white">Selected</span>}
+        
+        {/* Keep other indicators, but ensure they don't show when highlighted */}
         {isNight && !isHighlight && <span title="Night hours">●</span>}
         {isDay && !isHighlight && <span title="Day hours">○</span>}
         {isCurrent && !isHighlight && <span className="text-xs font-medium text-primary-500">now</span>}
@@ -208,7 +214,8 @@ const Row = ({ index, style, data }: ListChildComponentProps) => {
   );
 };
 
-const ListView = forwardRef<ListViewHandle, ListViewProps>(({
+// Rename component
+const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProps>(({
   selectedTimezones,
   userLocalTimezone,
   timeSlots,
@@ -253,7 +260,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
 
   const markRender = useCallback((name: string) => {
     if (typeof performance !== 'undefined' && process.env.NODE_ENV === 'development') {
-      performance.mark(`ListView-${name}-${Date.now()}`);
+      performance.mark(`MobileV2ListView-${name}-${Date.now()}`); // Update mark name
     }
   }, []);
 
@@ -670,8 +677,8 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
         if (targetIndex !== -1) {
           Object.values(listRefs.current).forEach(listRef => {
             if (listRef) {
-              // Revert syncAfterScrolling to 'center' for desktop
-              listRef.scrollToItem(targetIndex, 'center');
+              // Apply the 'start' alignment change here in syncAfterScrolling
+              listRef.scrollToItem(targetIndex, 'start');
             }
           });
         }
@@ -689,9 +696,8 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
       // Remove requestAnimationFrame to attempt more immediate scrolling
       Object.values(listRefs.current).forEach(listRef => {
         if (listRef) {
-          // Revert highlight scroll to 'center' (or 'start' for reduced motion) for desktop
-          const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-          listRef.scrollToItem(targetIndex, prefersReducedMotion ? 'start' : 'center');
+          // Always scroll to the start (top) when a time is highlighted
+          listRef.scrollToItem(targetIndex, 'start');
         }
       });
     }
@@ -867,7 +873,8 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     </motion.div>
   );
 });
-ListView.displayName = 'ListView';
+// Rename display name
+MobileV2ListView.displayName = 'MobileV2ListView';
 
 const TimezoneColumn = memo(({
   timezone,
@@ -1129,7 +1136,8 @@ const TimezoneColumn = memo(({
 });
 TimezoneColumn.displayName = 'TimezoneColumn';
 
-export default ListView;
+// Rename export
+export default MobileV2ListView;
 
 const TimeHeaderRow = memo(function TimeHeaderRow({
   timeSlot,
