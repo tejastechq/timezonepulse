@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Timezone, ViewMode } from '@/store/timezoneStore';
+import AnalogClock from './AnalogClock';
+import DigitalClock from './DigitalClock';
 import { isInDST } from '@/lib/utils/timezone';
 import { DateTime } from 'luxon';
 
@@ -104,44 +106,63 @@ export default function TimezoneCard({
       
       <p className="text-sm mb-4">{dateDisplay}</p>
       
-      {/* Only render list view since other views are removed */}
+      {/* Clock display based on view mode */}
       <div className="flex justify-center mb-4">
-        <div className="w-full max-h-40 overflow-y-auto">
-          {timeSlots.map((slot) => {
-            const slotInTimezone = DateTime.fromJSDate(slot).setZone(timezone.id);
-            
-            // Round the current time down to the nearest slot increment
-            const roundedCurrentTime = highlightedTime 
-              ? roundToNearestIncrement(highlightedTime, 30 * 60 * 1000) // Assuming 30 min increment
-              : null;
+        {viewMode === 'analog' && (
+          <AnalogClock
+            time={zonedTime.toJSDate()}
+            timezone={timezone.id}
+            size={150}
+            highlightedTime={highlightedTime}
+          />
+        )}
+        
+        {viewMode === 'digital' && (
+          <DigitalClock
+            time={zonedTime.toJSDate()}
+            timezone={timezone.id}
+            highlightedTime={highlightedTime}
+          />
+        )}
+        
+        {viewMode === 'list' && (
+          <div className="w-full max-h-40 overflow-y-auto">
+            {timeSlots.map((slot) => {
+              const slotInTimezone = DateTime.fromJSDate(slot).setZone(timezone.id);
+              
+              // Round the current time down to the nearest slot increment
+              const roundedCurrentTime = highlightedTime 
+                ? roundToNearestIncrement(highlightedTime, 30 * 60 * 1000) // Assuming 30 min increment
+                : null;
 
-            // Convert rounded time to the card's timezone for comparison
-            const roundedCurrentInTimezone = roundedCurrentTime
-              ? DateTime.fromJSDate(roundedCurrentTime).setZone(timezone.id)
-              : null;
+              // Convert rounded time to the card's timezone for comparison
+              const roundedCurrentInTimezone = roundedCurrentTime
+                ? DateTime.fromJSDate(roundedCurrentTime).setZone(timezone.id)
+                : null;
 
-            // Check if the slot matches the rounded current time
-            const isHighlighted = roundedCurrentInTimezone && 
-              roundedCurrentInTimezone.hasSame(slotInTimezone, 'hour') && 
-              roundedCurrentInTimezone.hasSame(slotInTimezone, 'minute');
-            
-            return (
-              <button
-                key={slot.getTime()}
-                onClick={() => onTimeSelect(slot)}
-                className={`
-                  w-full text-left px-2 py-1 rounded-md mb-1 transition-colors duration-150 ease-in-out
-                  ${isHighlighted 
-                    ? 'bg-primary-500 text-white' // Highlight style: background color, white text
-                    : 'hover:bg-gray-100 dark:hover:bg-gray-700' // Normal style: standard padding, hover effect
-                  }
-                `}
-              >
-                {slotInTimezone.toFormat('HH:mm')}
-              </button>
-            );
-          })}
-        </div>
+              // Check if the slot matches the rounded current time
+              const isHighlighted = roundedCurrentInTimezone && 
+                roundedCurrentInTimezone.hasSame(slotInTimezone, 'hour') && 
+                roundedCurrentInTimezone.hasSame(slotInTimezone, 'minute');
+              
+              return (
+                <button
+                  key={slot.getTime()}
+                  onClick={() => onTimeSelect(slot)}
+                  className={`
+                    w-full text-left px-2 py-1 rounded-md mb-1 transition-colors duration-150 ease-in-out
+                    ${isHighlighted 
+                      ? 'bg-primary-500 text-white' // Highlight style: background color, white text
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-700' // Normal style: standard padding, hover effect
+                    }
+                  `}
+                >
+                  {slotInTimezone.toFormat('HH:mm')}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
       
       {/* Status indicators */}

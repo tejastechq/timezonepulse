@@ -7,6 +7,7 @@ import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 import { useView } from '@/app/contexts/ViewContext';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import dynamic from 'next/dynamic';
+import { ListView, ClocksView, DigitalView } from '../views';
 import MobileTimezoneCard from '../mobile/MobileTimezoneCard'; // Import MobileTimezoneCard
 import DraggableTimezoneCard from '../mobile/DraggableTimezoneCard'; // Import DraggableTimezoneCard
 import { getLocalTimezone } from '@/lib/utils/timezone';
@@ -16,6 +17,14 @@ import { MobileMenu } from '@/components/MobileMenu'; // Import MobileMenu for t
 import { CalendarDays, ArrowLeftCircle, Plus, Calendar, X } from 'lucide-react'; // Removed Menu icon, added MobileMenu component instead
 import TimezoneTile from './TimezoneTile';
 import { PulseViews } from '@/types/timezone';
+import ViewSwitcher from './ViewSwitcher';
+import DatePicker from './DatePicker';
+import AnalogClockView from './AnalogClockView';
+import DigitalClockView from './DigitalClockView';
+import { OptimizedListView, OptimizedClocksView, OptimizedDigitalView } from './OptimizedViews';
+import AnalogClock from './AnalogClock';
+import OptimizedTimezoneBar from '../OptimizedTimezoneBar';
+import { useCounterTimeStore } from '@/store/counterTimeStore';
 
 // Define interfaces for the view components based on their implementations
 interface ListViewProps {
@@ -29,6 +38,18 @@ interface ListViewProps {
   currentDate: Date | null;
 }
 
+interface ClocksViewProps {
+  selectedTimezones: Timezone[];
+  userLocalTimezone: string;
+  // Removed setSelectedTimezones from interface
+}
+
+interface DigitalViewProps {
+  selectedTimezones: Timezone[];
+  userLocalTimezone: string;
+  // Removed setSelectedTimezones from interface
+}
+
 /**
  * Using original view components directly
  * Components are optimized using React's built-in memoization techniques
@@ -40,10 +61,11 @@ const OptimizedListView = dynamic(() => import('../views/ListView'), {
 const MobileV2ListView = dynamic(() => import('../views/MobileV2ListView'), {
   loading: () => <ViewPlaceholder />
 });
-// Removed OptimizedClocksView and OptimizedDigitalView declarations
+const OptimizedClocksView = ClocksView;
+const OptimizedDigitalView = DigitalView;
 
 // Dynamically import less critical components to reduce initial load
-// Removed ViewSwitcher import
+const ViewSwitcher = dynamic(() => import('./ViewSwitcher'), { ssr: true });
 const TimezoneSelector = dynamic(() => import('./TimezoneSelector'), { ssr: false }); // Added TimezoneSelector import
 
 // Import the DatePicker
@@ -306,7 +328,7 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
         // Desktop Header Controls
         <>
           <div className="flex justify-between items-center mb-4 h-12">
-            <h1 className="font-bold text-xl">TimeZonePulse</h1>
+            <ViewSwitcher />
             <div className="flex items-center space-x-2">
             <button // Desktop Add Button
               onClick={() => setIsSelectorOpen(true)}
@@ -402,27 +424,61 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
               )}
             </div>
           ) : (
-            // --- Only List View for Desktop (removed analog/digital) ---
-            <motion.div
-              key="list"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="time-columns-container w-full"
-            >
-              <OptimizedListView
-                selectedTimezones={timezones}
-                userLocalTimezone={localTimezone}
-                timeSlots={timeSlots}
-                localTime={currentTime}
-                highlightedTime={highlightedTime}
-                handleTimeSelection={handleTimeSelection}
-                roundToNearestIncrement={roundToNearestIncrement}
-                removeTimezone={removeTimezone}
-                currentDate={currentDate}
-              />
-            </motion.div>
+            // --- Standard Desktop View (List/Analog/Digital) ---
+            <AnimatePresence mode="wait">
+              {currentView === 'list' && (
+                <motion.div
+                  key="list"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="time-columns-container w-full"
+                >
+                  <OptimizedListView
+                    selectedTimezones={timezones}
+                    userLocalTimezone={localTimezone}
+                    timeSlots={timeSlots}
+                    localTime={currentTime}
+                    highlightedTime={highlightedTime}
+                    handleTimeSelection={handleTimeSelection}
+                    roundToNearestIncrement={roundToNearestIncrement}
+                    removeTimezone={removeTimezone}
+                    currentDate={currentDate}
+                  />
+                </motion.div>
+              )}
+              {currentView === 'analog' && (
+                <motion.div
+                  key="analog"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full"
+                >
+                  <OptimizedClocksView
+                    selectedTimezones={timezones}
+                    userLocalTimezone={localTimezone}
+                  />
+                </motion.div>
+              )}
+              {currentView === 'digital' && (
+                <motion.div
+                  key="digital"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="w-full"
+                >
+                  <OptimizedDigitalView
+                    selectedTimezones={timezones}
+                    userLocalTimezone={localTimezone}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
           )}
         </Suspense>
       </div>
