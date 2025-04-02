@@ -664,12 +664,13 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
       const fullTime12 = timeInLocalZone.toFormat('h:mm a').toLowerCase();
       const fullTime24 = timeInLocalZone.toFormat('HH:mm').toLowerCase();
       if (searchLower.includes(':')) return fullTime12.startsWith(searchLower) || fullTime24.startsWith(searchLower);
-      else return hour12 === searchLower || hour24 === searchLower;
-    });
-    setFilteredTimeSlots(filtered);
-    if (filtered.length > 0) {
-      const wasScrolling = userIsScrollingRef.current;
-      userIsScrollingRef.current = false; // Temporarily disable scroll checking
+       else return hour12 === searchLower || hour24 === searchLower;
+      });
+      setFilteredTimeSlots(filtered);
+      // Resetting will now happen in TimezoneColumn's useEffect
+      if (filtered.length > 0) {
+        const wasScrolling = userIsScrollingRef.current;
+        userIsScrollingRef.current = false; // Temporarily disable scroll checking
       const targetIndex = timeSlots.findIndex(t => t.getTime() === filtered[0].getTime());
       if (targetIndex !== -1) {
         // Scroll search result to the start
@@ -687,11 +688,12 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
 
   const handleClearSearch = useCallback(() => {
     setSearchTerm('');
-    setFilteredTimeSlots([]);
-    setIsSearching(false);
-    // Scroll to current time at the start after clearing search
-    scrollToIndex(getCurrentTimeIndex(), 'start');
-  }, [scrollToIndex, getCurrentTimeIndex]);
+      setFilteredTimeSlots([]);
+      setIsSearching(false);
+      // Resetting will now happen in TimezoneColumn's useEffect
+      // Scroll to current time at the start after clearing search
+      scrollToIndex(getCurrentTimeIndex(), 'start');
+    }, [scrollToIndex, getCurrentTimeIndex]);
 
   const renderTimeColumns = useCallback(() => {
     if (!mounted) return null;
@@ -1070,6 +1072,9 @@ const TimezoneColumn = memo(({
 
   const displaySlots = isSearching && filteredTimeSlots.length > 0 ? filteredTimeSlots : timeSlots;
   const listHeight = displaySlots.length * itemSize; // Calculate height based on filtered items
+  const listRef = useRef<FixedSizeList | null>(null); // Create a ref for this specific list
+
+  // Removed the useEffect causing the error
 
   return (
     <motion.div
@@ -1228,17 +1233,21 @@ const TimezoneColumn = memo(({
           listRef.scrollTo(newOffset);
         }}
       >
-        <AutoSizer>
-          {({ height, width }) => (
-            <FixedSizeList
-              height={height}
-              width={width}
-              itemCount={displaySlots.length}
-              itemSize={itemSize} // Use defined itemSize
-              overscanCount={10}
-              ref={(ref) => { listRefs.current[timezone.id] = ref; }}
-              className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md scrollbar-hide"
-              style={{ 
+         <AutoSizer>
+           {({ height, width }) => (
+             <FixedSizeList
+               key={isSearching && displaySlots.length > 0 ? `filtered-${timezone.id}` : `full-${timezone.id}`} // Add dynamic key
+               height={height}
+               width={width}
+                itemCount={displaySlots.length}
+               itemSize={itemSize} // Use defined itemSize
+               overscanCount={10}
+               ref={(r) => {
+                 listRef.current = r; // Assign to local ref
+                 listRefs.current[timezone.id] = r; // Assign to parent's collection ref
+               }}
+               className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md scrollbar-hide"
+               style={{
                 backgroundColor: 'transparent',
                 scrollbarWidth: 'none', /* Firefox */
                 msOverflowStyle: 'none', /* IE/Edge */
