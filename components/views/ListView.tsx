@@ -158,7 +158,11 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
       </span>
       
       {/* Simplified indicators */}
-      <div className="flex items-center space-x-1.5 opacity-70">
+      <div className="flex items-center space-x-1.5 opacity-90"> {/* Increased opacity slightly for visibility on highlight */}
+        {/* Show "Selected" when highlighted */}
+        {isHighlight && <span className="text-xs font-medium text-white">Selected</span>}
+        
+        {/* Keep other indicators, but ensure they don't show when highlighted */}
         {isNight && !isHighlight && <span title="Night hours">●</span>}
         {isDay && !isHighlight && <span title="Day hours">○</span>}
         {isCurrent && !isHighlight && <span className="text-xs font-medium text-primary-500">now</span>}
