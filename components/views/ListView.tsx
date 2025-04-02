@@ -628,14 +628,6 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     };
     return (
       <>
-        {/* Removed the inline highlighted time display */}
-        {/* Time difference display (optional, kept for context) */}
-        {highlightedTime && (
-          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className={`${getTimeDiffColorClass()} p-1.5 px-3 rounded-md text-sm font-medium mb-2 flex items-center mx-auto shadow-sm`}>
-            <Clock className="w-4 h-4 mr-2" />{timeDifference}
-          </motion.div>
-        )}
-        {/* Removed DndContext and SortableContext wrappers */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-3 gap-1 md:gap-1">
           {/* Render all timezones using TimezoneColumn directly */}
           {displayTimezones.map((timezone) => (
