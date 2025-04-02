@@ -147,7 +147,13 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
       className={cellClasses}
       tabIndex={0}
     >
-      {isBoundary && <div className="absolute top-0 left-0 w-full text-xs text-gray-500/90 dark:text-gray-400/90 pt-0.5 px-2 font-medium">{DateTime.fromJSDate(time).setZone(timezone).toFormat('EEE, MMM d')}</div>}
+      {isBoundary && (
+        <div className="absolute top-0 left-0 w-full flex items-center justify-center">
+          <div className="bg-primary-100 dark:bg-primary-900/80 text-primary-800 dark:text-primary-200 text-xs rounded-b-md px-3 py-1 font-medium shadow-sm border-t-0 border-x border-b border-primary-200 dark:border-primary-700/50">
+            {DateTime.fromJSDate(time).setZone(timezone).toFormat('EEE, MMM d')}
+          </div>
+        </div>
+      )}
       
       {/* Time display with minimal styling */}
       <span className={clsx(
