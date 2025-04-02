@@ -10,6 +10,8 @@ import dynamic from 'next/dynamic';
 import { ListView, ClocksView, DigitalView } from '../views';
 import MobileTimezoneCard from '../mobile/MobileTimezoneCard'; // Import MobileTimezoneCard
 import DraggableTimezoneCard from '../mobile/DraggableTimezoneCard'; // Import DraggableTimezoneCard
+import MobileMarsExplanationCard from '../mobile/MobileMarsExplanationCard'; // Import the mobile Mars explanation card
+import DesktopMarsExplanationCard from './DesktopMarsExplanationCard'; // Import the new desktop Mars explanation card
 import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
@@ -94,6 +96,7 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
     selectedDate,
     setSelectedDate,
     resetToToday
+    // Removed showMarsExplanation - no longer needed for tooltip logic
   } = useTimezoneStore();
 
   // Get view state from the view context
@@ -307,9 +310,12 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
         </header>
       ) : (
         // Desktop Header Controls
-        <div className="flex justify-between items-center mb-4 h-12">
-          <ViewSwitcher />
-          <div className="flex items-center space-x-2">
+        <>
+          {/* Add the persistent Desktop Mars Explanation Card */}
+          <DesktopMarsExplanationCard /> 
+          <div className="flex justify-between items-center mb-4 h-12">
+            <ViewSwitcher />
+            <div className="flex items-center space-x-2">
             <button // Desktop Add Button
               onClick={() => setIsSelectorOpen(true)}
               className="p-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
@@ -336,8 +342,9 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
                 <span className="text-sm">Today</span>
               </button>
             )}
+            </div>
           </div>
-        </div>
+        </>
       )}
       {/* End of Conditional Header Rendering */}
 
@@ -347,13 +354,16 @@ export default function TimeZonePulse({ skipHeading = false }: TimeZonePulseProp
         <Suspense fallback={<ViewPlaceholder />}>
           {/* Render mobile view or desktop view based on detection */}
           {isConsideredMobile ? (
-            // Mobile View: List of DraggableTimezoneCards (assuming this is the intended mobile card)
-            // Need to import DraggableTimezoneCard if not already done
+            // Mobile View: List of DraggableTimezoneCards
             <div className="w-full space-y-4 pb-20">
+              {/* Render the Mars Explanation Card at the top (no longer conditional on removed store state) */}
+              {/* TODO: Decide if this should always show or be conditional based on presence of Mars timezones */}
+              <MobileMarsExplanationCard key="mars-explanation" />
+              
               <AnimatePresence initial={false}> {/* Keep animation wrapper */}
                 {timezones.map((tz: Timezone) => ( // Ensure type is specified
-                  <DraggableTimezoneCard // Use DraggableTimezoneCard if that's the correct one for mobile list
-                    key={tz.id}
+                  <DraggableTimezoneCard // Use DraggableTimezoneCard for the timezones
+                    key={tz.id} // Keep unique key for timezones
                     timezone={tz}
                     isLocal={tz.id === localTimezone} // Pass isLocal prop
                     onRemove={removeTimezone} // Pass remove function

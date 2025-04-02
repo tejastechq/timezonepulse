@@ -35,6 +35,13 @@ function ClockCard({
   // Get theme for styling
   const { resolvedTheme } = useTheme();
 
+  // Ensure currentTime is a valid Date
+  const validTime = useMemo(() => {
+    return currentTime instanceof Date && !isNaN(currentTime.getTime()) 
+      ? currentTime 
+      : new Date();
+  }, [currentTime]);
+
   // Callback for remove button click with confirmation
   const handleRemoveClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card interactions if needed
@@ -48,8 +55,8 @@ function ClockCard({
 
   // Memoize expensive calculations
   const zonedTime = useMemo(() =>
-    DateTime.fromJSDate(currentTime).setZone(timezone.id),
-    [currentTime, timezone.id]
+    DateTime.fromJSDate(validTime).setZone(timezone.id),
+    [validTime, timezone.id]
   );
   
   const isDST = useMemo(() => isInDST(timezone.id), [timezone.id]);
@@ -151,7 +158,7 @@ function ClockCard({
       
       {/* Clock display */}
       <div className="flex justify-center items-center mb-4 relative z-[2]">
-        {renderClock(zonedTime.toJSDate(), timezone.id)}
+        {renderClock(validTime, timezone.id)}
       </div>
       
       {/* Status indicators */}

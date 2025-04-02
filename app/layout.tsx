@@ -73,7 +73,10 @@ export default function RootLayout({
             </a>
           </footer>
         </Providers>
-        <Script src="https://timezonepulse1.statuspage.io/embed/script.js" strategy="afterInteractive" />
+        {/* TODO: Implement Statuspage.io embed properly or remove if not needed. 
+             Currently disabled as it might not be fully integrated or styled correctly.
+        <Script src="https://timezonepulse1.statuspage.io/embed/script.js" strategy="afterInteractive" /> 
+        */}
       </body>
     </html>
   );

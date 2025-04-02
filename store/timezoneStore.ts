@@ -40,6 +40,11 @@ interface TimezoneState {
   localTimezone: string;
   appVersion: typeof APP_VERSION;
   selectedDate: Date;
+  // Removed state related to the old Mars explanation tooltip
+  // showMarsExplanation: boolean; 
+  hasMarsTimezone: boolean; // Keep this to know if any Mars timezone exists
+  // marsExplanationPosition: 'left' | 'right';
+  // lastAddedMarsTimezoneId: string | null;
   addTimezone: (timezone: Timezone) => void;
   removeTimezone: (id: string) => void;
   setViewMode: (mode: ViewMode) => void;
@@ -49,6 +54,8 @@ interface TimezoneState {
   reorderTimezones: (fromIndex: number, toIndex: number) => void;
   hydrate: () => void;
   resetStore: () => void;
+  // Removed hideMarsExplanation action
+  // hideMarsExplanation: () => void; 
 }
 
 // Get a storage key that's unique to the current origin to prevent cross-port persistence issues
@@ -67,9 +74,8 @@ export const useTimezoneStore = create<TimezoneState>()(
       const localTz = getLocalTimezone();
       
       // Function to create initial state
-      const getInitialState = () => ({
-        // Initial state
-        timezones: [
+      const getInitialState = () => {
+        const initialTimezones = [
           // Always include local timezone as first option
           {
             id: localTz,
@@ -77,6 +83,29 @@ export const useTimezoneStore = create<TimezoneState>()(
             city: 'Local',
             country: '',
           },
+          // Add Chicago
+          {
+            id: 'America/Chicago',
+            name: 'Chicago (America/Chicago)',
+            city: 'Chicago',
+            country: 'United States',
+          },
+          // Add London
+          {
+            id: 'Europe/London',
+            name: 'London (Europe/London)',
+            city: 'London',
+            country: 'United Kingdom',
+          },
+          // Add Mars/Jezero (moved from position 2 to position 4)
+          {
+            id: 'Mars/Jezero',
+            name: '🔴 Jezero Crater (Mars)', // Added emoji
+            city: 'Jezero Crater',
+            country: 'Mars',
+          },
+          // The rest of the conditional logic is kept for additional timezones
+          // but won't be used in the initial 4 timezones
           // Add a timezone from a different continent based on user's location
           ...(/^America\//.test(localTz) ? [{
             id: 'Europe/London',
@@ -85,10 +114,10 @@ export const useTimezoneStore = create<TimezoneState>()(
             country: 'United Kingdom',
           }] : []),
           ...(/^Europe\//.test(localTz) ? [{
-            id: 'Asia/Tokyo',
-            name: 'Tokyo (Asia/Tokyo)',
-            city: 'Tokyo',
-            country: 'Japan',
+            id: 'Europe/Paris',
+            name: 'Paris (Europe/Paris)',
+            city: 'Paris',
+            country: 'France',
           }] : []),
           ...(/^Asia\//.test(localTz) ? [{
             id: 'America/New_York',
@@ -111,10 +140,10 @@ export const useTimezoneStore = create<TimezoneState>()(
           
           // Add a second geographically different timezone
           ...(/^America\//.test(localTz) ? [{
-            id: 'Asia/Tokyo',
-            name: 'Tokyo (Asia/Tokyo)',
-            city: 'Tokyo',
-            country: 'Japan',
+            id: 'Europe/London',
+            name: 'London (Europe/London)',
+            city: 'London',
+            country: 'United Kingdom',
           }] : []),
           ...(/^Europe\//.test(localTz) ? [{
             id: 'America/New_York',
@@ -140,34 +169,50 @@ export const useTimezoneStore = create<TimezoneState>()(
             city: 'New York',
             country: 'United States',
           }] : []),
-        ].slice(0, 3), // Ensure we have exactly 3 timezones
-        viewMode: 'list' as ViewMode,
-        highlightedTime: null,
-        localTimezone: localTz,
+        ];
+
+        // Filter out duplicates just in case localTz somehow matches one of the added ones
+        const uniqueTimezones = initialTimezones.filter((tz, index, self) =>
+          index === self.findIndex((t) => t.id === tz.id)
+        );
+        
+        return {
+          // Initial state
+          timezones: uniqueTimezones.slice(0, 4), // Ensure we have up to 4 timezones
+          viewMode: 'list' as ViewMode,
+          highlightedTime: null,
+          localTimezone: localTz,
         selectedDate: new Date(), // Default to today
         appVersion: { ...APP_VERSION, timestamp: Date.now() },
-      });
+        // Removed initial state for old tooltip
+        // showMarsExplanation: false,
+        hasMarsTimezone: true, // Set to true as Mars is added by default
+        // marsExplanationPosition: 'right' as 'left' | 'right',
+        // lastAddedMarsTimezoneId: null,
+      };
+    };
       
       return {
         ...getInitialState(),
         
         // Actions
-        addTimezone: (timezone: Timezone) => 
-          set((state) => {
-            // Check if the timezone already exists in the state
-            const exists = state.timezones.some(tz => tz.id === timezone.id);
-            
-            // If it exists, don't add it again
-            if (exists) {
-              return { timezones: state.timezones };
-            }
-            
-            // Otherwise add the new timezone
-            return {
-              timezones: [...state.timezones, timezone]
-            };
-          }),
+        addTimezone: (timezone: Timezone) => set((state) => {
+          // Check if the timezone ID already exists in the list
+          if (state.timezones.some(tz => tz.id === timezone.id)) {
+            return state; // Don't add duplicates
+          }
           
+          const isMarsTimezone = timezone.id.startsWith('Mars/');
+          
+          // Return updated state (only update timezones and hasMarsTimezone)
+          return {
+            timezones: [...state.timezones, timezone],
+            // Set hasMarsTimezone if this is the first Mars timezone added
+            hasMarsTimezone: state.hasMarsTimezone || isMarsTimezone 
+            // Removed setting for showMarsExplanation, position, lastAddedId
+          };
+        }),
+        
         removeTimezone: (id: string) => 
           set((state) => ({
             timezones: state.timezones.filter((timezone) => timezone.id !== id)
@@ -205,7 +250,9 @@ export const useTimezoneStore = create<TimezoneState>()(
         resetStore: () => {
           // This completely resets the store to initial values
           set(getInitialState());
-        }
+        },
+        
+        // Removed hideMarsExplanation action
       };
     },
     {
@@ -242,4 +289,4 @@ export const useHighlightedTime = () => useTimezoneStore((state) => state.highli
 export const useSelectedDate = () => useTimezoneStore((state) => state.selectedDate);
 
 // Helper hook to get the app version (for debugging)
-export const useAppVersion = () => useTimezoneStore((state) => state.appVersion); 
+export const useAppVersion = () => useTimezoneStore((state) => state.appVersion);

@@ -15,6 +15,7 @@ export default function ViewSwitcher() {
   };
 
   return (
+    /* Hiding the view switcher buttons temporarily due to issues
     <div className="flex items-center space-x-2">
       <div className="flex space-x-2 bg-white dark:bg-gray-800 p-1 rounded-lg shadow-sm">
         <button
@@ -96,5 +97,7 @@ export default function ViewSwitcher() {
         </button>
       </div>
     </div>
+    */
+   null // Return null to render nothing
   );
 }

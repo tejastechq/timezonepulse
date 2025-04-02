@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import Image from 'next/image';
 import { getAllTimezones } from '@/lib/utils/timezone';
 import { sortTimezonesByRelevance, getTimezoneContext } from '@/lib/utils/timezoneSearch';
 import { Timezone } from '@/store/timezoneStore';
@@ -8,6 +9,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search, X, Clock, Briefcase } from 'lucide-react';
 import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
+import { DateTime } from 'luxon';
 
 // Define our own useDebounce hook that we'll use consistently
 const useDebounce = <T,>(value: T, delay: number): T => {
@@ -144,11 +146,23 @@ export default function TimezoneSelector({
     
     try {
       const allTimezones = getAllTimezones();
-      const availableTimezones = allTimezones.filter(tz => 
-        !excludeTimezones.includes(tz.id)
-      );
+       let availableTimezones = allTimezones.filter(tz => 
+         !excludeTimezones.includes(tz.id)
+       );
+
+      // Sort the initial list to put Mars timezones first
+      availableTimezones.sort((a, b) => {
+        const aIsMars = a.id.startsWith('Mars/');
+        const bIsMars = b.id.startsWith('Mars/');
+        if (aIsMars && !bIsMars) return -1; // a (Mars) comes before b
+        if (!aIsMars && bIsMars) return 1;  // b (Mars) comes before a
+        // Keep original alphabetical/regional order for non-Mars timezones (or apply another sort if needed)
+        // For now, let's assume the original `getAllTimezones` provides a reasonable default sort
+        return 0; 
+      });
+
       setTimezones(availableTimezones);
-      setFilteredTimezones(availableTimezones);
+      setFilteredTimezones(availableTimezones); // Initial filtered list is the full sorted list
       setSearchResultsCount(availableTimezones.length);
     } catch (err) {
       setError('Error loading timezones. Please try again.');
@@ -173,12 +187,22 @@ export default function TimezoneSelector({
         tz.id.toLowerCase().includes(searchLower) ||
         (tz.city && tz.city.toLowerCase().includes(searchLower)) ||
         (tz.country && tz.country.toLowerCase().includes(searchLower)) ||
-        (tz.abbreviation && tz.abbreviation.toLowerCase().includes(searchLower))
-      );
+         (tz.abbreviation && tz.abbreviation.toLowerCase().includes(searchLower))
+       );
 
-      return sortTimezonesByRelevance(filtered, debouncedSearch, recentTimezones);
+      // Temporarily boost Mars timezones to the top during search
+      const sortedFiltered = filtered.sort((a, b) => {
+        const aIsMars = a.id.startsWith('Mars/');
+        const bIsMars = b.id.startsWith('Mars/');
+        if (aIsMars && !bIsMars) return -1; // a comes first
+        if (!aIsMars && bIsMars) return 1;  // b comes first
+        return 0; // Keep original relative order otherwise
+      });
+
+      // Apply relevance sorting after boosting Mars timezones
+      return sortTimezonesByRelevance(sortedFiltered, debouncedSearch, recentTimezones);
     } catch (err) {
-      console.error('Error filtering timezones:', err);
+      console.error('Error filtering or sorting timezones:', err);
       return [];
     }
   }, [debouncedSearch, timezones, recentTimezones]);
@@ -221,9 +245,9 @@ export default function TimezoneSelector({
         <div style={style}>
           <button
             onClick={() => handleSelect(timezone)}
-            className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 
+            className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 
                       transition-colors duration-150 focus:outline-none focus:ring-2 
-                      focus:ring-primary-500"
+                      focus:ring-primary-500`}
             role="option"
             aria-selected="false"
             id={`timezone-option-${timezone.id}`}
@@ -236,12 +260,21 @@ export default function TimezoneSelector({
               }
             }}
           >
-            <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between gap-2">
-              <div className="flex items-center space-x-2 min-w-0 flex-1">
-                <span className="truncate">{timezone.city || timezone.name}</span>
-                {timezone.abbreviation && (
+                                  <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between gap-2">
+                                    <div className="flex items-center space-x-2 min-w-0 flex-1">
+                                      <span className="truncate">
+                                        {/* Replace emoji with image */}
+                                        {timezone.id === 'Mars/Jezero' && <Image src="/perseverance.png" alt="Perseverance Rover" width={16} height={16} className="inline-block w-4 h-4 mr-1 align-middle" />}
+                                        {timezone.city || timezone.name}
+                                      </span>
+                                      {timezone.abbreviation && (
                   <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded flex-shrink-0">
                     {timezone.abbreviation}
+                  </span>
+                )}
+                {context.isRoverLocation && (
+                  <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded flex-shrink-0 animate-pulse">
+                    Rover
                   </span>
                 )}
               </div>
@@ -254,14 +287,45 @@ export default function TimezoneSelector({
                   <Clock className="w-4 h-4 flex-shrink-0" />
                   <span className="whitespace-nowrap">{context.currentTime}</span>
                 </div>
-                {context.isBusinessHours && (
+                {/* Hide Business Hours for Mars timezones */}
+                {context.isBusinessHours && !timezone.id.startsWith('Mars/') && (
                   <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
                     <Briefcase className="w-4 h-4 flex-shrink-0" />
                     <span className="text-xs whitespace-nowrap">Business hours</span>
                   </div>
                 )}
+                {timezone.id.startsWith('Mars/') && (
+                  <div className="flex items-center space-x-1">
+                    {context.isMarsDaytime ? (
+                                      <div className="flex items-center space-x-1 text-amber-500 dark:text-amber-400">
+                                        <span className="flex items-center">
+                                          <Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 mr-1 align-middle" />
+                                          <span className="text-xs">☀️</span>
+                                        </span>
+                                        <span className="text-xs whitespace-nowrap">Mars Daytime</span>
+                      </div>
+                    ) : (
+                                      <div className="flex items-center space-x-1 text-indigo-500 dark:text-indigo-400">
+                                        <span className="flex items-center">
+                                          <Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 mr-1 align-middle" />
+                                          <span className="text-xs">🌙</span>
+                                        </span>
+                                        <span className="text-xs whitespace-nowrap">Mars Night</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
+            
+            {/* Add Perseverance rover information */}
+            {context.isRoverLocation && context.roverInfo && (
+              <div className="mt-2 text-xs bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/20">
+                <p className="font-medium text-red-700 dark:text-red-300">{context.roverInfo.name} Rover</p>
+                <p className="text-red-600/80 dark:text-red-400/80 mt-1">{context.roverInfo.mission}</p>
+                <p className="text-red-600/70 dark:text-red-400/70">Landed: {context.roverInfo.landingDate}</p>
+              </div>
+            )}
           </button>
         </div>
       );
@@ -299,6 +363,18 @@ export default function TimezoneSelector({
                 >
                   Select Timezone or Region
                 </Dialog.Title>
+
+                {DateTime.now().month === 4 && DateTime.now().day === 1 && (
+                  <div className="mt-2 px-3 py-2 bg-red-100 dark:bg-red-900/30 rounded-md border border-red-200 dark:border-red-800/50 text-sm">
+                    <div className="flex items-center gap-2 mb-1">
+                      
+                      <span className="text-red-600/90 dark:text-red-400/90">Mars timezones now available!</span>
+                    </div>
+                    <div className="text-xs text-red-600/80 dark:text-red-400/80 font-medium">
+                      Check out the <span className="font-bold">Perseverance Rover</span> timezone at Jezero Crater
+                    </div>
+                  </div>
+                )}
 
                 <Dialog.Close 
                   className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 
@@ -381,7 +457,7 @@ export default function TimezoneSelector({
                     height={320}
                     width="100%"
                     itemCount={filteredTimezones.length}
-                    itemSize={80}
+                    itemSize={100} // Increased item size to accommodate Mars info
                     className="timezone-list focus:outline-none"
                     overscanCount={5}
                   >
@@ -421,9 +497,9 @@ export default function TimezoneSelector({
                                 <button
                                   key={timezone.id}
                                   onClick={() => handleSelect(timezone)}
-                                  className="w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 
+                                  className={`w-full text-left px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 
                                             transition-colors duration-150 focus:outline-none focus:ring-2 
-                                            focus:ring-primary-500 border-b border-gray-200 dark:border-gray-700"
+                                            focus:ring-primary-500 border-b border-gray-200 dark:border-gray-700`}
                                   role="option"
                                   aria-selected="false"
                                   id={`timezone-option-${timezone.id}`}
@@ -436,12 +512,21 @@ export default function TimezoneSelector({
                                     }
                                   }}
                                 >
-                                  <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between gap-2">
-                                    <div className="flex items-center space-x-2 min-w-0 flex-1">
-                                      <span className="truncate">{timezone.city || timezone.name}</span>
-                                      {timezone.abbreviation && (
+            <div className="font-medium text-gray-900 dark:text-white flex items-center justify-between gap-2">
+              <div className="flex items-center space-x-2 min-w-0 flex-1">
+                <span className="truncate">
+                  {/* Replace emoji with image */}
+                  {timezone.id === 'Mars/Jezero' && <Image src="/perseverance.png" alt="Perseverance Rover" width={16} height={16} className="inline-block w-4 h-4 mr-1 align-middle" />}
+                  {timezone.city || timezone.name}
+                </span>
+                {timezone.abbreviation && (
                                         <span className="text-xs bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-1.5 py-0.5 rounded flex-shrink-0">
                                           {timezone.abbreviation}
+                                        </span>
+                                      )}
+                                      {context.isRoverLocation && (
+                                        <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-1.5 py-0.5 rounded flex-shrink-0 animate-pulse">
+                                          Rover
                                         </span>
                                       )}
                                     </div>
@@ -454,14 +539,45 @@ export default function TimezoneSelector({
                                         <Clock className="w-4 h-4 flex-shrink-0" />
                                         <span className="whitespace-nowrap">{context.currentTime}</span>
                                       </div>
-                                      {context.isBusinessHours && (
+                                      {/* Hide Business Hours for Mars timezones */}
+                                      {context.isBusinessHours && !timezone.id.startsWith('Mars/') && (
                                         <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
                                           <Briefcase className="w-4 h-4 flex-shrink-0" />
                                           <span className="text-xs whitespace-nowrap">Business hours</span>
                                         </div>
                                       )}
+                                      {timezone.id.startsWith('Mars/') && (
+                                        <div className="flex items-center space-x-1">
+                                          {context.isMarsDaytime ? (
+                                            <div className="flex items-center space-x-1 text-amber-500 dark:text-amber-400">
+                                              <span className="flex items-center">
+                                                <Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 mr-1 align-middle" />
+                                                <span className="text-xs">☀️</span>
+                                              </span>
+                                              <span className="text-xs whitespace-nowrap">Mars Daytime</span>
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center space-x-1 text-indigo-500 dark:text-indigo-400">
+                                              <span className="flex items-center">
+                                                <Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 mr-1 align-middle" />
+                                                <span className="text-xs">🌙</span>
+                                              </span>
+                                              <span className="text-xs whitespace-nowrap">Mars Night</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
+                                  
+                                  {/* Add Perseverance rover information */}
+                                  {context.isRoverLocation && context.roverInfo && (
+                                    <div className="mt-2 text-xs bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/20">
+                                      <p className="font-medium text-red-700 dark:text-red-300">{context.roverInfo.name} Rover</p>
+                                      <p className="text-red-600/80 dark:text-red-400/80 mt-1">{context.roverInfo.mission}</p>
+                                      <p className="text-red-600/70 dark:text-red-400/70">Landed: {context.roverInfo.landingDate}</p>
+                                    </div>
+                                  )}
                                 </button>
                               );
                             } catch (err) {

@@ -1,5 +1,7 @@
-# TimezonePulse
+# Clock Project
 
-Effortlessly track, compare, and convert time across multiple timezones with TimezonePulse. Stay synchronized with the world, whether for work or travel.
+This is a world clock application built with Next.js and Tailwind CSS.
 
-[Live Demo](https://www.timezonepulse.com)
+## TODO
+
+- [ ] Re-enable the List/Analog/Digital view switcher buttons in `components/clock/ViewSwitcher.tsx` after resolving the underlying issues.

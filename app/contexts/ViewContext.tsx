@@ -2,6 +2,7 @@
 
 import React, { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
 import { useSettingsStore } from '@/store/settingsStore';
+import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 
 /**
  * Types of views available in the application
@@ -39,6 +40,9 @@ export function ViewProvider({ children }: { children: React.ReactNode }) {
   // Local state to manage current view (will sync with settings store)
   const [currentView, setCurrentView] = useState<ViewType>('list');
   const [initialized, setInitialized] = useState(false);
+  
+  // Detect if we're in mobile mode
+  const isMobileView = useMediaQuery('(max-width: 768px)');
 
   // Handle client-side only logic
   useEffect(() => {
@@ -49,13 +53,17 @@ export function ViewProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isClient) return;
 
-    // Set current view from the settings store defaultView
-    // This ensures consistent view preferences across the app
-    // Map 'analog' to 'analog' (which was previously 'clocks')
-    const mappedView = defaultView === 'analog' ? 'analog' : defaultView;
-    setCurrentView(mappedView);
+    // Always use 'list' view for desktop mode regardless of saved setting
+    if (!isMobileView) {
+      setCurrentView('list');
+    } else {
+      // For mobile, use the stored preference
+      const mappedView = defaultView === 'analog' ? 'analog' : defaultView;
+      setCurrentView(mappedView);
+    }
+    
     setInitialized(true);
-  }, [isClient, defaultView]);
+  }, [isClient, defaultView, isMobileView]);
 
   // Update both local state and settings store when view changes
   const handleViewChange = useCallback((view: ViewType) => {

@@ -27,15 +27,20 @@ function ClocksView(props: ClocksViewProps) {
   }, [resolvedTheme]);
 
   // Define the analog clock renderer function - memoized to prevent recreation on each render
-  const renderAnalogClock = useCallback((time: Date, timezone: string) => (
-    <AnalogClock
-      time={time}
-      timezone={timezone}
-      size={220}
-      highlightedTime={null}
-      theme={clockTheme as 'light' | 'dark'}
-    />
-  ), [clockTheme]);
+  const renderAnalogClock = useCallback((time: Date, timezone: string) => {
+    // Ensure time is a valid Date object
+    const validTime = time instanceof Date && !isNaN(time.getTime()) ? time : new Date();
+    
+    return (
+      <AnalogClock
+        time={validTime}
+        timezone={timezone}
+        size={220}
+        highlightedTime={null}
+        theme={clockTheme as 'light' | 'dark'}
+      />
+    );
+  }, [clockTheme]);
 
   return (
     <BaseClockView
