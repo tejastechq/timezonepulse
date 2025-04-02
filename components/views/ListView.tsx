@@ -113,18 +113,19 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
   const isWknd = isWeekendFn(time, timezone);
   const formatted = formattedTimeStr;
   const animClass = getHighlightAnimationClassFn(isHighlight);
+  
+  // Simplified styling inspired by mobile view
   const cellClasses = clsx(
-    'relative z-10 px-3 py-3 transition-all duration-300 border-b border-gray-100 dark:border-gray-800',
-    isDST ? 'border-l-4 border-l-amber-400 dark:border-l-amber-500' : '',
-    isBoundary ? 'border-t-2 border-t-gray-300 dark:border-t-gray-600' : '',
-    isHighlight ? 'bg-blue-500 dark:bg-blue-600 text-white shadow-md' : '',
-    isCurrent && !isHighlight ? 'current-time-highlight' : '',
-    isNight && !isHighlight && !isCurrent ? 'bg-gray-100/80 dark:bg-gray-800/80' : '',
-    isDay && !isHighlight && !isCurrent ? 'bg-yellow-400/20 dark:bg-yellow-500/20 border-l-2 border-l-yellow-500 dark:border-l-yellow-600' : '',
-    isWknd && !isHighlight && !isCurrent ? getHighlightClass(isWknd) : '',
-    !isNight && !isHighlight && !isWknd && !isCurrent ? 'bg-white dark:bg-gray-900' : '',
+    'flex justify-between items-center px-4 py-3 border-b border-border/50 cursor-pointer transition-colors duration-200 relative',
+    'hover:bg-accent',
+    isHighlight ? 'bg-blue-500 dark:bg-blue-600 text-white font-medium' : 'text-foreground font-normal',
+    isCurrent && !isHighlight ? 'bg-blue-900/50 border-l-2 border-blue-400' : '',
+    isDay && !isHighlight && !isCurrent ? 'bg-yellow-400/20 dark:bg-yellow-500/20 border-l-2 border-yellow-500 dark:border-yellow-600' : '',
+    isNight && !isHighlight && !isCurrent ? 'bg-muted/60' : '',
+    isBoundary && !isHighlight ? 'border-t border-t-border' : '',
     animClass
   );
+  
   return (
     <div
       style={style}
@@ -133,44 +134,40 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
       data-key={time.getTime()}
       data-current-time={isCurrent ? 'true' : 'false'}
       data-time-item="true"
-      onClick={(e) => { e.stopPropagation(); }}
+      onClick={(e) => { 
+        e.stopPropagation(); 
+        handleTimeSelectionFn(time);
+      }}
       className={cellClasses}
       tabIndex={0}
     >
       {isBoundary && <div className="absolute top-0 left-0 w-full text-xs text-gray-500 dark:text-gray-400 pt-0.5 px-3 font-medium">{DateTime.fromJSDate(time).setZone(timezone).toFormat('EEE, MMM d')}</div>}
-      <div
-        className="flex justify-between items-center cursor-pointer"
-        onClick={(e) => {
-          e.stopPropagation();
-          handleTimeSelectionFn(time);
-        }}
-      >
-        <span
-          className={`
-            ${isHighlight ? 'text-white font-semibold' : ''}
-            ${isCurrent && !isHighlight ? 'text-primary-700 dark:text-primary-300 font-medium' : ''}
-            ${timezone.startsWith('Mars/') && !isHighlight ? 'text-red-600 dark:text-red-400 font-medium' : ''}
-          `}
-        >
-          {timezone.startsWith('Mars/') && !isHighlight && (
-            <span className="mr-1 text-red-600 dark:text-red-400 inline-flex items-center" title="Mars Time">
-              {timezone === 'Mars/Jezero' ? (
-                <Image src="/perseverance.png" alt="Perseverance Rover" width={16} height={16} className="inline-block w-4 h-4 align-text-bottom" />
-              ) : (
-                <Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 align-text-bottom" />
-              )}
-            </span>
-          )}
-          {formatted}
-        </span>
-        <div className="flex items-center space-x-1 pointer-events-none">
-          {isCurrent && !isHighlight && <span className="absolute left-0 top-0 h-full w-2 bg-blue-500 rounded-l-md animate-pulse" />}
-          {isNight && !isHighlight && <span className="text-xs text-indigo-400 dark:text-indigo-300" title="Night time"><Moon className="h-3 w-3" /></span>}
-          {isDay && !isHighlight && <span className="text-xs text-amber-500 dark:text-amber-400" title="Day time"><Sun className="h-3 w-3" /></span>}
-          {isDST && !isHighlight && <span className="text-xs text-amber-500 ml-1" title="DST transition soon">⚠️</span>}
-          {isCurrent && !isHighlight && <span className="text-xs text-blue-500 ml-1 animate-pulse" title="Current time">⏰</span>}
-          {isWknd && !isHighlight && <span className="text-xs text-purple-500 ml-1" title="Weekend">🏖️</span>}
-        </div>
+      
+      {/* Time display with simplified styling */}
+      <span className={clsx(
+        'text-sm', 
+        isHighlight ? 'text-white' : isCurrent ? 'text-primary-700 dark:text-primary-300' : 'text-foreground',
+        timezone.startsWith('Mars/') && !isHighlight ? 'text-red-600 dark:text-red-400 font-medium' : ''
+      )}>
+        {timezone.startsWith('Mars/') && !isHighlight && (
+          <span className="mr-1 text-red-600 dark:text-red-400 inline-flex items-center" title="Mars Time">
+            {timezone === 'Mars/Jezero' ? (
+              <Image src="/perseverance.png" alt="Perseverance Rover" width={16} height={16} className="inline-block w-4 h-4 align-text-bottom" />
+            ) : (
+              <Image src="/mars.png" alt="Mars" width={16} height={16} className="inline-block w-4 h-4 align-text-bottom" />
+            )}
+          </span>
+        )}
+        {formatted}
+      </span>
+      
+      {/* Indicators with simplified styling */}
+      <div className="flex items-center space-x-1.5">
+        {isNight && !isHighlight && <Moon className="h-3.5 w-3.5 text-indigo-400 dark:text-indigo-300" />}
+        {isDay && !isHighlight && <Sun className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />}
+        {isCurrent && !isHighlight && <span className="text-xs font-medium text-blue-500">(Now)</span>}
+        {isDST && !isHighlight && <span className="text-xs text-amber-500 ml-1" title="DST transition soon">⚠️</span>}
+        {isWknd && !isHighlight && <span className="text-xs text-purple-500 ml-1" title="Weekend">🏖️</span>}
       </div>
     </div>
   );
@@ -899,19 +896,23 @@ const TimezoneColumn = memo(({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className={`glass-card backdrop-blur-fix ${resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'} rounded-lg p-5 md:p-6 lg:p-7 border border-gray-200 dark:border-gray-700 transition-all duration-200 hover:shadow-lg relative`}
-      style={{ isolation: 'isolate', backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.2)' : 'rgba(255, 255, 255, 0.15)', minWidth: '280px' }}
+      className={`glass-card backdrop-blur-fix ${resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'} rounded-lg p-4 md:p-5 border border-border/50 transition-all duration-200 hover:shadow-md relative`}
+      style={{ 
+        isolation: 'isolate', 
+        backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.2)' : 'rgba(255, 255, 255, 0.15)', 
+        minWidth: '280px' 
+      }}
       data-timezone-id={timezone.id}
     >
-      <div className="flex justify-between items-center mb-3 md:mb-4 relative z-[2]">
+      <div className="flex justify-between items-center mb-3 relative z-[2]">
         <div>
-          <h3 className={`text-lg font-semibold ${timezone.id === 'Mars/Jezero' ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'} inline-flex items-center`}>
+          <h3 className={`text-lg font-medium ${timezone.id === 'Mars/Jezero' ? 'text-red-600 dark:text-red-400' : 'text-foreground'} inline-flex items-center`}>
             {timezone.id.startsWith('Mars/') && (<span className="inline-block mr-1.5" title="Mars Time"><Image src="/mars.png" alt="Mars" width={20} height={20} className="inline-block w-5 h-5 align-text-bottom" /></span>)}
             {timezone.id === 'Mars/Jezero' && (<span className="inline-block mr-1.5" title="Perseverance Rover Location"><Image src="/perseverance.png" alt="Perseverance Rover" width={20} height={20} className="inline-block w-5 h-5 align-text-bottom" /></span>)}
             <span className="truncate">{timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}</span>
             {timezone.id === 'Mars/Jezero' && (<span className="ml-2 text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded animate-pulse"></span>)}
           </h3>
-          <div className="text-xs text-gray-600 dark:text-gray-300 flex items-center space-x-2">
+          <div className="text-xs text-muted-foreground flex items-center space-x-2">
             <span>{timezone.id.startsWith('Mars/') ? timezone.id === 'Mars/Jezero' ? '(MTC+05:10)' : 'MTC' : DateTime.now().setZone(timezone.id).toFormat('ZZZZ')}</span>
             {!timezone.id.startsWith('Mars/') && <span>({getTimezoneOffset(timezone.id)})</span>}
             {timezone.id === 'Mars/Jezero' && <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 dark:bg-red-800/30 dark:text-red-300">Perseverance</span>}
@@ -920,35 +921,34 @@ const TimezoneColumn = memo(({
           <div className={`text-sm font-medium mt-1 ${timezone.id.startsWith('Mars/') ? 'text-red-600 dark:text-red-400' : 'text-primary-600 dark:text-primary-400'}`}>
             {localTime && formatTime(localTime, timezone.id)}
           </div>
+          {/* Shortened Mars info panel */}
           {timezone.id === 'Mars/Jezero' && (
-            <div className="mt-2 text-xs bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/20">
-              <div className="flex justify-between items-center">
-                <p className="font-medium text-red-700 dark:text-red-300">Perseverance Rover</p>
-                <p className="font-medium text-amber-500 dark:text-amber-400">{localTime && formatTime(localTime, timezone.id).includes('Sol') ? formatTime(localTime, timezone.id).split('MTC')[1].trim() : 'Sol'}</p>
-              </div>
-              <p className="text-red-600/80 dark:text-red-400/80 mt-1">NASA Mars 2020 Mission</p>
-              <p className="text-red-600/70 dark:text-red-400/70"><span className="inline-block">Location: Jezero Crater</span><span className="inline-block ml-2">18.38°N, 77.58°E</span></p>
-              <p className="mt-1 flex items-center">{localTime && formatTime(localTime, timezone.id).includes('a') ? (formatTime(localTime, timezone.id).includes('am') ? <span className="text-amber-500 dark:text-amber-400 flex items-center"><span className="mr-1">☀️</span> Mars Morning</span> : <span className="text-indigo-500 dark:text-indigo-400 flex items-center"><span className="mr-1">🌙</span> Mars Evening</span>) : null}</p>
+            <div className="mt-2 text-xs bg-red-50 dark:bg-red-900/5 p-2 rounded border border-red-100/50 dark:border-red-900/10">
+              <p className="text-red-600/80 dark:text-red-400/80">Perseverance Rover • Jezero Crater</p>
+              <p className="text-red-600/70 dark:text-red-400/70 flex justify-between">
+                <span>18.38°N, 77.58°E</span>
+                <span>{localTime && formatTime(localTime, timezone.id).includes('Sol') ? formatTime(localTime, timezone.id).split('MTC')[1].trim() : 'Sol'}</span>
+              </p>
             </div>
           )}
         </div>
         {!isLocal && (
           <div className="flex items-center space-x-1 relative z-[2]">
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
-                <button className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500" aria-label="Timezone options"><Settings className="h-4 w-4 text-gray-500 dark:text-gray-400" /></button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content className="min-w-[200px] bg-white dark:bg-gray-800 rounded-lg shadow-lg py-1.5 border border-gray-200 dark:border-gray-700" sideOffset={5} align="end">
-                  {timezone.id !== userLocalTimezone && (<DropdownMenu.Item onSelect={() => { setEditingTimezoneId(timezone.id); setTimeout(() => setSelectorOpen(true), 100); }} className="flex items-center px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"><Edit2 className="h-4 w-4 mr-2" />Change Timezone</DropdownMenu.Item>)}
-                  {timezone.id !== userLocalTimezone && (<><DropdownMenu.Separator className="h-px bg-gray-200 dark:bg-gray-700 my-1" /><DropdownMenu.Item onSelect={() => handleRemoveTimezone(timezone.id)} className="flex items-center px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 cursor-pointer focus:bg-red-50 dark:focus:bg-red-900/20 focus:text-red-700 dark:focus:text-red-300 focus:outline-none"><X className="h-4 w-4 mr-2" />Remove</DropdownMenu.Item></>)}
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
+            <button 
+              onClick={() => handleRemoveTimezone(timezone.id)} 
+              className="p-1.5 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none" 
+              aria-label="Remove timezone"
+            >
+              <X className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            </button>
           </div>
         )}
       </div>
-      <div className="h-72 md:h-80 lg:h-96 rounded-md border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-[2px] overflow-hidden mt-4 md:mt-5 min-w-[300px]" style={{ backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.1)' : 'rgba(255, 255, 255, 0.1)' }} role="listbox" aria-label={`Time selection list for ${timezone.name}`}>
+      <div className="h-72 md:h-80 lg:h-96 rounded-md border border-border/50 overflow-hidden mt-4 backdrop-blur-[2px]" 
+        style={{ backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.05)' : 'rgba(255, 255, 255, 0.05)' }}
+        role="listbox" 
+        aria-label={`Time selection list for ${timezone.name}`}
+      >
         <AutoSizer>
           {({ height, width }) => (
             <FixedSizeList
@@ -959,7 +959,7 @@ const TimezoneColumn = memo(({
               overscanCount={10}
               ref={(ref) => { listRefs.current[timezone.id] = ref; }}
               className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md"
-              style={{ backdropFilter: 'blur(2px)', backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.05)' : 'rgba(255, 255, 255, 0.05)' }}
+              style={{ backgroundColor: 'transparent' }}
               itemKey={(index) => `${timezone.id}-${itemData.slots[index].getTime()}`}
               onScroll={handleUserScroll}
               itemData={itemData}
