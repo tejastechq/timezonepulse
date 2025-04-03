@@ -18,6 +18,7 @@ import { Providers } from './providers';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import GlassmorphismAnimation from '@/components/GlassmorphismAnimation';
+import Sidebar from '@/components/layout/Sidebar'; // Import the Sidebar
 import '@/lib/utils/trusted-types'; // Import trusted-types configuration
 import { Inter, Roboto_Mono, Poppins, Montserrat, Oswald } from 'next/font/google';
 import Script from 'next/script';
@@ -46,8 +47,13 @@ export default function RootLayout({
     >
       <body className={`min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${inter.className}`}>
         <Providers>
-          {children}
-          {fonts}
+          <div className="relative flex min-h-screen"> {/* Flex container, added relative for potential absolute positioning inside */}
+            <Sidebar /> {/* Add the Sidebar */}
+            <main className="flex-grow"> {/* Removed pl-20 */}
+              {children}
+              {fonts}
+            </main>
+          </div>
           <Analytics 
             mode={process.env.NODE_ENV === 'production' ? 'production' : 'development'}
             debug={process.env.NODE_ENV !== 'production'}
@@ -55,7 +61,7 @@ export default function RootLayout({
           <SpeedInsights />
           <GlassmorphismAnimation />
 
-          {/* Footer Section */}
+          {/* Footer Section - Removed pl-20 */}
           <footer className="w-full mt-auto py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
             © {new Date().getFullYear()} TimezonePulse. All rights reserved. |{' '}
             <a href="/" className="hover:underline">
