@@ -15,16 +15,18 @@ import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
 import { MobileMenu } from '@/components/MobileMenu'; // Import MobileMenu for the header
 import { CalendarDays, ArrowLeftCircle, Plus, Calendar, X } from 'lucide-react'; // Removed Menu icon, added MobileMenu component instead
-import TimezoneTile from './TimezoneTile';
-import { PulseViews } from '@/types/timezone';
-import ViewSwitcher from './ViewSwitcher';
-import DatePicker from './DatePicker';
-import AnalogClockView from './AnalogClockView';
-import DigitalClockView from './DigitalClockView';
-import { OptimizedListView, OptimizedClocksView, OptimizedDigitalView } from './OptimizedViews';
+// Removed unused/incorrect imports: TimezoneTile, PulseViews, DatePicker, AnalogClockView, DigitalClockView, OptimizedViews, OptimizedTimezoneBar, useCounterTimeStore
+// import TimezoneTile from './TimezoneTile';
+// import { PulseViews } from '@/types/timezone';
+// import ViewSwitcher from './ViewSwitcher'; // Removed conflicting static import
+// import DatePicker from './DatePicker';
+// import AnalogClockView from './AnalogClockView';
+// import DigitalClockView from './DigitalClockView';
+// import { OptimizedListView, OptimizedClocksView, OptimizedDigitalView } from './OptimizedViews';
 import AnalogClock from './AnalogClock';
-import OptimizedTimezoneBar from '../OptimizedTimezoneBar';
-import { useCounterTimeStore } from '@/store/counterTimeStore';
+// import OptimizedTimezoneBar from '../OptimizedTimezoneBar';
+// import { useCounterTimeStore } from '@/store/counterTimeStore';
+
 
 // Define interfaces for the view components based on their implementations
 interface ListViewProps {
@@ -65,10 +67,10 @@ const OptimizedClocksView = ClocksView;
 const OptimizedDigitalView = DigitalView;
 
 // Dynamically import less critical components to reduce initial load
-const ViewSwitcher = dynamic(() => import('./ViewSwitcher'), { ssr: true });
+const ViewSwitcher = dynamic(() => import('./ViewSwitcher'), { ssr: true }); // Keep dynamic import
 const TimezoneSelector = dynamic(() => import('./TimezoneSelector'), { ssr: false }); // Added TimezoneSelector import
 
-// Import the DatePicker
+// Import the DatePicker (Dynamic import remains)
 const DatePicker = dynamic(() => import('../ui/date-picker').then(mod => mod.DatePicker), {
   ssr: false
 });
@@ -103,14 +105,17 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
   // Get state from the timezone store
   const {
     timezones,
-    addTimezone,
+    addTimezone, // Keep this for the onSelect handler
     removeTimezone,
     highlightedTime,
     setHighlightedTime,
     localTimezone,
     selectedDate,
     setSelectedDate,
-    resetToToday
+    resetToToday,
+    isTimezoneSelectorOpen, // Get global state
+    openTimezoneSelector,   // Get global action
+    closeTimezoneSelector  // Get global action
     // Removed showMarsExplanation - no longer needed for tooltip logic
   } = useTimezoneStore();
 
@@ -122,7 +127,7 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
   
   // State for showing the add timezone form
   const [showAddForm, setShowAddForm] = useState(false); // Keep for now, might be removable later
-  const [isSelectorOpen, setIsSelectorOpen] = useState(false); // State for the modal
+  // Remove local state: const [isSelectorOpen, setIsSelectorOpen] = useState(false); // State for the modal
 
   // State for tracking if the component has mounted
   const [mounted, setMounted] = useState(false);
@@ -277,11 +282,11 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
     return dt.set({ minute: roundedMinutes, second: 0, millisecond: 0 }).toJSDate();
   }, []);
 
-  // Callback to handle adding a timezone from the selector
+  // Callback to handle adding a timezone from the selector (using global state)
   const handleAddTimezone = useCallback((timezone: Timezone) => {
     addTimezone(timezone);
-    setIsSelectorOpen(false);
-  }, [addTimezone]);
+    closeTimezoneSelector(); // Use global action to close
+  }, [addTimezone, closeTimezoneSelector]);
 
   // Handle hydration mismatch by rendering placeholder until client-side render
   if (!isClient || !currentTime) {
@@ -306,12 +311,12 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
           <MobileMenu />
           <h1 className="font-bold uppercase text-xl">TimeZonePulse</h1>
           <div className="flex items-center space-x-2">
-            {/* Add Timezone Button (Mobile FAB exists, but keep this for consistency?) */}
-             <button
-               onClick={() => setIsSelectorOpen(true)}
-               className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors text-white" // Added text-white for visibility if needed
-               aria-label="Add Timezone"
-             >
+             {/* Add Timezone Button (Mobile FAB exists, but keep this for consistency?) */}
+              <button
+                onClick={openTimezoneSelector} // Use global action
+                className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors text-white" // Added text-white for visibility if needed
+                aria-label="Add Timezone"
+              >
                <Plus size={20} />
              </button>
             {/* Calendar Button (Mobile) */}
@@ -329,12 +334,12 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
         <>
           <div className="flex justify-between items-center mb-4 h-12">
             <ViewSwitcher />
-            <div className="flex items-center space-x-2">
-            <button // Desktop Add Button
-              onClick={() => setIsSelectorOpen(true)}
-              className="p-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-              aria-label="Add Timezone"
-              title="Add Timezone" // Tooltip for clarity
+             <div className="flex items-center space-x-2">
+             <button // Desktop Add Button
+               onClick={openTimezoneSelector} // Use global action
+               className="p-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+               aria-label="Add Timezone"
+               title="Add Timezone" // Tooltip for clarity
             >
               <Plus size={20} />
             </button>
@@ -414,7 +419,7 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
                 <div className="text-center text-gray-400 mt-10">
                   <p>No timezones added yet.</p>
                   <button
-                    onClick={() => setIsSelectorOpen(true)}
+                    onClick={openTimezoneSelector} // Use global action here
                     className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
                     <Plus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
@@ -549,15 +554,15 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
         )}
       </AnimatePresence>
 
-      {/* Timezone Selection Modal */}
-      <AnimatePresence>
-        {isSelectorOpen && (
-          <TimezoneSelector
-            key="timezone-selector"
-            isOpen={true}
-            onClose={() => setIsSelectorOpen(false)}
-            onSelect={handleAddTimezone}
-            excludeTimezones={[localTimezone, ...timezones.map(tz => tz.id)]}
+       {/* Timezone Selection Modal (using global state) */}
+       <AnimatePresence>
+         {isTimezoneSelectorOpen && ( // Use global state
+           <TimezoneSelector
+             key="timezone-selector"
+             isOpen={isTimezoneSelectorOpen} // Pass global state
+             onClose={closeTimezoneSelector} // Use global action
+             onSelect={handleAddTimezone}
+             excludeTimezones={[localTimezone, ...timezones.map(tz => tz.id)]}
             data-timezone-selector
           />
         )}

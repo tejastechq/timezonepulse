@@ -56,6 +56,9 @@ interface TimezoneState {
   resetStore: () => void;
   // Removed hideMarsExplanation action
   // hideMarsExplanation: () => void; 
+  isTimezoneSelectorOpen: boolean; // New state for modal visibility
+  openTimezoneSelector: () => void; // Action to open modal
+  closeTimezoneSelector: () => void; // Action to close modal
 }
 
 // Get a storage key that's unique to the current origin to prevent cross-port persistence issues
@@ -189,6 +192,7 @@ export const useTimezoneStore = create<TimezoneState>()(
         hasMarsTimezone: false, // Changed to false since Mars is no longer added by default
         // marsExplanationPosition: 'right' as 'left' | 'right',
         // lastAddedMarsTimezoneId: null,
+        isTimezoneSelectorOpen: false, // Initial state for modal
       };
     };
       
@@ -196,6 +200,8 @@ export const useTimezoneStore = create<TimezoneState>()(
         ...getInitialState(),
         
         // Actions
+        openTimezoneSelector: () => set({ isTimezoneSelectorOpen: true }), // Add action
+        closeTimezoneSelector: () => set({ isTimezoneSelectorOpen: false }), // Add action
         addTimezone: (timezone: Timezone) => set((state) => {
           // Check if the timezone ID already exists in the list
           if (state.timezones.some(tz => tz.id === timezone.id)) {
