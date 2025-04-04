@@ -366,7 +366,7 @@ body::after {
 }
 
 /* Adjust the opacity of the Mars explanation card to save space */
-.mobile-desktop-container :global(.desktop-mars-explanation) {
+.mobile-desktop-container .desktop-mars-explanation {
   opacity: 0.8;
   transform: scale(0.9);
   transform-origin: top right;

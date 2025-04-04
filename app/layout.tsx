@@ -18,7 +18,6 @@ import { Providers } from './providers';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import GlassmorphismAnimation from '@/components/GlassmorphismAnimation';
-import Sidebar from '@/components/layout/Sidebar'; // Import the Sidebar
 import '@/lib/utils/trusted-types'; // Import trusted-types configuration
 import { Inter, Roboto_Mono, Poppins, Montserrat, Oswald } from 'next/font/google';
 import Script from 'next/script';
@@ -48,7 +47,6 @@ export default function RootLayout({
       <body className={`min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${inter.className}`}>
         <Providers>
           <div className="relative flex min-h-screen"> {/* Flex container, added relative for potential absolute positioning inside */}
-            <Sidebar /> {/* Add the Sidebar */}
             <main className="flex-grow"> {/* Removed pl-20 */}
               {children}
               {fonts}
