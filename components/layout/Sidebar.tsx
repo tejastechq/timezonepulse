@@ -11,8 +11,8 @@ const Sidebar = () => {
   const { openTimezoneSelector } = useTimezoneStore(); // Get the action from the store
 
   return (
-    // Main container: Floating, glassmorphism (adjusted opacity), rounded corners, padding, margin
-    <div className="fixed left-4 top-4 h-[calc(100vh-2rem)] w-[72px] bg-[#1E1F22]/60 backdrop-blur-md text-white flex flex-col items-center py-4 space-y-4 rounded-2xl z-50 border border-white/10 shadow-lg"> {/* Changed opacity from /75 to /60 */}
+    // Main container: Floating, glassmorphism, rounded corners, padding, margin. Hidden on mobile, shown on md+ screens.
+    <div className="hidden md:flex fixed left-4 top-4 h-[calc(100vh-2rem)] w-[72px] bg-[#1E1F22]/60 backdrop-blur-md text-white flex-col items-center py-4 space-y-4 rounded-2xl z-50 border border-white/10 shadow-lg"> {/* Added hidden md:flex */}
       {/* Logo */}
       <div className="w-12 h-12 flex items-center justify-center mb-2">
         <Image

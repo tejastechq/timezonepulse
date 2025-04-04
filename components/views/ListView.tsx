@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Timezone, useTimezoneStore } from '@/store/timezoneStore';
 import { isNightHours, isWeekend } from '@/lib/utils/dateTimeFormatter';
 import { FixedSizeList, ListChildComponentProps } from 'react-window';
-import AutoSizer from 'react-virtualized-auto-sizer';
+// Removed AutoSizer import
+// import AutoSizer from 'react-virtualized-auto-sizer'; 
 import { ChevronUp, ChevronDown, Sun, Moon, Clock, Plus, X, Edit2, Settings, CalendarDays } from 'lucide-react';
 import { getAllTimezones, isInDST } from '@/lib/utils/timezone';
 import SelectedTimeNotification from '../ui/SelectedTimeNotification';
@@ -603,7 +604,7 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
     };
     return (
       <>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 justify-items-center"> {/* Added justify-items-center */}
           {displayTimezones.map((timezone) => (
             <TimezoneColumn
               key={timezone.id}
@@ -959,10 +960,10 @@ const TimezoneColumn = memo(({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-white/10 dark:bg-black/10 backdrop-blur-md rounded-lg overflow-hidden shadow-lg border border-white/10 dark:border-white/5"
+      className="bg-white/10 dark:bg-black/10 backdrop-blur-md rounded-lg overflow-hidden shadow-lg border border-white/10 dark:border-white/5 w-80 mx-auto" // Re-added mx-auto
       style={{ 
         isolation: 'isolate', 
-        minWidth: '280px',
+        // Removed minWidth: '280px', 
         transition: 'all 0.3s ease',
         backgroundImage: timezone.id.startsWith('Mars/') ? 
           'linear-gradient(to bottom right, rgba(239, 68, 68, 0.03), transparent)' : 
@@ -1103,13 +1104,14 @@ const TimezoneColumn = memo(({
           
           // Scroll to the new position
           listRef.scrollTo(newOffset);
-        }}
-      >
-        <AutoSizer>
-          {({ height, width }) => (
-            <FixedSizeList
-              height={height}
-              width={width}
+         }}
+       >
+         {/* Removed AutoSizer, set width directly */}
+         {/* <AutoSizer> */}
+           {/* {({ height, width }) => ( */}
+             <FixedSizeList
+               height={240} // Explicit height needed without AutoSizer
+               width="100%" // Reverted back to 100% to fill parent w-80
               itemCount={displaySlots.length}
               itemSize={40} // Reduced from 48
               overscanCount={10}
@@ -1123,11 +1125,11 @@ const TimezoneColumn = memo(({
               itemKey={(index) => `${timezone.id}-${itemData.slots[index].getTime()}`}
               onScroll={handleUserScroll}
               itemData={itemData}
-            >
-              {Row}
-            </FixedSizeList>
-          )}
-        </AutoSizer>
+             >
+               {Row}
+             </FixedSizeList>
+           {/* )} */}
+         {/* </AutoSizer> */}
       </div>
     </motion.div>
   );
