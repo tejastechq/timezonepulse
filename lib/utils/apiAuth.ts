@@ -55,56 +55,19 @@ export const secureApiHeaders = {
  * @returns NextResponse with error if authentication fails, null if authentication succeeds
  */
 export async function authenticateApi(options: AuthOptions = { type: AuthType.RATE_LIMITED }): Promise<NextResponse | null> {
-  // NOTE: headers() must be awaited when called inside Route Handlers
-  const headersList = await headers(); // Get headers once
-
-  // --- Origin Check ---
-  const origin = headersList.get('origin');
-  const allowedOrigin = process.env.NEXT_PUBLIC_APP_URL;
-
-  // Block requests if origin exists and doesn't match the allowed origin in production
-  // In development, allow requests without origin (e.g., Postman) or from localhost derivatives
-  if (process.env.NODE_ENV === 'production') {
-    if (origin && allowedOrigin && origin !== allowedOrigin) {
-      console.warn(`Blocked API request from invalid origin: ${origin}`);
-      return NextResponse.json({
-        success: false,
-        message: 'Invalid origin'
-      }, {
-        status: 403,
-        headers: secureApiHeaders
-      });
-    }
-    // Allow requests without an origin header in production for server-to-server or direct API calls if needed.
-    // If stricter control is desired, uncomment the following block:
-    // else if (!origin && allowedOrigin) {
-    //   console.warn(`Blocked API request without origin header in production`);
-    //   return NextResponse.json({ success: false, message: 'Origin header required' }, { status: 403, headers: secureApiHeaders });
-    // }
-  } else {
-    // Development: Allow localhost and missing origin
-    if (origin && allowedOrigin && !origin.startsWith('http://localhost:') && origin !== allowedOrigin) {
-       console.warn(`Blocked API request from potentially invalid dev origin: ${origin}`);
-       return NextResponse.json({ success: false, message: 'Invalid development origin' }, { status: 403, headers: secureApiHeaders });
-    }
-  }
-  // --- End Origin Check ---
-
-
   // Allow all access in development unless specifically requiring admin/session
-  if (process.env.NODE_ENV === 'development' &&
-      options.type !== AuthType.ADMIN &&
+  if (process.env.NODE_ENV === 'development' && 
+      options.type !== AuthType.ADMIN && 
       options.type !== AuthType.SESSION) {
     return null; // Authentication successful
   }
   
   // ADMIN auth check
   if (options.type === AuthType.ADMIN) {
-    // const headersList = headers(); // Already fetched above
+    const headersList = await headers();
     const authToken = headersList.get('x-admin-token');
-
+    
     if (!await validateAdminToken(authToken)) {
-      console.warn(`Failed ADMIN authentication attempt. Origin: ${origin || 'N/A'}`); // Log failed attempt
       return NextResponse.json({
         success: false,
         message: options.message || 'Unauthorized access'
@@ -119,7 +82,6 @@ export async function authenticateApi(options: AuthOptions = { type: AuthType.RA
   if (options.type === AuthType.SESSION) {
     // Session validation logic should be implemented here
     // For now, return unauthorized as it's not implemented
-    console.warn(`Failed SESSION authentication attempt (not implemented). Origin: ${origin || 'N/A'}`); // Log failed attempt
     return NextResponse.json({
       success: false,
       message: options.message || 'Session authentication not implemented'

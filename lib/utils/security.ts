@@ -48,45 +48,17 @@ export function getCspWithNonce(nonce: string, hostname: string = ''): string {
     'https://vercel.live',
   ];
 
-  // For production environments (including Vercel previews treated as production NODE_ENV)
+  // For production, use a different approach that works better with third-party scripts
   if (process.env.NODE_ENV === 'production') {
-    // Use 'unsafe-inline' for scripts in production/preview to avoid hash/nonce issues
-    // This is less secure but more practical if hashes change frequently.
-    // IMPORTANT: 'unsafe-inline' is ignored if nonces or hashes are present, so we remove the nonce source here.
-    const prodScriptSrcElements = [
-      `'self'`,
-      // Filter out the nonce from commonScriptSrc for this policy
-      ...commonScriptSrc.filter(src => !src.startsWith("'nonce-")),
-      `'unsafe-inline'`, // Allow all inline scripts
-      hostname ? `https://${hostname}` : '',
-    ].filter(Boolean);
-    console.log("Using Production/Preview CSP with unsafe-inline (nonce removed)"); // Log policy type
-
-    const prodScriptSrc = prodScriptSrcElements.join(' ');
-
-    const prodConnectSrc = [
-      `'self'`,
-      ...vercelAnalyticsDomains,
-      'https://plausible.io',
-      'https://status.useanvil.com',
-      hostname ? `https://${hostname}` : '', // Add the app's own domain
-    ].filter(Boolean);
-
-    const prodFrameSrc = [
-      `'self'`,
-      ...statuspageDomains,
-      'https://vercel.live',
-      'https://*.vercel.live', // Keep Vercel Live for preview comments etc. Consider tightening if not needed.
-    ];
-
+    // In production, we'll use a more permissive policy without nonce enforcement
     return [
       `default-src 'self'`,
-      `script-src ${prodScriptSrc}`, // Use the already joined string directly
-      `style-src 'self' 'unsafe-inline'`, // Keep unsafe-inline for styles as Next.js might need it
-      `img-src 'self' data: blob: https://*`, // Keep img-src permissive for now, consider tightening if needed
+      `script-src 'self' 'unsafe-inline' ${commonScriptSrc.join(' ')} https://*.vercel.app https://*.vercel.com ${hostname ? `https://${hostname}` : ''}`,
+      `style-src 'self' 'unsafe-inline'`,
+      `img-src 'self' data: blob: https://*`,
       `font-src 'self' data: https://fonts.gstatic.com`,
-      `connect-src ${prodConnectSrc.join(' ')}`,
-      `frame-src ${prodFrameSrc.join(' ')}`,
+      `connect-src 'self' ${vercelAnalyticsDomains.join(' ')} https://plausible.io https://status.useanvil.com https://*.vercel.app https://*.vercel.com ${hostname ? `https://${hostname}` : ''}`,
+      `frame-src 'self' ${statuspageDomains.join(' ')} https://vercel.live https://*.vercel.live`,
       `form-action 'self'`,
       `base-uri 'self'`,
       `object-src 'none'`,
