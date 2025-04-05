@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { JsonLd } from '@/components/seo/JsonLd';
-import dynamic from 'next/dynamic';
 import TimeZonePulse from '@/components/clock/WorldClock';
 import { ViewProvider } from '@/app/contexts/ViewContext';
 import { IntegrationsProvider } from '@/app/contexts/IntegrationsContext';
