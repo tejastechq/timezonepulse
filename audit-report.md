@@ -1,36 +1,35 @@
-22# Unused Feature Audit Report (Main Page - /)
+# Clock Application Audit Report (Unused/Partial Features)
 
-**Date:** 2025-04-05
+Date: 2025-04-05
 
-**Objective:** Audit the main page (`/`) for unused or partially implemented features and remove dead code.
+This report details findings from an audit of the Clock application codebase to identify unused, partially implemented, or disabled features.
 
-**Findings:**
+## Summary of Findings
 
-1.  **Forced View:** The main page component (`app/page.tsx`) explicitly forces the `MobileV2ListView` by passing `forceMobileV2View={true}` to the `TimeZonePulse` (`components/clock/WorldClock.tsx`) component.
-2.  **Unused Rendering Paths:** Due to the forced view, the conditional rendering logic within `WorldClock.tsx` for the standard desktop views (List, Analog, Digital) and the standard mobile view (using draggable cards) was never executed when rendering the main page.
-3.  **Unused Components:** The following components were identified as unused in the context of the main page and confirmed to have no other usages (except `ListView` which is used elsewhere):
-    *   `components/views/ClocksView.tsx`
-    *   `components/views/DigitalView.tsx`
-    *   `components/clock/ViewSwitcher.tsx` (Controls the unused desktop views)
-    *   `components/mobile/DraggableTimezoneCard.tsx` (Part of the unused standard mobile view)
-    *   `components/mobile/MobileTimezoneCard.tsx` (Used only by `DraggableTimezoneCard`)
-4.  **Unused Backup Files:** The following backup files were identified:
-    *   `components/views/ListView_backup.tsx`
-    *   `components/clock/AnalogClock.tsx.bak`
+The following areas were identified as potential candidates for removal or further investigation:
 
-**Actions Taken:**
 
-1.  **Refactored `components/clock/WorldClock.tsx`:** Removed the conditional rendering logic for standard desktop and mobile views, associated state, props, and imports. Simplified the component to only render `MobileV2ListView`.
-2.  **Updated `components/views/index.ts`:** Removed exports for `ClocksView` and `DigitalView`.
-3.  **Deleted Files:** The following unused component and backup files were deleted:
-    *   `components/views/ClocksView.tsx`
-    *   `components/views/DigitalView.tsx`
-    *   `components/clock/ViewSwitcher.tsx`
-    *   `components/mobile/DraggableTimezoneCard.tsx`
-    *   `components/mobile/MobileTimezoneCard.tsx`
-    *   `components/views/ListView_backup.tsx`
-    *   `components/clock/AnalogClock.tsx.bak`
 
-**Result:**
+### 2. Outdated Documentation / Missing Features
 
-The codebase related to the main page rendering has been simplified by removing dead code paths and unused components associated with deprecated view modes. This improves maintainability and reduces bundle size.
+*   **`components/clock/ViewSwitcher.tsx`**:
+    *   `README.md` contains a TODO item mentioning this file and related functionality (List/Analog/Digital view switcher).
+    *   The file `components/clock/ViewSwitcher.tsx` does **not** exist in the project.
+    *   **Recommendation:** Update `README.md` to remove the outdated TODO item or investigate if the feature was intended to be implemented differently.
+
+### 3. Active Features (Not for Removal)
+
+*   **`components/dev/SettingsVerifier.tsx`**:
+    *   Located within the `components/dev/` directory but is actively used on the `/settings` page (`app/settings/page.tsx`).
+    *   **Recommendation:** Keep this component as it's part of the active settings functionality.
+*   **`components/ui/SelectedTimeNotification.tsx`**:
+    *   Actively used in `components/views/ListView.tsx` and `components/views/MobileV2ListView.tsx`.
+    *   `Issues-to-fix.md` mentions desired UI refinements for this component.
+    *   **Recommendation:** Keep this component. Address the refinement request in `Issues-to-fix.md` separately.
+
+## Next Steps
+
+1.  Review the recommendations in this report.
+2.  Proceed with the removal of the identified unused directories and files.
+3.  Update `middleware.ts` to remove the redirect for `/mobilev2`.
+4.  Update `README.md` to remove the outdated TODO regarding `ViewSwitcher.tsx`.
