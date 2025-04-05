@@ -1,21 +1,16 @@
 'use client';
 
-import React, { useState, useEffect, useRef, Suspense, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTimezoneStore, Timezone } from '@/store/timezoneStore';
 import { ViewProvider } from '@/app/contexts/ViewContext';
 import { IntegrationsProvider } from '@/app/contexts/IntegrationsContext';
-import dynamic from 'next/dynamic';
-import { DateTime } from 'luxon';
-import { FixedSizeList } from 'react-window';
-import { useTheme } from 'next-themes';
-import clsx from 'clsx';
-import { useSettingsStore, getWeekendHighlightClass } from '@/store/settingsStore';
-import { formatTimeForTimezone } from '@/lib/timezone-utils';
-import { isInDST } from '@/lib/utils/timezone';
-import { isNightHours, isWeekend as isWeekendUtil } from '@/lib/utils/dateTimeFormatter';
-import { TimezoneColumn } from '@/components/views/MobileV2ListView';
+import dynamic from 'next/dynamic'; // Keep dynamic for potential future use if needed
+import { DateTime } from 'luxon'; // Keep DateTime if used elsewhere or by original grid items
 
-// Placeholder for loading state
+// Import the wrapper component
+import SingleTimezoneCardWrapper from './SingleTimezoneCardWrapper';
+
+// Placeholder for loading state (can be defined here or imported)
 const ViewPlaceholder = () => (
   <div className="w-full min-h-[300px] flex items-center justify-center">
     <div className="animate-pulse flex flex-col items-center justify-center">
@@ -24,13 +19,6 @@ const ViewPlaceholder = () => (
     </div>
   </div>
 );
-
-// Helper function (can be moved to utils)
-const roundToNearestIncrement = (date: Date, incrementMinutes: number): Date => {
-  const incrementMillis = incrementMinutes * 60 * 1000;
-  const ms = date.getTime();
-  return new Date(Math.floor(ms / incrementMillis) * incrementMillis);
-};
 
 // Define getInitialColumns function *before* it's used in useState
 const getInitialColumns = () => {
@@ -45,253 +33,38 @@ const getInitialColumns = () => {
 };
 
 export default function GridTestPage() {
-  // --- Hooks Section (All hooks defined first) ---
-  const {
-    timezones,
-    hydrate,
-    localTimezone,
-    highlightedTime,
-    setHighlightedTime,
-  } = useTimezoneStore();
-  const { resolvedTheme } = useTheme();
-  const { weekendHighlightColor, highlightAutoClear, highlightDuration } = useSettingsStore(); // Added highlight settings
-
+  // --- Hooks Section ---
+  // Hooks needed for the grid page itself and potentially passing initial data
+  const { timezones, hydrate } = useTimezoneStore();
   const [isMounted, setIsMounted] = useState(false);
+  // Keep currentTime state here to pass as initial prop to wrapper
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
-  const [currentDate, setCurrentDate] = useState<Date | null>(null);
-  const [editingTimezoneIdState, setEditingTimezoneIdState] = useState<string | null>(null);
-  const [selectorOpenState, setSelectorOpenState] = useState<boolean>(false);
+
+  // Hooks for the grid layout
   const [activeItem, setActiveItem] = useState<number | null>(null); // Grid item selection state
   const [columns, setColumns] = useState(getInitialColumns);
   const [rows, setRows] = useState(3); // Default, will be recalculated
   const containerRef = useRef<HTMLDivElement>(null);
-  const listRefs = useRef<Record<string, FixedSizeList | null>>({}); // Ref for the list inside TimezoneColumn
-
-  // Refs and State for highlight timer and scrolling logic (from MobileV2ListView)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const timeRemainingRef = useRef<number>(highlightDuration);
-  const [timeRemaining, setTimeRemaining] = useState<number>(highlightDuration); // For potential display
-  const userIsScrollingRef = useRef(false); // Track if user is actively scrolling the list
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timer to detect scroll end
-  const lastScrollTimeRef = useRef<number>(0); // Timestamp of last scroll event
-  const highlightedTimeRef = useRef<Date | null>(null); // Ref to track highlighted time for effects
-
-  // --- Callbacks & Memos ---
-  const handleUserScroll = useCallback((event: { scrollOffset: number; scrollUpdateWasRequested: boolean }) => {
-    // Mark user as scrolling if it wasn't a programmatic scroll
-    if (!event.scrollUpdateWasRequested) {
-      userIsScrollingRef.current = true;
-      lastScrollTimeRef.current = Date.now();
-      // Clear previous scroll end timer
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      // Set a timer to reset scrolling state after a short delay
-      scrollTimeoutRef.current = setTimeout(() => {
-        userIsScrollingRef.current = false;
-      }, 500); // Adjust delay as needed
-    }
-  }, []);
-
-  const handleTouchStart = useCallback(() => {
-    userIsScrollingRef.current = true;
-    lastScrollTimeRef.current = Date.now();
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-  }, []);
-
-  const handleTouchEnd = useCallback(() => {
-    // Use a short delay to allow momentum scrolling to finish before resetting
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    scrollTimeoutRef.current = setTimeout(() => {
-      userIsScrollingRef.current = false;
-    }, 150); // Adjust delay as needed
-  }, []);
-
-  const handleTouchCancel = useCallback(() => {
-    userIsScrollingRef.current = false;
-    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-  }, []);
-
-  const handleRemoveTimezone = useCallback((id: string) => console.log('Remove timezone:', id), []);
-  const isHighlighted = useCallback((time: Date) => highlightedTime ? time.getTime() === highlightedTime.getTime() : false, [highlightedTime]);
-  const checkNightHours = useCallback((time: Date, timezone: string) => isNightHours(time, timezone), []);
-  const isDateBoundary = useCallback((time: Date, timezone: string) => {
-    const timeInTimezone = DateTime.fromJSDate(time).setZone(timezone);
-    return timeInTimezone.hour === 0 && timeInTimezone.minute === 0;
-  }, []);
-  const isDSTTransition = useCallback((time: Date, timezone: string) => {
-    const timeInTimezone = DateTime.fromJSDate(time).setZone(timezone);
-    const oneDayLater = timeInTimezone.plus({ days: 1 });
-    return timeInTimezone.offset !== oneDayLater.offset;
-  }, []);
-  const isCurrentTime = useCallback((time: Date): boolean => {
-    if (!currentTime) return false;
-    const timeDateTime = DateTime.fromJSDate(time);
-    const localDateTime = DateTime.fromJSDate(currentTime);
-    const roundedLocalMinute = Math.floor(localDateTime.minute / 30) * 30;
-    const roundedLocalDateTime = localDateTime.set({ minute: roundedLocalMinute, second: 0, millisecond: 0 });
-    return timeDateTime.hasSame(roundedLocalDateTime, 'hour') && timeDateTime.minute === roundedLocalDateTime.minute;
-  }, [currentTime]);
-  const isWeekend = useCallback((time: Date, timezone: string) => isWeekendUtil(time, timezone), []);
-  const formatTime = useCallback((date: Date, timezone: string) => formatTimeForTimezone(date, timezone, 'h:mm a'), []);
-  const getHighlightAnimationClass = useCallback((isHighlight: boolean) => isHighlight ? 'highlight-item-optimized highlight-pulse-effect' : '', []);
-  const getHighlightClass = useCallback((isWeekend: boolean) => isWeekend ? getWeekendHighlightClass(weekendHighlightColor) : '', [weekendHighlightColor]);
-  const getTimezoneOffset = useCallback((timezone: string) => DateTime.now().setZone(timezone).toFormat('ZZ'), []);
-
-  const timeSlots = useMemo(() => {
-    if (!currentTime) return [];
-    const slots = [];
-    const dateToUse = currentDate || currentTime;
-    const date = DateTime.fromJSDate(dateToUse);
-    const startOfDay = date.startOf('day');
-    for (let i = 0; i < 48; i++) {
-      slots.push(startOfDay.plus({ minutes: i * 30 }).toJSDate());
-    }
-    return slots;
-  }, [currentTime, currentDate]);
-
-  // Callback to reset the highlight timer
-  const resetInactivityTimer = useCallback(() => {
-    if (!highlightedTimeRef.current || !highlightAutoClear) return;
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setTimeRemaining(highlightDuration);
-    timeRemainingRef.current = highlightDuration;
-    timeoutRef.current = setTimeout(() => {
-      // Check ref before clearing state
-      if (highlightedTimeRef.current) {
-        setHighlightedTime(null);
-      }
-    }, highlightDuration * 1000);
-  }, [highlightAutoClear, highlightDuration, setHighlightedTime]);
-
-  // Updated handleTimeSelection to include timer logic
-  const handleTimeSelection = useCallback((time: Date | null) => {
-    setHighlightedTime(time);
-    // Update ref and reset timer if a time is selected and auto-clear is on
-    if (time && highlightAutoClear) {
-      highlightedTimeRef.current = time;
-      resetInactivityTimer();
-    } else if (!time) {
-      // Clear ref and timer if selection is cleared
-      highlightedTimeRef.current = null;
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    }
-  }, [setHighlightedTime, highlightAutoClear, resetInactivityTimer]);
-
-  const handleItemClick = (id: number) => {
-    setActiveItem(activeItem === id ? null : id);
-  };
-
-  // Helper to get current time index
-   const getCurrentTimeIndex = useCallback(() => {
-    if (!currentTime || !timeSlots.length) return 0;
-    const roundedLocalTime = roundToNearestIncrement(currentTime, 30);
-    const index = timeSlots.findIndex(t => DateTime.fromJSDate(t).hasSame(DateTime.fromJSDate(roundedLocalTime), 'minute'));
-    return index > -1 ? index : 0;
-  }, [currentTime, timeSlots]);
-
-  // Helper to scroll the list for the specific timezone column
-  const scrollToIndex = useCallback((index: number, alignment: 'start' | 'center' | 'end' | 'smart' | 'auto' = 'center', timezoneId: string) => {
-    const listRef = listRefs.current[timezoneId];
-    // Only scroll if the user isn't actively scrolling
-    if (listRef && !userIsScrollingRef.current) {
-        requestAnimationFrame(() => {
-            if (listRefs.current[timezoneId]) { // Double-check ref inside frame
-                const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-                listRefs.current[timezoneId]?.scrollToItem(index, prefersReducedMotion ? 'start' : alignment);
-            }
-        });
-    }
-  }, []); // Dependencies removed as it relies on refs and closure
-
 
   // --- Effects ---
+  // Hydration and initial time setting
   useEffect(() => {
     hydrate();
     setIsMounted(true);
-    const now = new Date();
-    setCurrentTime(now);
-    setCurrentDate(now);
+    setCurrentTime(new Date()); // Set initial time for the wrapper prop
   }, [hydrate]);
 
-  useEffect(() => {
+   // Update current time every second (needed to pass updated time to wrapper if desired, though wrapper also has its own timer)
+   useEffect(() => {
     if (!isMounted) return;
     const timer = setInterval(() => {
-      const now = new Date();
-      setCurrentTime(now);
-      const currentStoredDate = currentDate ? new Date(currentDate) : null;
-      if (currentStoredDate && currentStoredDate.getDate() !== now.getDate()) {
-        setCurrentDate(now);
-      }
+      setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
-  }, [isMounted, currentDate]);
-
-  // Effect for highlight auto-clear timer
-  useEffect(() => {
-    highlightedTimeRef.current = highlightedTime; // Keep ref in sync
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    if (highlightedTime && highlightAutoClear) {
-      setTimeRemaining(highlightDuration);
-      timeRemainingRef.current = highlightDuration;
-      timeoutRef.current = setTimeout(() => {
-        if (highlightedTimeRef.current) {
-          handleTimeSelection(null); // Use callback to clear state
-        }
-      }, highlightDuration * 1000);
-    } else if (!highlightedTime) {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      setTimeRemaining(highlightDuration);
-      timeRemainingRef.current = highlightDuration;
-    }
-    const timerId = timeoutRef.current;
-    return () => { if (timerId) clearTimeout(timerId); };
-  }, [highlightedTime, highlightAutoClear, highlightDuration, handleTimeSelection]);
-
-  // Get first timezone for the single column display
-  const firstTimezone = useMemo(() => timezones[0] || { id: 'America/New_York', name: 'New York', city: 'New York', offset: -5, country: 'US' }, [timezones]);
-
-  // Effect to scroll to highlighted time or current time for the *single* column
-  useEffect(() => {
-    // Wait for mount, slots, and ensure user isn't scrolling
-    if (!isMounted || !timeSlots.length || userIsScrollingRef.current || !firstTimezone) return;
-
-    let targetIndex = -1;
-    const alignment: 'start' | 'center' = 'start'; // Scroll to top
-
-    if (highlightedTime) {
-      const targetTimeUTC = DateTime.fromJSDate(highlightedTime).toUTC();
-      targetIndex = timeSlots.findIndex(t => {
-        const slotTimeUTC = DateTime.fromJSDate(t).toUTC();
-        // Compare minutes for 30-min slots
-        return slotTimeUTC.hasSame(targetTimeUTC, 'minute');
-      });
-    } else if (currentTime) {
-      // If nothing highlighted, scroll to current time
-      targetIndex = getCurrentTimeIndex();
-    }
-
-    if (targetIndex !== -1) {
-      // Scroll the specific list for the first timezone
-      // Add a slight delay to ensure the listRef is available after render
-      const scrollTimer = setTimeout(() => {
-          scrollToIndex(targetIndex, alignment, firstTimezone.id);
-      }, 50); // 50ms delay, adjust if needed
-      return () => clearTimeout(scrollTimer); // Cleanup timer
-    }
-  // Ensure dependencies cover all scenarios for scrolling
-  }, [highlightedTime, currentTime, timeSlots, isMounted, firstTimezone?.id, scrollToIndex, getCurrentTimeIndex]); // Added firstTimezone.id
+  }, [isMounted]);
 
 
-  // --- Non-Hook Logic ---
-  const gridItems = useMemo(() => Array.from({ length: 10 }, (_, index) => ({
-    id: index + 1,
-    title: `Item ${index + 1}`,
-    content: `This is a sample grid item with some content for demonstration purposes.`,
-    color: index % 4 === 0 ? 'primary' :
-           index % 4 === 1 ? 'blue' :
-           index % 4 === 2 ? 'green' : 'amber'
-  })), []);
-
-  // Effect for layout calculation
+  // Grid layout effect
   useEffect(() => {
     const calculateLayout = () => {
       if (!containerRef.current) return;
@@ -301,14 +74,31 @@ export default function GridTestPage() {
       else if (viewportWidth <= 912) maxColumns = 2;
       else if (viewportWidth <= 1024) maxColumns = 3;
       else maxColumns = 4;
-      const rowsNeeded = Math.ceil(gridItems.length / maxColumns);
+      // Calculate rows based on the *actual* gridItems length (defined below)
+      const rowsNeeded = Math.ceil(10 / maxColumns); // Assuming 10 items total
       setColumns(maxColumns);
       setRows(rowsNeeded);
     };
     calculateLayout();
     window.addEventListener('resize', calculateLayout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     return () => window.removeEventListener('resize', calculateLayout);
-  }, [gridItems.length]);
+  }, []); // Removed columns dependency as it causes infinite loop with setColumns inside
+
+  // --- Non-Hook Logic ---
+  // Define gridItems *after* hooks
+   const gridItems = useMemo(() => Array.from({ length: 10 }, (_, index) => ({
+    id: index + 1,
+    title: `Item ${index + 1}`,
+    content: `This is a sample grid item with some content for demonstration purposes.`,
+    color: index % 4 === 0 ? 'primary' :
+           index % 4 === 1 ? 'blue' :
+           index % 4 === 2 ? 'green' : 'amber'
+  })), []);
+
+  const handleItemClick = (id: number) => {
+    setActiveItem(activeItem === id ? null : id);
+  };
 
   const getProgressWidth = (id: number) => {
     const percentage = (id % 5 + 1) * 20;
@@ -330,6 +120,8 @@ export default function GridTestPage() {
   };
 
   const displayItems = reorganizeItems();
+  // Get first timezone *after* hooks
+  const firstTimezone = useMemo(() => timezones[0] || { id: 'America/New_York', name: 'New York', city: 'New York', offset: -5, country: 'US' }, [timezones]);
 
   const ITEM_WIDTH = 285;
   const GAP_WIDTH = 24;
@@ -360,38 +152,12 @@ export default function GridTestPage() {
               >
                 {displayItems.map((item) => {
                   if (item.id === 1) {
-                    // Ensure firstTimezone is defined before rendering
-                    if (!firstTimezone) return <ViewPlaceholder key="tz-placeholder"/>;
+                    // Render the wrapper component for the first item
                     return (
-                      <TimezoneColumn
+                      <SingleTimezoneCardWrapper
                         key={firstTimezone.id}
                         timezone={firstTimezone}
-                        isLocal={firstTimezone.id === localTimezone}
-                        isSearching={false}
-                        filteredTimeSlots={[]}
-                        timeSlots={timeSlots}
-                        isHighlighted={isHighlighted}
-                        checkNightHours={checkNightHours}
-                        isDateBoundary={isDateBoundary}
-                        isDSTTransition={isDSTTransition}
-                        isCurrentTime={isCurrentTime}
-                        isWeekend={isWeekend}
-                        formatTime={formatTime}
-                        getHighlightAnimationClass={getHighlightAnimationClass}
-                        handleTimeSelection={handleTimeSelection} // Pass the updated handler
-                        listRefs={listRefs} // Pass the ref collection
-                        handleUserScroll={handleUserScroll}
-                        resolvedTheme={resolvedTheme}
-                        getTimezoneOffset={getTimezoneOffset}
-                        handleRemoveTimezone={handleRemoveTimezone}
-                        setEditingTimezoneId={setEditingTimezoneIdState}
-                        setSelectorOpen={setSelectorOpenState}
-                        userLocalTimezone={localTimezone || 'America/New_York'}
-                        localTime={currentTime}
-                        getHighlightClass={getHighlightClass}
-                        handleTouchStart={handleTouchStart}
-                        handleTouchEnd={handleTouchEnd}
-                        handleTouchCancel={handleTouchCancel}
+                        initialCurrentTime={currentTime} // Pass current time state from this page
                       />
                     );
                   }
@@ -448,13 +214,12 @@ export default function GridTestPage() {
               <p className="text-sm mt-2">The layout dynamically adjusts column count. Item 1 is replaced by TimezoneCard.</p>
             </div>
           )}
-          {/* Added global styles for animations and variables */}
+          {/* Global styles needed for animations defined in the wrapper/column */}
           <style jsx global>{`
             @keyframes fadeInUp {
               from { opacity: 0; transform: translateY(-10px); }
               to { opacity: 1; transform: translateY(0); }
             }
-            /* Ensure highlight animations are available globally if not already */
             .highlight-item-optimized { animation: none !important; position: relative; transform: translateZ(0); opacity: 1 !important; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
             .dark .highlight-item-optimized { box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
             .highlight-pulse-effect { position: relative; overflow: hidden; }
@@ -462,8 +227,8 @@ export default function GridTestPage() {
             @keyframes shimmerHighlight { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
             .highlight-item-optimized::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; z-index: 2; pointer-events: none; border-radius: inherit; box-shadow: 0 0 0 0 rgba(var(--primary-500-rgb), 0.4); animation: optimizedHighlightPulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
             @keyframes optimizedHighlightPulse { 0% { box-shadow: 0 0 0 0 rgba(var(--primary-500-rgb), 0.4); background-color: rgba(var(--primary-500-rgb), 0.05); } 50% { box-shadow: 0 0 0 8px rgba(var(--primary-500-rgb), 0.2); background-color: rgba(var(--primary-500-rgb), 0); } 100% { box-shadow: 0 0 0 0 rgba(var(--primary-500-rgb), 0); background-color: rgba(var(--primary-500-rgb), 0.05); } }
-            :root { --primary-500-rgb: 99, 102, 241; } /* Define CSS variable */
-            .dark { --primary-500-rgb: 129, 140, 248; } /* Define CSS variable for dark mode */
+            :root { --primary-500-rgb: 99, 102, 241; }
+            .dark { --primary-500-rgb: 129, 140, 248; }
           `}</style>
         </div>
       </IntegrationsProvider>

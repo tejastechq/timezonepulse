@@ -1143,10 +1143,10 @@ const TimezoneColumn = memo(({
         )}
       </div>
       
-      <div 
-        className="overflow-hidden scrollbar-hide" // Removed h-60
-        style={{ 
-          height: isSearching && displaySlots.length > 0 ? `${Math.max(listHeight, itemSize)}px` : '15rem', // Dynamic height, ensure min height of one item
+      <div
+        className="overflow-hidden scrollbar-hide"
+        style={{
+          height: '15rem', // Apply fixed height matching original example
           scrollbarWidth: 'none', /* Firefox */
           msOverflowStyle: 'none', /* IE/Edge */
         }}
