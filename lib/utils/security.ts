@@ -48,17 +48,38 @@ export function getCspWithNonce(nonce: string, hostname: string = ''): string {
     'https://vercel.live',
   ];
 
-  // For production, use a different approach that works better with third-party scripts
+  // For production, use a stricter policy
   if (process.env.NODE_ENV === 'production') {
-    // In production, we'll use a more permissive policy without nonce enforcement
+    // Define stricter sources, removing broad wildcards and unsafe-inline for scripts
+    const prodScriptSrc = [
+      `'self'`,
+      ...commonScriptSrc, // Includes nonce and specific allowed domains like Vercel Analytics, Plausible, Statuspage, Vercel Live
+      hostname ? `https://${hostname}` : '', // Add the app's own domain
+    ].filter(Boolean); // Filter out empty string if hostname is not present
+
+    const prodConnectSrc = [
+      `'self'`,
+      ...vercelAnalyticsDomains,
+      'https://plausible.io',
+      'https://status.useanvil.com',
+      hostname ? `https://${hostname}` : '', // Add the app's own domain
+    ].filter(Boolean);
+
+    const prodFrameSrc = [
+      `'self'`,
+      ...statuspageDomains,
+      'https://vercel.live',
+      'https://*.vercel.live', // Keep Vercel Live for preview comments etc. Consider tightening if not needed.
+    ];
+
     return [
       `default-src 'self'`,
-      `script-src 'self' 'unsafe-inline' ${commonScriptSrc.join(' ')} https://*.vercel.app https://*.vercel.com ${hostname ? `https://${hostname}` : ''}`,
-      `style-src 'self' 'unsafe-inline'`,
-      `img-src 'self' data: blob: https://*`,
+      `script-src ${prodScriptSrc.join(' ')}`,
+      `style-src 'self' 'unsafe-inline'`, // Keep unsafe-inline for styles as Next.js might need it
+      `img-src 'self' data: blob: https://*`, // Keep img-src permissive for now, consider tightening if needed
       `font-src 'self' data: https://fonts.gstatic.com`,
-      `connect-src 'self' ${vercelAnalyticsDomains.join(' ')} https://plausible.io https://status.useanvil.com https://*.vercel.app https://*.vercel.com ${hostname ? `https://${hostname}` : ''}`,
-      `frame-src 'self' ${statuspageDomains.join(' ')} https://vercel.live https://*.vercel.live`,
+      `connect-src ${prodConnectSrc.join(' ')}`,
+      `frame-src ${prodFrameSrc.join(' ')}`,
       `form-action 'self'`,
       `base-uri 'self'`,
       `object-src 'none'`,

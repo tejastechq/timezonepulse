@@ -1,9 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod'; // Import Zod
+
+// Define Zod schema for the CSP report structure
+const CspReportSchema = z.object({
+  'csp-report': z.object({
+    'document-uri': z.string().url().optional(),
+    'referrer': z.string().optional(),
+    'violated-directive': z.string().optional(),
+    'effective-directive': z.string().optional(),
+    'original-policy': z.string().optional(),
+    'blocked-uri': z.string().optional(), // Can be URL or 'inline', 'eval', etc.
+    'status-code': z.number().optional(),
+    'source-file': z.string().optional(),
+    'line-number': z.number().optional(),
+    'column-number': z.number().optional(),
+  }).passthrough(), // Allow other fields
+});
 
 // Enhanced CSP violation report logger with structured logging
 export async function POST(request: NextRequest) {
   try {
-    const report = await request.json();
+    let report;
+    try {
+      const rawBody = await request.json();
+      const validationResult = CspReportSchema.safeParse(rawBody);
+      if (!validationResult.success) {
+        console.warn('Invalid CSP report structure received:', validationResult.error.format());
+        // Still return 204 as per spec, but log the invalid structure
+        return new NextResponse(null, { status: 204 });
+      }
+      report = validationResult.data;
+    } catch (parseError) {
+      console.error('Error parsing CSP report JSON:', parseError);
+      // Return 204 even if parsing fails
+      return new NextResponse(null, { status: 204 });
+    }
     
     // Extract client information for more context
     const userAgent = request.headers.get('user-agent') || 'unknown';

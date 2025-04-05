@@ -13,8 +13,25 @@ const dummyRateLimiter = {
  * Middleware function for Next.js
  */
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Block suspicious paths early
+  const blockedPatterns = [
+      /^\/cmd_/,        // Paths starting with /cmd_
+      /\/\.env/,        // Paths containing /.env
+      /\/admin$/,       // Paths ending with /admin
+      /\/\.git/,        // Paths containing /.git
+      /\/node_modules/, // Paths containing /node_modules
+      /\/package\.json/, // Paths containing /package.json
+      /\/tsconfig\.json/, // Paths containing /tsconfig.json
+  ];
+  if (blockedPatterns.some((pattern) => pattern.test(pathname))) {
+    console.warn(`Blocked suspicious path access attempt: ${pathname}`);
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   // Redirect /mobilev2 and /list-view routes to the homepage
-  if (request.nextUrl.pathname.startsWith('/mobilev2') || request.nextUrl.pathname.startsWith('/list-view')) {
+  if (pathname.startsWith('/mobilev2') || pathname.startsWith('/list-view')) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
@@ -33,11 +50,11 @@ export async function middleware(request: NextRequest) {
     response.headers.set(key, value);
   });
 
-  // // Set the CSP header with the generated nonce
-  // response.headers.set(
-  //   "Content-Security-Policy",
-  //   getCspWithNonce(nonce, request.nextUrl.hostname)
-  // );
+  // Set the CSP header with the generated nonce
+  response.headers.set(
+    "Content-Security-Policy",
+    getCspWithNonce(nonce, request.nextUrl.hostname)
+  );
 
   // Set the nonce in a cookie for the Document component to use
   // Extract domain for cookie
@@ -68,6 +85,30 @@ export async function middleware(request: NextRequest) {
     console.error("Rate limiting error:", error);
     // Continue processing even if rate limiting fails
   }
+
+  // --- Log attempts to access potentially undefined routes ---
+  // Define known valid route prefixes/patterns (adjust as needed)
+  const knownRoutePatterns = [
+    /^\/$/,             // Homepage
+    /^\/about/,
+    /^\/settings/,
+    /^\/grid-test/,
+    /^\/home/,          // Though it redirects
+    /^\/api\//,         // API routes
+    // The matcher already excludes static assets like /_next/static, /_next/image, /favicon.ico etc.
+    // Redirected routes (/mobilev2, /list-view) are handled earlier.
+  ];
+
+  // Check if the current path matches any known patterns
+  const isKnownRoute = knownRoutePatterns.some(pattern => pattern.test(pathname));
+
+  if (!isKnownRoute) {
+    // It's not a blocked pattern (checked earlier) and not a known route
+    const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+    console.warn(`Potential access attempt to undefined route: ${pathname} from IP: ${clientIp}`);
+  }
+  // --- End logging ---
+
 
   return response;
 }
