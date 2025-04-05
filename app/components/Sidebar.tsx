@@ -75,10 +75,17 @@ export default function Sidebar({ children }: SidebarProps) {
           >
             <Bars3Icon className="h-6 w-6" />
           </button>
-          <div className="ml-4 flex items-center">
-            <ClockIcon className="h-6 w-6 text-blue-500 mr-2" />
-            <span className="font-semibold text-white">TimezonePulse</span>
+          
+          {/* Centered logo and text */}
+          <div className="flex-1 flex justify-center items-center">
+            <div className="flex items-center">
+              <ClockIcon className="h-6 w-6 text-blue-500 mr-2" />
+              <span className="font-semibold text-white">TimezonePulse</span>
+            </div>
           </div>
+          
+          {/* Empty div to balance the header */}
+          <div className="w-10" />
         </div>
         
         {/* Content padding to account for the header on all devices */}
