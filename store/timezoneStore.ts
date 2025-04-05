@@ -28,14 +28,14 @@ export interface Timezone {
 /**
  * Interface for the view mode
  */
-export type ViewMode = 'analog' | 'digital' | 'list';
+export type ViewMode = 'list'; // Removed 'analog' and 'digital'
 
 /**
  * Interface for the timezone store state
  */
 interface TimezoneState {
   timezones: Timezone[];
-  viewMode: ViewMode;
+  // viewMode: ViewMode; // Removed
   highlightedTime: Date | null;
   localTimezone: string;
   appVersion: typeof APP_VERSION;
@@ -47,7 +47,7 @@ interface TimezoneState {
   // lastAddedMarsTimezoneId: string | null;
   addTimezone: (timezone: Timezone) => void;
   removeTimezone: (id: string) => void;
-  setViewMode: (mode: ViewMode) => void;
+  // setViewMode: (mode: ViewMode) => void; // Removed
   setHighlightedTime: (time: Date | null) => void;
   setSelectedDate: (date: Date) => void;
   resetToToday: () => void;
@@ -182,7 +182,7 @@ export const useTimezoneStore = create<TimezoneState>()(
         return {
           // Initial state
           timezones: uniqueTimezones.slice(0, 4), // Ensure we have up to 4 timezones
-          viewMode: 'list' as ViewMode,
+          // viewMode: 'list' as ViewMode, // Removed
           highlightedTime: null,
           localTimezone: localTz,
         selectedDate: new Date(), // Default to today
@@ -224,8 +224,8 @@ export const useTimezoneStore = create<TimezoneState>()(
             timezones: state.timezones.filter((timezone) => timezone.id !== id)
           })),
           
-        setViewMode: (mode: ViewMode) => 
-          set({ viewMode: mode }),
+        // setViewMode: (mode: ViewMode) => // Removed
+        //   set({ viewMode: mode }), // Removed
           
         setHighlightedTime: (time: Date | null) => 
           set({ highlightedTime: time }),
@@ -278,7 +278,7 @@ export const useTimezoneStore = create<TimezoneState>()(
       // Filter out certain fields from persistence
       partialize: (state) => ({
         timezones: state.timezones,
-        viewMode: state.viewMode as ViewMode,
+        // viewMode: state.viewMode as ViewMode, // Removed from persistence
         localTimezone: state.localTimezone
       }),
     }
@@ -286,7 +286,7 @@ export const useTimezoneStore = create<TimezoneState>()(
 );
 
 // Helper hook to get the current view mode
-export const useViewMode = () => useTimezoneStore((state) => state.viewMode);
+// export const useViewMode = () => useTimezoneStore((state) => state.viewMode); // Removed
 
 // Helper hook to get the highlighted time
 export const useHighlightedTime = () => useTimezoneStore((state) => state.highlightedTime);

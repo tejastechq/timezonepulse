@@ -43,13 +43,6 @@ export default function SettingsPage() {
     { value: '24h', label: '24-hour (13:30)' }
   ];
   
-  // View mode options
-  const viewModeOptions = [
-    { value: 'analog', label: 'Analog' },
-    { value: 'digital', label: 'Digital' },
-    { value: 'list', label: 'List' }
-  ];
-  
   // Generate mock time slots for the demo
   const generateDemoTimeSlots = () => {
     const now = DateTime.now();
@@ -81,11 +74,6 @@ export default function SettingsPage() {
   const handleTimeFormatChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     settings.setTimeFormat(e.target.value as '12h' | '24h');
     showFeedback('Time format updated');
-  };
-  
-  const handleViewChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    settings.setDefaultView(e.target.value as 'analog' | 'digital' | 'list');
-    showFeedback('Default view updated');
   };
   
   const handleShowSecondsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -216,29 +204,6 @@ export default function SettingsPage() {
               
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 Choose the highlight color for weekends in the list view.
-              </p>
-            </div>
-            
-            {/* Default View Mode */}
-            <div>
-              <label htmlFor="defaultView" className="block text-sm font-medium mb-2">
-                Default View Mode
-              </label>
-              <select
-                id="defaultView"
-                value={settings.defaultView}
-                onChange={handleViewChange}
-                className="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-              >
-                {viewModeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Choose which view mode to show by default when opening the application.
               </p>
             </div>
 

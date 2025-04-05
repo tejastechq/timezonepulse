@@ -7,7 +7,6 @@ import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
 // Removed useView import
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import dynamic from 'next/dynamic';
-// Removed ListView, ClocksView, DigitalView imports
 // Removed MobileTimezoneCard import
 // Removed DraggableTimezoneCard import
 import { getLocalTimezone } from '@/lib/utils/timezone';
@@ -19,8 +18,6 @@ import { ArrowLeftCircle, Plus, Calendar, X } from 'lucide-react'; // Removed Ca
 import AnalogClock from './AnalogClock'; // Keep AnalogClock if used elsewhere, otherwise remove later
 
 
-// Removed ListViewProps, ClocksViewProps, DigitalViewProps interfaces
-
 /**
  * Using original view components directly
  * Components are optimized using React's built-in memoization techniques
@@ -30,8 +27,6 @@ import AnalogClock from './AnalogClock'; // Keep AnalogClock if used elsewhere, 
 const MobileV2ListView = dynamic(() => import('../views/MobileV2ListView'), {
   loading: () => <ViewPlaceholder />
 });
-// Removed OptimizedClocksView assignment
-// Removed OptimizedDigitalView assignment
 
 // Dynamically import less critical components to reduce initial load
 // Removed ViewSwitcher dynamic import
@@ -312,7 +307,6 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
               </motion.div>
             </AnimatePresence>
           {/* Removed isConsideredMobile block (DraggableTimezoneCard) */}
-          {/* Removed standard desktop view block (ListView, ClocksView, DigitalView) */}
         </Suspense>
       </div>
 

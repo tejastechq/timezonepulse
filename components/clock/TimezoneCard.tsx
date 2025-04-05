@@ -3,15 +3,13 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Timezone, ViewMode } from '@/store/timezoneStore';
-import AnalogClock from './AnalogClock';
-import DigitalClock from './DigitalClock';
 import { isInDST } from '@/lib/utils/timezone';
 import { DateTime } from 'luxon';
 
 interface TimezoneCardProps {
   timezone: Timezone;
   currentTime: Date;
-  viewMode: ViewMode;
+  // viewMode: ViewMode; // Removed
   onRemove: (id: string) => void;
   highlightedTime: Date | null;
   timeSlots: Date[];
@@ -25,7 +23,7 @@ interface TimezoneCardProps {
 export default function TimezoneCard({
   timezone,
   currentTime,
-  viewMode,
+  // viewMode, // Removed
   onRemove,
   highlightedTime,
   timeSlots,
@@ -107,28 +105,11 @@ export default function TimezoneCard({
       
       <p className="text-sm mb-4">{dateDisplay}</p>
       
-      {/* Clock display based on view mode */}
+      {/* Clock display */}
       <div className="flex justify-center mb-4">
-        {viewMode === 'analog' && (
-          <AnalogClock
-            time={zonedTime.toJSDate()}
-            timezone={timezone.id}
-            size={150}
-            highlightedTime={highlightedTime}
-          />
-        )}
-        
-        {viewMode === 'digital' && (
-          <DigitalClock
-            time={zonedTime.toJSDate()}
-            timezone={timezone.id}
-            highlightedTime={highlightedTime}
-          />
-        )}
-        
-        {viewMode === 'list' && (
-          <div className="w-full max-h-40 overflow-y-auto">
-            {timeSlots.map((slot) => {
+        {/* Always render list content */}
+        <div className="w-full max-h-40 overflow-y-auto">
+          {timeSlots.map((slot) => {
               const slotInTimezone = DateTime.fromJSDate(slot).setZone(timezone.id);
               
               // Round the current time down to the nearest slot increment
@@ -163,7 +144,6 @@ export default function TimezoneCard({
               );
             })}
           </div>
-        )}
       </div>
       
       {/* Status indicators */}
@@ -178,5 +158,3 @@ export default function TimezoneCard({
     </motion.div>
   );
 }
-
-
