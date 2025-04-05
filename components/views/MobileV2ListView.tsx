@@ -17,7 +17,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import TimezoneSelector from '../clock/TimezoneSelector';
 import { useTheme } from 'next-themes';
 import clsx from 'clsx';
-import { useSettingsStore, getWeekendHighlightClass } from '@/store/settingsStore';
+// Removed settings store import
 import { formatTimeForTimezone } from '@/lib/timezone-utils';
 import { convertEarthToMarsTime, formatMarsTime } from '@/lib/utils/mars-timezone';
 
@@ -250,7 +250,12 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
   const touchEndTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for short delay after touch ends
 
   const { resolvedTheme } = useTheme();
-  const { weekendHighlightColor, highlightAutoClear, highlightDuration } = useSettingsStore();
+  // Removed settings store usage
+  const weekendHighlightColor = 'red'; // Hardcoded default
+  const highlightAutoClear = true; // Hardcoded default
+  const highlightDuration = 60; // Hardcoded default (seconds)
+  // Hardcoded weekend highlight class function
+  const getWeekendHighlightClass = (color: string) => `bg-${color}-100 dark:bg-${color}-900/20`;
 
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [editingTimezoneId, setEditingTimezoneId] = useState<string | null>(null);
@@ -642,7 +647,7 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
     }
   }, [removeTimezone, userLocalTimezone, selectedTimezones]);
 
-  const getHighlightClass = useCallback((isWeekend: boolean) => isWeekend ? getWeekendHighlightClass(weekendHighlightColor) : '', [weekendHighlightColor]);
+  const getHighlightClass = useCallback((isWeekend: boolean) => isWeekend ? getWeekendHighlightClass(weekendHighlightColor) : '', [weekendHighlightColor]); // Uses hardcoded function now
 
   const renderTimeColumns = useCallback(() => {
     if (!mounted) return null;
@@ -1240,9 +1245,12 @@ const TimeHeaderRow = memo(function TimeHeaderRow({
 }) {
   const dt = DateTime.fromJSDate(timeSlot);
   const dateDisplay = dt.toFormat('EEE, MMM d');
-  const store = useSettingsStore.getState();
+  // Removed settings store usage
   const hour = dt.hour;
-  const isNightTime = store.nightHoursStart > store.nightHoursEnd ? hour >= store.nightHoursStart || hour < store.nightHoursEnd : hour >= store.nightHoursStart && hour < store.nightHoursEnd;
+  // Hardcoded night hours check
+  const nightHoursStart = 20; 
+  const nightHoursEnd = 6;
+  const isNightTime = nightHoursStart > nightHoursEnd ? hour >= nightHoursStart || hour < nightHoursEnd : hour >= nightHoursStart && hour < nightHoursEnd;
   const dayTimeColor = 'text-amber-500 dark:text-amber-400';
   const nightTimeColor = 'text-indigo-400 dark:text-indigo-300';
   return (

@@ -4,7 +4,7 @@ import React from 'react';
 import { useEffect } from 'react';
 import { useTimezoneStore } from '@/store/timezoneStore';
 import TimeZonePulse from './WorldClock'; // Import the renamed component (file name is still WorldClock.tsx)
-import { ViewProvider } from '@/app/contexts/ViewContext';
+// Removed ViewProvider import
 import { IntegrationsProvider } from '@/app/contexts/IntegrationsContext';
 
 /**
@@ -21,10 +21,9 @@ export default function WorldClockWrapper() {
 
   // Skip rendering the heading here since it's rendered by the Server Component
   return (
-    <ViewProvider>
-      <IntegrationsProvider>
-        <TimeZonePulse skipHeading={true} /> 
-      </IntegrationsProvider>
-    </ViewProvider>
+    // Removed ViewProvider wrapper
+    <IntegrationsProvider>
+      <TimeZonePulse skipHeading={true} /> 
+    </IntegrationsProvider>
   );
 }

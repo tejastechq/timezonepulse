@@ -3,7 +3,7 @@
 import React, { useEffect } from 'react';
 import { useTimezoneStore } from '@/store/timezoneStore';
 import TimeZonePulse from '@/components/clock/WorldClock';
-import { ViewProvider } from '@/app/contexts/ViewContext';
+// Removed ViewProvider import
 import { IntegrationsProvider } from '@/app/contexts/IntegrationsContext';
 
 /**
@@ -19,10 +19,9 @@ export default function DesktopViewWrapper() {
 
   // Force the specific MobileV2 list view
   return (
-    <ViewProvider>
-      <IntegrationsProvider>
-        <TimeZonePulse skipHeading={true} forceMobileV2View={true} /> 
-      </IntegrationsProvider>
-    </ViewProvider>
+    // Removed ViewProvider wrapper
+    <IntegrationsProvider>
+      <TimeZonePulse skipHeading={true} forceMobileV2View={true} /> 
+    </IntegrationsProvider>
   );
 }

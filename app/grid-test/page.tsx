@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useTimezoneStore, Timezone } from '@/store/timezoneStore';
-import { ViewProvider } from '@/app/contexts/ViewContext';
+// Removed ViewProvider import
 import { IntegrationsProvider } from '@/app/contexts/IntegrationsContext';
 import dynamic from 'next/dynamic'; // Keep dynamic for potential future use if needed
 import { DateTime } from 'luxon'; // Keep DateTime if used elsewhere or by original grid items
@@ -128,9 +128,9 @@ export default function GridTestPage() {
 
   // --- Render Logic ---
   return (
-    <ViewProvider>
-      <IntegrationsProvider>
-        <div className="w-full min-h-screen flex flex-col items-center justify-start p-8 overflow-x-hidden" ref={containerRef}>
+    // Removed ViewProvider wrapper
+    <IntegrationsProvider>
+      <div className="w-full min-h-screen flex flex-col items-center justify-start p-8 overflow-x-hidden" ref={containerRef}>
           <h1 className="text-2xl font-bold mb-6 text-center">Grid Test with Timezone Card</h1>
           <p className="text-gray-600 dark:text-gray-300 mb-8 text-center max-w-2xl">
             A grid layout where the first item is replaced by a TimezoneCard component.
@@ -230,8 +230,7 @@ export default function GridTestPage() {
             :root { --primary-500-rgb: 99, 102, 241; }
             .dark { --primary-500-rgb: 129, 140, 248; }
           `}</style>
-        </div>
-      </IntegrationsProvider>
-    </ViewProvider>
+      </div>
+    </IntegrationsProvider>
   );
 }

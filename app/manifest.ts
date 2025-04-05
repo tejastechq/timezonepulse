@@ -51,20 +51,7 @@ export default function manifest(): MetadataRoute.Manifest {
       }
     ],
     screenshots: [
-      {
-        src: "/screenshots/digital-view.png",
-        sizes: "1280x720",
-        type: "image/png",
-        platform: "windows",
-        label: "Digital Clock View"
-      },
-      {
-        src: "/screenshots/analog-view.png",
-        sizes: "1280x720",
-        type: "image/png",
-        platform: "windows",
-        label: "Analog Clock View"
-      }
+      // Removed digital-view.png and analog-view.png entries
     ]
   };
 }

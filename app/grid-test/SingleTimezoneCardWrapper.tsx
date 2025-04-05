@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useTimezoneStore, Timezone } from '@/store/timezoneStore';
 import { FixedSizeList } from 'react-window';
 import { useTheme } from 'next-themes';
-import { useSettingsStore, getWeekendHighlightClass } from '@/store/settingsStore';
+// Removed settings store import
 import { DateTime } from 'luxon';
 import { formatTimeForTimezone } from '@/lib/timezone-utils';
 import { isInDST } from '@/lib/utils/timezone';
@@ -39,7 +39,12 @@ export default function SingleTimezoneCardWrapper({ timezone, currentTime }: Sin
   // --- Hooks Section ---
   const { localTimezone } = useTimezoneStore(); // Get localTimezone from store
   const { resolvedTheme } = useTheme();
-  const { weekendHighlightColor, highlightAutoClear, highlightDuration } = useSettingsStore();
+  // Removed settings store usage
+  const weekendHighlightColor = 'red'; // Hardcoded default
+  const highlightAutoClear = true; // Hardcoded default
+  const highlightDuration = 60; // Hardcoded default (seconds)
+  // Hardcoded weekend highlight class function
+  const getWeekendHighlightClass = (color: string) => `bg-${color}-100 dark:bg-${color}-900/20`;
   const [highlightedTime, setHighlightedTime] = useState<Date | null>(null);
   // Removed internal currentTime and currentDate state
 
@@ -101,7 +106,7 @@ export default function SingleTimezoneCardWrapper({ timezone, currentTime }: Sin
   const isWeekend = useCallback((time: Date, tzId: string) => isWeekendUtil(time, tzId), []);
   const formatTime = useCallback((date: Date, tzId: string) => formatTimeForTimezone(date, tzId, 'h:mm a'), []);
   const getHighlightAnimationClass = useCallback((isHighlight: boolean) => isHighlight ? 'highlight-item-optimized highlight-pulse-effect' : '', []);
-  const getHighlightClass = useCallback((isWeekend: boolean) => isWeekend ? getWeekendHighlightClass(weekendHighlightColor) : '', [weekendHighlightColor]);
+  const getHighlightClass = useCallback((isWeekend: boolean) => isWeekend ? getWeekendHighlightClass(weekendHighlightColor) : '', [weekendHighlightColor]); // Uses hardcoded function now
   const getTimezoneOffset = useCallback((tzId: string) => DateTime.now().setZone(tzId).toFormat('ZZ'), []);
 
   const timeSlots = useMemo(() => {

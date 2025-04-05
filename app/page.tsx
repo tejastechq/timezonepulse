@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { JsonLd } from '@/components/seo/JsonLd';
 import TimeZonePulse from '@/components/clock/WorldClock';
-import { ViewProvider } from '@/app/contexts/ViewContext';
+// Removed ViewProvider import
 import { IntegrationsProvider } from '@/app/contexts/IntegrationsContext';
 import { useTimezoneStore } from '@/store/timezoneStore';
 
@@ -47,11 +47,10 @@ export default function Home() {
   return (
     <main className="min-h-screen mobile-desktop-container">
       <JsonLd data={jsonLd} />
-      <ViewProvider>
-        <IntegrationsProvider>
-          <TimeZonePulse skipHeading={true} forceMobileV2View={true} /> 
-        </IntegrationsProvider>
-      </ViewProvider>
+      {/* Removed ViewProvider wrapper */}
+      <IntegrationsProvider>
+        <TimeZonePulse skipHeading={true} forceMobileV2View={true} /> 
+      </IntegrationsProvider>
     </main>
   );
 }

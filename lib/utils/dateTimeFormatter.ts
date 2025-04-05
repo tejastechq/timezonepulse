@@ -1,5 +1,5 @@
 import { DateTime } from 'luxon';
-import { useSettingsStore } from '@/store/settingsStore';
+// Removed settings store import
 
 /**
  * Format date according to the user's date format preference
@@ -9,16 +9,15 @@ import { useSettingsStore } from '@/store/settingsStore';
  * @returns Formatted date string
  */
 export function formatDate(date: Date | DateTime, format?: string): string {
-  // Get settings from the store
-  const store = useSettingsStore.getState();
+  // Removed settings store usage
   
   // Convert to Luxon DateTime if needed
   const dateTime = date instanceof DateTime ? date : DateTime.fromJSDate(date);
   
-  // Use provided format or user preference from settings
-  const dateFormat = format || store.dateFormat;
+  // Use provided format or hardcoded default
+  const dateFormat = format || 'MM/DD/YYYY'; // Hardcoded default
   
-  // Format the date based on settings
+  // Format the date
   switch (dateFormat) {
     case 'MM/DD/YYYY':
       return dateTime.toFormat('MM/dd/yyyy');
@@ -44,17 +43,16 @@ export function formatTime(
   includeSeconds?: boolean, 
   format?: '12h' | '24h'
 ): string {
-  // Get settings from the store
-  const store = useSettingsStore.getState();
+  // Removed settings store usage
   
   // Convert to Luxon DateTime if needed
   const dateTime = date instanceof DateTime ? date : DateTime.fromJSDate(date);
   
-  // Use provided values or user preferences from settings
-  const timeFormat = format || store.timeFormat;
-  const showSeconds = includeSeconds !== undefined ? includeSeconds : store.showSeconds;
+  // Use provided values or hardcoded defaults
+  const timeFormat = format || '12h'; // Hardcoded default
+  const showSeconds = includeSeconds !== undefined ? includeSeconds : false; // Hardcoded default
   
-  // Format the time based on settings
+  // Format the time
   if (timeFormat === '12h') {
     return dateTime.toFormat(showSeconds ? 'h:mm:ss a' : 'h:mm a');
   } else {
@@ -70,8 +68,7 @@ export function formatTime(
  * @returns Formatted date and time string
  */
 export function formatDateTime(date: Date | DateTime, includeSeconds?: boolean): string {
-  // Get settings from the store
-  const store = useSettingsStore.getState();
+  // Removed settings store usage
   
   // Convert to Luxon DateTime if needed
   const dateTime = date instanceof DateTime ? date : DateTime.fromJSDate(date);
@@ -92,8 +89,9 @@ export function formatDateTime(date: Date | DateTime, includeSeconds?: boolean):
  * @returns Boolean indicating if time is within business hours
  */
 export function isBusinessHours(date: Date | DateTime, timezone?: string): boolean {
-  // Get settings from the store
-  const store = useSettingsStore.getState();
+  // Removed settings store usage
+  const businessHoursStart = 9; // Hardcoded default
+  const businessHoursEnd = 17; // Hardcoded default
   
   // Convert to Luxon DateTime with the specified timezone
   const dateTime = date instanceof DateTime 
@@ -106,10 +104,10 @@ export function isBusinessHours(date: Date | DateTime, timezone?: string): boole
   // Check if it's a weekday (1-5 in Luxon is Monday to Friday)
   const isWeekday = dateTime.weekday >= 1 && dateTime.weekday <= 5;
   
-  // Check if the time is within business hours and on a weekday
+  // Check if the time is within business hours (hardcoded) and on a weekday
   return isWeekday && 
-    hour >= store.nightHoursStart && 
-    hour < store.nightHoursEnd;
+    hour >= businessHoursStart && 
+    hour < businessHoursEnd;
 }
 
 /**
@@ -120,8 +118,9 @@ export function isBusinessHours(date: Date | DateTime, timezone?: string): boole
  * @returns Boolean indicating if time is within night hours
  */
 export function isNightHours(date: Date | DateTime, timezone?: string): boolean {
-  // Get settings from the store
-  const store = useSettingsStore.getState();
+  // Removed settings store usage
+  const nightHoursStart = 20; // Hardcoded default
+  const nightHoursEnd = 6; // Hardcoded default (spans midnight)
   
   // Convert to Luxon DateTime with the specified timezone
   const dateTime = date instanceof DateTime 
@@ -131,13 +130,13 @@ export function isNightHours(date: Date | DateTime, timezone?: string): boolean 
   // Get the hour of the day (0-23)
   const hour = dateTime.hour;
 
-  // Night hours can span across midnight
-  if (store.nightHoursStart > store.nightHoursEnd) {
-    // Example: 22:00 - 06:00 (10 PM - 6 AM)
-    return hour >= store.nightHoursStart || hour < store.nightHoursEnd;
+  // Night hours can span across midnight (using hardcoded values)
+  if (nightHoursStart > nightHoursEnd) {
+    // Example: 20:00 - 06:00 
+    return hour >= nightHoursStart || hour < nightHoursEnd;
   } else {
-    // Example: 00:00 - 06:00 (12 AM - 6 AM)
-    return hour >= store.nightHoursStart && hour < store.nightHoursEnd;
+    // Example: 00:00 - 06:00 
+    return hour >= nightHoursStart && hour < nightHoursEnd;
   }
 }
 
