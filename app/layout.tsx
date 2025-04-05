@@ -21,6 +21,7 @@ import GlassmorphismAnimation from '@/components/GlassmorphismAnimation';
 import '@/lib/utils/trusted-types'; // Import trusted-types configuration
 import { Inter, Roboto_Mono, Poppins, Montserrat, Oswald } from 'next/font/google';
 import Script from 'next/script';
+import Sidebar from './components/Sidebar';
 
 // Export metadata and viewport configurations
 export const metadata = baseMetadata;
@@ -46,34 +47,34 @@ export default function RootLayout({
     >
       <body className={`min-h-screen bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 ${inter.className}`}>
         <Providers>
-          <div className="relative flex min-h-screen"> {/* Flex container, added relative for potential absolute positioning inside */}
-            <main className="flex-grow"> {/* Removed pl-20 */}
+          <Sidebar>
+            <main className="flex-grow">
               {children}
               {fonts}
             </main>
-          </div>
+
+            {/* Footer Section */}
+            <footer className="w-full mt-auto py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
+              © {new Date().getFullYear()} TimezonePulse. All rights reserved. |{' '}
+              <a href="/" className="hover:underline">
+                Home
+              </a>{' '}
+              |{' '}
+              <a href="/about" className="hover:underline">
+                About
+              </a>{' '}
+              |{' '}
+              <a href="https://timezonepulse1.statuspage.io" target="_blank" rel="noopener noreferrer" className="hover:underline">
+                System Status
+              </a>
+            </footer>
+          </Sidebar>
           <Analytics 
             mode={process.env.NODE_ENV === 'production' ? 'production' : 'development'}
             debug={process.env.NODE_ENV !== 'production'}
           />
           <SpeedInsights />
           <GlassmorphismAnimation />
-
-          {/* Footer Section - Removed pl-20 */}
-          <footer className="w-full mt-auto py-4 px-4 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
-            © {new Date().getFullYear()} TimezonePulse. All rights reserved. |{' '}
-            <a href="/" className="hover:underline">
-              Home
-            </a>{' '}
-            |{' '}
-            <a href="/about" className="hover:underline">
-              About
-            </a>{' '}
-            |{' '}
-            <a href="https://timezonepulse1.statuspage.io" target="_blank" rel="noopener noreferrer" className="hover:underline">
-              System Status
-            </a>
-          </footer>
         </Providers>
         {/* TODO: Implement Statuspage.io embed properly or remove if not needed. 
              Currently disabled as it might not be fully integrated or styled correctly.
