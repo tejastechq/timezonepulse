@@ -1218,8 +1218,10 @@ const TimezoneColumn = memo(({
 });
 TimezoneColumn.displayName = 'TimezoneColumn';
 
-// Rename export
+// Rename export and export TimezoneColumn
+export { TimezoneColumn }; // Export the column component
 export default MobileV2ListView;
+
 
 const TimeHeaderRow = memo(function TimeHeaderRow({
   timeSlot,
