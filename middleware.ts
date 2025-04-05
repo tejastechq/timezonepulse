@@ -30,10 +30,26 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  // Redirect /mobilev2 and /list-view routes to the homepage
-  if (pathname.startsWith('/mobilev2') || pathname.startsWith('/list-view')) {
-    return NextResponse.redirect(new URL('/', request.url));
+  // Redirect /mobilev2 and /list-view routes to the homepage (already handled)
+  // if (pathname.startsWith('/mobilev2') || pathname.startsWith('/list-view')) {
+  //   return NextResponse.redirect(new URL('/', request.url));
+  // }
+
+  // --- Block development/test pages and specific routes in production ---
+  if (process.env.NODE_ENV === 'production') {
+    const blockedProductionPaths = [
+      '/grid-test',
+      '/list-view',
+      '/mobilev2',
+      '/settings',
+    ];
+    if (blockedProductionPaths.some(path => pathname.startsWith(path))) {
+      console.warn(`Attempted access to blocked page '${pathname}' in production. Redirecting.`);
+      return NextResponse.redirect(new URL('/', request.url));
+    }
   }
+  // --- End blocking pages ---
+
 
   // Generate a secure nonce value for CSP
   const nonce = generateNonce();
