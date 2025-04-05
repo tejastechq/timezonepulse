@@ -180,29 +180,32 @@ export default function SingleTimezoneCardWrapper({ timezone, currentTime }: Sin
     return () => { if (timerId) clearTimeout(timerId); };
   }, [highlightedTime, highlightAutoClear, highlightDuration, handleTimeSelection]);
 
-  // Effect to scroll to highlighted time or current time
+  // Effect to scroll to highlighted time
   useEffect(() => {
-    if (!timeSlots.length || userIsScrollingRef.current || !timezone) return;
+    if (!timeSlots.length || userIsScrollingRef.current || !timezone || !highlightedTime) return;
 
-    let targetIndex = -1;
-    const alignment: 'start' | 'center' = 'start';
-
-    if (highlightedTime) {
-      const targetTimeUTC = DateTime.fromJSDate(highlightedTime).toUTC();
-      targetIndex = timeSlots.findIndex(t => {
-        const slotTimeUTC = DateTime.fromJSDate(t).toUTC();
-        return slotTimeUTC.hasSame(targetTimeUTC, 'minute');
-      });
-    } else if (currentTime) {
-      targetIndex = getCurrentTimeIndex();
-    }
+    const targetTimeUTC = DateTime.fromJSDate(highlightedTime).toUTC();
+    const targetIndex = timeSlots.findIndex(t => {
+      const slotTimeUTC = DateTime.fromJSDate(t).toUTC();
+      return slotTimeUTC.hasSame(targetTimeUTC, 'minute');
+    });
 
     if (targetIndex !== -1) {
-      // Removed setTimeout for immediate scroll
-      scrollToIndex(targetIndex, alignment, timezone.id);
+      scrollToIndex(targetIndex, 'start', timezone.id); // Scroll highlighted to start
     }
-    // Dependency is now currentTime prop
-  }, [highlightedTime, currentTime, timeSlots, timezone?.id, scrollToIndex, getCurrentTimeIndex]);
+  }, [highlightedTime, timeSlots, timezone?.id, scrollToIndex]); // Dependencies: highlightedTime, timeSlots, timezone.id
+
+  // Effect to scroll to current time (only if no time is highlighted)
+  useEffect(() => {
+    // Only run if currentTime exists, no time is highlighted, and not currently scrolling
+    if (!currentTime || highlightedTime || !timeSlots.length || userIsScrollingRef.current || !timezone) return;
+
+    const targetIndex = getCurrentTimeIndex();
+    if (targetIndex !== -1) {
+      // Scroll current time to the start on initial load or when currentTime changes (and nothing is highlighted)
+      scrollToIndex(targetIndex, 'start', timezone.id);
+    }
+  }, [currentTime, highlightedTime, timeSlots, timezone?.id, scrollToIndex, getCurrentTimeIndex]); // Dependencies: currentTime, highlightedTime, timeSlots, timezone.id
 
   // --- Render Logic ---
   if (!timezone) return <ViewPlaceholder />; // Handle case where timezone is not yet available
