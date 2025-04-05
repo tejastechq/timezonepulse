@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 export default function GridTestPage() {
-  // Create an array of 12 items (4 columns x 3 rows)
-  const gridItems = Array.from({ length: 12 }, (_, index) => ({
+  // Create an array of 10 UI element cards
+  const gridItems = Array.from({ length: 10 }, (_, index) => ({
     id: index + 1,
     title: `Item ${index + 1}`,
     content: `This is a sample grid item with some content for demonstration purposes.`,
@@ -13,9 +13,22 @@ export default function GridTestPage() {
            index % 4 === 2 ? 'green' : 'amber'
   }));
 
+  // Calculate initial columns based on window width if client-side
+  const getInitialColumns = () => {
+    if (typeof window !== 'undefined') {
+      const width = window.innerWidth;
+      if (width <= 540) return 1;
+      if (width <= 912) return 2; // Covers 820, 852, 912px
+      if (width <= 1024) return 3;
+      return 4;
+    }
+    return 4; // Default for server-side rendering
+  };
+
   const [activeItem, setActiveItem] = useState<number | null>(null);
-  const [columns, setColumns] = useState(4);
+  const [columns, setColumns] = useState(getInitialColumns);
   const [rows, setRows] = useState(3);
+  const [columnsReducedForSpace, setColumnsReducedForSpace] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
   // Constants for layout calculations
@@ -31,47 +44,30 @@ export default function GridTestPage() {
       
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
-      
-      // Account for padding and container position
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const paddingWidth = 32; // 16px padding on each side
-      const topOffset = containerRect.top || 0;
-      
-      // Calculate available space
-      const availableWidth = viewportWidth - paddingWidth;
-      const availableHeight = viewportHeight - topOffset - 20; // 20px bottom margin
-      
-      // First calculate max columns based on width
-      const possibleColumns = Math.floor(availableWidth / (ITEM_WIDTH + GAP_WIDTH));
-      const maxColumns = Math.min(4, Math.max(1, possibleColumns));
-      
-      // Then calculate max rows based on height
-      const totalItems = gridItems.length;
-      const rowsNeeded = Math.ceil(totalItems / maxColumns);
-      
-      // How many rows can fit in the available height?
-      const maxRowsInView = Math.floor(availableHeight / (ITEM_HEIGHT + GAP_WIDTH));
-      
-      // Ensure at least one row is shown
-      const safeRows = Math.max(1, maxRowsInView);
-      
-      // If we can't fit all rows, we need to reduce columns
-      if (safeRows < rowsNeeded && maxColumns > 1) {
-        // Try reducing columns to see if it helps with vertical fit
-        for (let colCount = maxColumns - 1; colCount >= 1; colCount--) {
-          const newRowsNeeded = Math.ceil(totalItems / colCount);
-          if (newRowsNeeded <= safeRows || colCount === 1) {
-            // Either we found a fitting combination or we're at the minimum columns
-            setColumns(colCount);
-            setRows(safeRows);
-            return;
-          }
-        }
+
+      // Set columns based on screen width breakpoints
+      let maxColumns;
+      if (viewportWidth <= 540) {
+        // Mobile/Small
+        maxColumns = 1;
+      } else if (viewportWidth > 540 && viewportWidth <= 912) {
+        // Tablet (covers 820, 852, 912)
+        maxColumns = 2;
+      } else if (viewportWidth > 912 && viewportWidth <= 1024) {
+        // Large tablet
+        maxColumns = 3;
+      } else {
+        // Desktop (> 1024px)
+        maxColumns = 4;
       }
       
-      // If we get here, use the original calculation
+      // Calculate rows needed to display all items
+      const rowsNeeded = Math.ceil(gridItems.length / maxColumns);
+      
+      // Set the columns and rows
       setColumns(maxColumns);
-      setRows(safeRows);
+      setRows(rowsNeeded);
+      setColumnsReducedForSpace(false);
     };
 
     // Calculate on initial render
@@ -96,14 +92,13 @@ export default function GridTestPage() {
 
   // Reorganize items based on current column count
   const reorganizeItems = () => {
-    // Only show the first n rows × columns items
-    const maxItems = rows * columns;
-    const visibleItems = gridItems.slice(0, maxItems);
+    // Show all 10 items, regardless of calculated rows
+    const visibleItems = gridItems;
     
     const reorganized = [];
     
     // Fill in the grid row by row
-    for (let row = 0; row < rows; row++) {
+    for (let row = 0; row < Math.ceil(gridItems.length / columns); row++) {
       for (let col = 0; col < columns; col++) {
         const index = row * columns + col;
         if (index < visibleItems.length) {
@@ -120,22 +115,21 @@ export default function GridTestPage() {
   const totalHidden = gridItems.length - totalVisible;
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-start p-8 overflow-x-auto" ref={containerRef}>
+    <div className="w-full min-h-screen flex flex-col items-center justify-start p-8 overflow-x-hidden" ref={containerRef}>
       <h1 className="text-2xl font-bold mb-6 text-center">Fixed Grid Layout</h1>
       <p className="text-gray-600 dark:text-gray-300 mb-8 text-center max-w-2xl">
         A grid layout with fixed-size elements (285×370px). Layout adjusts to prevent UI elements from being cut off vertically.
       </p>
       
-      {/* Fixed-width grid container */}
-      <div style={{ 
-        width: `${columns * ITEM_WIDTH + (columns - 1) * GAP_WIDTH}px`,
-        minWidth: `${columns * ITEM_WIDTH + (columns - 1) * GAP_WIDTH}px`
-      }}>
+      {/* Grid container with horizontal scrolling for mobile */}
+      <div className={`w-full flex justify-center ${columns === 1 ? 'overflow-x-auto pb-4' : ''}`}>
         <div 
           className="grid gap-6"
           style={{ 
+            width: `${columns * ITEM_WIDTH + (columns - 1) * GAP_WIDTH}px`,
             gridTemplateColumns: `repeat(${columns}, ${ITEM_WIDTH}px)`,
-            gridTemplateRows: `repeat(${rows}, ${ITEM_HEIGHT}px)`
+            gridTemplateRows: `repeat(${rows}, ${ITEM_HEIGHT}px)`,
+            maxWidth: columns === 1 ? 'none' : '100%'
           }}
         >
           {displayItems.map((item) => {
@@ -230,12 +224,12 @@ export default function GridTestPage() {
       <div className="mt-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg max-w-lg">
         <p className="text-sm">
           <strong>Current display:</strong> {columns} column{columns !== 1 ? 's' : ''} × {rows} row{rows !== 1 ? 's' : ''} 
-          ({totalVisible} of {gridItems.length} items visible)
-          {totalHidden > 0 && ` - ${totalHidden} items hidden to prevent vertical overflow`}
+          (All {gridItems.length} items visible)
+          {columns === 1 && <span className="ml-1 text-blue-600 dark:text-blue-400">(scroll horizontally to view)</span>}
         </p>
         <p className="text-sm mt-2">
-          The layout dynamically adjusts to ensure UI elements are never cut off vertically.
-          Horizontal scrolling is enabled when necessary.
+          The layout dynamically adjusts column count while maintaining fixed element sizes (285×370px).
+          Elements never stretch or change shape regardless of screen size.
         </p>
       </div>
 
