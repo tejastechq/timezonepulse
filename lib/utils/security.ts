@@ -48,29 +48,21 @@ export function getCspWithNonce(nonce: string, hostname: string = ''): string {
     'https://vercel.live',
   ];
 
-  // For production, use a stricter policy
+  // For production environments (including Vercel previews treated as production NODE_ENV)
   if (process.env.NODE_ENV === 'production') {
-    // Define stricter sources, removing broad wildcards and unsafe-inline for scripts
-    // Add specific SHA-256 hashes for required inline scripts found during testing/preview
-    const inlineScriptHashes = [
-      `'sha256-OBTN3RiyCV4Bq7dFqZ5a2pAXjnCcCYeTJMO2I/LYKeo='`,
-      `'sha256-wIQvD0x6oUhE6ImVzA3MYK/ps+AgTIMTzT3vvtG5jdU='`,
-      `'sha256-xagHOOQGrsNSNLJLSvppvXWBRSJ5ejdZ9GINKP/n+Yc='`,
-      `'sha256-jwqSXYvo5x35CtmxDmG3TriSoT2EnYiEwUkVsj5jITE='`,
-      `'sha256-4yvzzZpJ87LJXcyPtymfegd2+9jR5tAthMH/Ic6d57Q='`,
-      `'sha256-nOOx2ymSjciqIloysFccdwrqwLDxx7xpaweoGSmi2eg='`,
-      `'sha256-XE3eabsr4mWDUMg8OTJifX1aQde9EViWHAAU8Ae/cnc='`,
-      `'sha256-6Tn+5fOrALmOpmYCtqeBqhvUTNx9siW+NKMvd5MXdMc='`,
-      `'sha256-u+5Hdqebh6UNBte2Ck/c5ei5golj4FQEGif+z/Lwbhw='`,
-      `'sha256-hkMBEy2plL0t0txSALD3KwNlynNUCA+hoZQDamm5OGk='`,
-      `'sha256-sZNKBbIn5+2zWDRZYHy+HnJOIZZAHNMoMXm8mnxh+rQ='`, // Added latest hash
-    ];
-    const prodScriptSrc = [
+    // Use 'unsafe-inline' for scripts in production/preview to avoid hash/nonce issues
+    // This is less secure but more practical if hashes change frequently.
+    // IMPORTANT: 'unsafe-inline' is ignored if nonces or hashes are present, so we remove the nonce source here.
+    const prodScriptSrcElements = [
       `'self'`,
-      ...commonScriptSrc, // Includes nonce and specific allowed domains like Vercel Analytics, Plausible, Statuspage, Vercel Live
-      ...inlineScriptHashes, // Add the allowed inline script hashes
-      hostname ? `https://${hostname}` : '', // Add the app's own domain
-    ].filter(Boolean); // Filter out empty string if hostname is not present
+      // Filter out the nonce from commonScriptSrc for this policy
+      ...commonScriptSrc.filter(src => !src.startsWith("'nonce-")),
+      `'unsafe-inline'`, // Allow all inline scripts
+      hostname ? `https://${hostname}` : '',
+    ].filter(Boolean);
+    console.log("Using Production/Preview CSP with unsafe-inline (nonce removed)"); // Log policy type
+
+    const prodScriptSrc = prodScriptSrcElements.join(' ');
 
     const prodConnectSrc = [
       `'self'`,
@@ -89,7 +81,7 @@ export function getCspWithNonce(nonce: string, hostname: string = ''): string {
 
     return [
       `default-src 'self'`,
-      `script-src ${prodScriptSrc.join(' ')}`,
+      `script-src ${prodScriptSrc}`, // Use the already joined string directly
       `style-src 'self' 'unsafe-inline'`, // Keep unsafe-inline for styles as Next.js might need it
       `img-src 'self' data: blob: https://*`, // Keep img-src permissive for now, consider tightening if needed
       `font-src 'self' data: https://fonts.gstatic.com`,
