@@ -157,7 +157,7 @@ export default function GridTestPage() {
                       <SingleTimezoneCardWrapper
                         key={firstTimezone.id}
                         timezone={firstTimezone}
-                        initialCurrentTime={currentTime} // Pass current time state from this page
+                        currentTime={currentTime} // Updated prop name
                       />
                     );
                   }

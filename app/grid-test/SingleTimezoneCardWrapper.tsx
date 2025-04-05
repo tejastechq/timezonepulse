@@ -24,7 +24,7 @@ const ViewPlaceholder = () => (
 
 interface SingleTimezoneCardWrapperProps {
   timezone: Timezone;
-  initialCurrentTime: Date | null; // Pass initial time
+  currentTime: Date | null; // Renamed prop to reflect direct usage
 }
 
 // Helper function
@@ -34,14 +34,14 @@ const roundToNearestIncrement = (date: Date, incrementMinutes: number): Date => 
     return new Date(Math.floor(ms / incrementMillis) * incrementMillis);
 };
 
-export default function SingleTimezoneCardWrapper({ timezone, initialCurrentTime }: SingleTimezoneCardWrapperProps) {
+// Use the renamed prop directly
+export default function SingleTimezoneCardWrapper({ timezone, currentTime }: SingleTimezoneCardWrapperProps) {
   // --- Hooks Section ---
   const { localTimezone } = useTimezoneStore(); // Get localTimezone from store
   const { resolvedTheme } = useTheme();
   const { weekendHighlightColor, highlightAutoClear, highlightDuration } = useSettingsStore();
   const [highlightedTime, setHighlightedTime] = useState<Date | null>(null);
-  const [currentTime, setCurrentTime] = useState<Date | null>(initialCurrentTime); // Use passed initial time
-  const [currentDate, setCurrentDate] = useState<Date | null>(initialCurrentTime); // Use passed initial time
+  // Removed internal currentTime and currentDate state
 
   const listRefs = useRef<Record<string, FixedSizeList | null>>({});
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -90,6 +90,7 @@ export default function SingleTimezoneCardWrapper({ timezone, initialCurrentTime
     return timeInTimezone.offset !== oneDayLater.offset;
   }, []);
   const isCurrentTime = useCallback((time: Date): boolean => {
+    // Use currentTime prop directly
     if (!currentTime) return false;
     const timeDateTime = DateTime.fromJSDate(time);
     const localDateTime = DateTime.fromJSDate(currentTime);
@@ -104,16 +105,17 @@ export default function SingleTimezoneCardWrapper({ timezone, initialCurrentTime
   const getTimezoneOffset = useCallback((tzId: string) => DateTime.now().setZone(tzId).toFormat('ZZ'), []);
 
   const timeSlots = useMemo(() => {
+    // Use currentTime prop directly
     if (!currentTime) return [];
     const slots = [];
-    const dateToUse = currentDate || currentTime;
-    const date = DateTime.fromJSDate(dateToUse);
+    // Use currentTime prop for date basis
+    const date = DateTime.fromJSDate(currentTime);
     const startOfDay = date.startOf('day');
     for (let i = 0; i < 48; i++) {
       slots.push(startOfDay.plus({ minutes: i * 30 }).toJSDate());
     }
     return slots;
-  }, [currentTime, currentDate]);
+  }, [currentTime]); // Dependency is now just currentTime prop
 
   const resetInactivityTimer = useCallback(() => {
     if (!highlightedTimeRef.current || !highlightAutoClear) return;
@@ -137,11 +139,12 @@ export default function SingleTimezoneCardWrapper({ timezone, initialCurrentTime
   }, [setHighlightedTime, highlightAutoClear, resetInactivityTimer]);
 
    const getCurrentTimeIndex = useCallback(() => {
+    // Use currentTime prop directly
     if (!currentTime || !timeSlots.length) return 0;
     const roundedLocalTime = roundToNearestIncrement(currentTime, 30);
     const index = timeSlots.findIndex(t => DateTime.fromJSDate(t).hasSame(DateTime.fromJSDate(roundedLocalTime), 'minute'));
     return index > -1 ? index : 0;
-  }, [currentTime, timeSlots]);
+  }, [currentTime, timeSlots]); // Dependency is now just currentTime prop
 
   const scrollToIndex = useCallback((index: number, alignment: 'start' | 'center' | 'end' | 'smart' | 'auto' = 'center', timezoneId: string) => {
     const listRef = listRefs.current[timezoneId];
@@ -156,18 +159,7 @@ export default function SingleTimezoneCardWrapper({ timezone, initialCurrentTime
   }, []);
 
   // --- Effects ---
-   useEffect(() => {
-    // Update internal current time every second
-    const timer = setInterval(() => {
-      const now = new Date();
-      setCurrentTime(now);
-      const currentStoredDate = currentDate ? new Date(currentDate) : null;
-      if (currentStoredDate && currentStoredDate.getDate() !== now.getDate()) {
-        setCurrentDate(now);
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [currentDate]); // Rerun only if currentDate changes (which it does daily)
+  // Removed useEffect that managed internal currentTime state
 
   // Effect for highlight auto-clear timer
   useEffect(() => {
@@ -206,12 +198,11 @@ export default function SingleTimezoneCardWrapper({ timezone, initialCurrentTime
     }
 
     if (targetIndex !== -1) {
-      const scrollTimer = setTimeout(() => {
-        scrollToIndex(targetIndex, alignment, timezone.id);
-      }, 150); // Increased delay
-      return () => clearTimeout(scrollTimer);
+      // Removed setTimeout for immediate scroll
+      scrollToIndex(targetIndex, alignment, timezone.id);
     }
-  }, [highlightedTime, currentTime, timeSlots, timezone?.id, scrollToIndex, getCurrentTimeIndex]); // Added timezone.id
+    // Dependency is now currentTime prop
+  }, [highlightedTime, currentTime, timeSlots, timezone?.id, scrollToIndex, getCurrentTimeIndex]);
 
   // --- Render Logic ---
   if (!timezone) return <ViewPlaceholder />; // Handle case where timezone is not yet available
@@ -241,7 +232,7 @@ export default function SingleTimezoneCardWrapper({ timezone, initialCurrentTime
       setEditingTimezoneId={setEditingTimezoneIdState} // Pass dummy setter
       setSelectorOpen={setSelectorOpenState} // Pass dummy setter
       userLocalTimezone={localTimezone || 'America/New_York'} // Use global or fallback
-      localTime={currentTime} // Use internal currentTime state
+      localTime={currentTime} // Pass currentTime prop down
       getHighlightClass={getHighlightClass}
       handleTouchStart={handleTouchStart}
       handleTouchEnd={handleTouchEnd}
