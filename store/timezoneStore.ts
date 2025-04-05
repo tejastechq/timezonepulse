@@ -278,15 +278,11 @@ export const useTimezoneStore = create<TimezoneState>()(
       // Filter out certain fields from persistence
       partialize: (state) => ({
         timezones: state.timezones,
-        viewMode: state.viewMode as ViewMode,
         localTimezone: state.localTimezone
       }),
     }
   )
 );
-
-// Helper hook to get the current view mode
-export const useViewMode = () => useTimezoneStore((state) => state.viewMode);
 
 // Helper hook to get the highlighted time
 export const useHighlightedTime = () => useTimezoneStore((state) => state.highlightedTime);
