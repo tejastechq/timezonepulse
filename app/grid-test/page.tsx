@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 export default function GridTestPage() {
   // Create an array of 12 items (4 columns x 3 rows)
@@ -15,36 +15,74 @@ export default function GridTestPage() {
 
   const [activeItem, setActiveItem] = useState<number | null>(null);
   const [columns, setColumns] = useState(4);
+  const [rows, setRows] = useState(3);
+  const containerRef = useRef<HTMLDivElement>(null);
   
-  // Constants for layout calculations - UPDATED DIMENSIONS
-  const ITEM_WIDTH = 285; // Width of each grid item in pixels (updated)
-  const ITEM_HEIGHT = 370; // Height of each grid item in pixels (updated)
+  // Constants for layout calculations
+  const ITEM_WIDTH = 285; // Width of each grid item in pixels
+  const ITEM_HEIGHT = 370; // Height of each grid item in pixels
   const GAP_WIDTH = 24; // Gap between columns (6 * 4px from tailwind gap-6)
+  const POPUP_HEIGHT = 100; // Estimated height of popup when active
 
   useEffect(() => {
-    // Function to calculate how many columns can fit
-    const calculateColumns = () => {
+    // Function to calculate how many columns and rows can fit
+    const calculateLayout = () => {
+      if (!containerRef.current) return;
+      
       const viewportWidth = window.innerWidth;
-      // Account for padding (8 * 4 = 32px from p-8 class)
-      const availableWidth = viewportWidth - 32;
+      const viewportHeight = window.innerHeight;
       
-      // Calculate how many columns can fit completely
+      // Account for padding and container position
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const paddingWidth = 32; // 16px padding on each side
+      const topOffset = containerRect.top || 0;
+      
+      // Calculate available space
+      const availableWidth = viewportWidth - paddingWidth;
+      const availableHeight = viewportHeight - topOffset - 20; // 20px bottom margin
+      
+      // First calculate max columns based on width
       const possibleColumns = Math.floor(availableWidth / (ITEM_WIDTH + GAP_WIDTH));
+      const maxColumns = Math.min(4, Math.max(1, possibleColumns));
       
-      // Limit to maximum of 4 columns and minimum of 1
-      const newColumns = Math.min(4, Math.max(1, possibleColumns));
-      setColumns(newColumns);
+      // Then calculate max rows based on height
+      const totalItems = gridItems.length;
+      const rowsNeeded = Math.ceil(totalItems / maxColumns);
+      
+      // How many rows can fit in the available height?
+      const maxRowsInView = Math.floor(availableHeight / (ITEM_HEIGHT + GAP_WIDTH));
+      
+      // Ensure at least one row is shown
+      const safeRows = Math.max(1, maxRowsInView);
+      
+      // If we can't fit all rows, we need to reduce columns
+      if (safeRows < rowsNeeded && maxColumns > 1) {
+        // Try reducing columns to see if it helps with vertical fit
+        for (let colCount = maxColumns - 1; colCount >= 1; colCount--) {
+          const newRowsNeeded = Math.ceil(totalItems / colCount);
+          if (newRowsNeeded <= safeRows || colCount === 1) {
+            // Either we found a fitting combination or we're at the minimum columns
+            setColumns(colCount);
+            setRows(safeRows);
+            return;
+          }
+        }
+      }
+      
+      // If we get here, use the original calculation
+      setColumns(maxColumns);
+      setRows(safeRows);
     };
 
-    // Calculate columns on initial render
-    calculateColumns();
+    // Calculate on initial render
+    calculateLayout();
     
     // Add event listener for window resize
-    window.addEventListener('resize', calculateColumns);
+    window.addEventListener('resize', calculateLayout);
     
     // Cleanup event listener on component unmount
-    return () => window.removeEventListener('resize', calculateColumns);
-  }, []);
+    return () => window.removeEventListener('resize', calculateLayout);
+  }, [gridItems.length]);
 
   const handleItemClick = (id: number) => {
     setActiveItem(activeItem === id ? null : id);
@@ -58,16 +96,18 @@ export default function GridTestPage() {
 
   // Reorganize items based on current column count
   const reorganizeItems = () => {
-    // If we have fewer than 4 columns, we need to reorganize the items
-    const rows = Math.ceil(gridItems.length / columns);
+    // Only show the first n rows × columns items
+    const maxItems = rows * columns;
+    const visibleItems = gridItems.slice(0, maxItems);
+    
     const reorganized = [];
     
     // Fill in the grid row by row
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < columns; col++) {
         const index = row * columns + col;
-        if (index < gridItems.length) {
-          reorganized.push(gridItems[index]);
+        if (index < visibleItems.length) {
+          reorganized.push(visibleItems[index]);
         }
       }
     }
@@ -76,15 +116,17 @@ export default function GridTestPage() {
   };
 
   const displayItems = reorganizeItems();
+  const totalVisible = displayItems.length;
+  const totalHidden = gridItems.length - totalVisible;
 
   return (
-    <div className="w-full min-h-screen flex flex-col items-center justify-start p-8 overflow-x-auto">
+    <div className="w-full min-h-screen flex flex-col items-center justify-start p-8 overflow-x-auto" ref={containerRef}>
       <h1 className="text-2xl font-bold mb-6 text-center">Fixed Grid Layout</h1>
       <p className="text-gray-600 dark:text-gray-300 mb-8 text-center max-w-2xl">
-        A dynamic grid layout with fixed-size elements. Columns adjust based on screen width.
+        A grid layout with fixed-size elements (285×370px). Layout adjusts to prevent UI elements from being cut off vertically.
       </p>
       
-      {/* Fixed-width grid container, with variable columns based on screen size */}
+      {/* Fixed-width grid container */}
       <div style={{ 
         width: `${columns * ITEM_WIDTH + (columns - 1) * GAP_WIDTH}px`,
         minWidth: `${columns * ITEM_WIDTH + (columns - 1) * GAP_WIDTH}px`
@@ -93,7 +135,7 @@ export default function GridTestPage() {
           className="grid gap-6"
           style={{ 
             gridTemplateColumns: `repeat(${columns}, ${ITEM_WIDTH}px)`,
-            gridTemplateRows: `repeat(${Math.ceil(displayItems.length / columns)}, ${ITEM_HEIGHT}px)`
+            gridTemplateRows: `repeat(${rows}, ${ITEM_HEIGHT}px)`
           }}
         >
           {displayItems.map((item) => {
@@ -130,7 +172,7 @@ export default function GridTestPage() {
                   <div className={`h-2 w-full ${bgColorClass} rounded-t-lg -mt-4 -mx-4 mb-4`}></div>
                   
                   <h2 className="text-lg font-semibold mb-2 truncate">{item.title}</h2>
-                  <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm line-clamp-3">{item.content}</p>
+                  <p className="text-gray-600 dark:text-gray-300 mb-4 text-sm line-clamp-2">{item.content}</p>
                   
                   {/* Additional content to fill the larger space */}
                   <div className="flex-grow flex flex-col justify-center items-center my-4">
@@ -162,10 +204,10 @@ export default function GridTestPage() {
                   </div>
                 </div>
                 
-                {/* Extra information popup */}
+                {/* Extra information popup - only show if there's room */}
                 {activeItem === item.id && (
                   <div 
-                    className={`absolute top-[380px] left-0 w-[285px] bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 
+                    className={`absolute top-[370px] left-0 w-[285px] bg-white dark:bg-gray-800 p-4 rounded-lg border border-gray-200 
                               dark:border-gray-700 shadow-lg z-10 animate-fade-in`}
                     style={{ 
                       animation: 'fadeInUp 0.3s ease-out forwards'
@@ -187,11 +229,13 @@ export default function GridTestPage() {
 
       <div className="mt-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg max-w-lg">
         <p className="text-sm">
-          <strong>Current display:</strong> {columns} column{columns !== 1 ? 's' : ''} with {Math.ceil(displayItems.length / columns)} rows
+          <strong>Current display:</strong> {columns} column{columns !== 1 ? 's' : ''} × {rows} row{rows !== 1 ? 's' : ''} 
+          ({totalVisible} of {gridItems.length} items visible)
+          {totalHidden > 0 && ` - ${totalHidden} items hidden to prevent vertical overflow`}
         </p>
         <p className="text-sm mt-2">
-          The layout automatically adjusts the number of columns based on screen width while preserving the exact size of UI elements (285×370px).
-          If elements would be cut off vertically, columns are removed. Horizontal scrolling is enabled for overflow.
+          The layout dynamically adjusts to ensure UI elements are never cut off vertically.
+          Horizontal scrolling is enabled when necessary.
         </p>
       </div>
 
