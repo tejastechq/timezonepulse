@@ -1,76 +1,43 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef, Suspense } from 'react';
-import { useTimezoneStore, ViewMode, useSelectedDate, Timezone } from '@/store/timezoneStore'; // Added Timezone type
+import { useTimezoneStore, useSelectedDate, Timezone } from '@/store/timezoneStore'; // Removed ViewMode, Added Timezone type
 import { DateTime } from 'luxon';
 import { motion, useReducedMotion, AnimatePresence } from 'framer-motion';
-import { useView } from '@/app/contexts/ViewContext';
+// Removed useView import
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
 import dynamic from 'next/dynamic';
-import { ListView, ClocksView, DigitalView } from '../views';
-import MobileTimezoneCard from '../mobile/MobileTimezoneCard'; // Import MobileTimezoneCard
-import DraggableTimezoneCard from '../mobile/DraggableTimezoneCard'; // Import DraggableTimezoneCard
+// Removed ListView, ClocksView, DigitalView imports
+// Removed MobileTimezoneCard import
+// Removed DraggableTimezoneCard import
 import { getLocalTimezone } from '@/lib/utils/timezone';
 import { useWebVitals, optimizeLayoutStability } from '@/lib/utils/performance';
 import { trackPerformance } from '@/app/sentry';
 import { MobileMenu } from '@/components/MobileMenu'; // Import MobileMenu for the header
-import { CalendarDays, ArrowLeftCircle, Plus, Calendar, X } from 'lucide-react'; // Removed Menu icon, added MobileMenu component instead
-// Removed unused/incorrect imports: TimezoneTile, PulseViews, DatePicker, AnalogClockView, DigitalClockView, OptimizedViews, OptimizedTimezoneBar, useCounterTimeStore
-// import TimezoneTile from './TimezoneTile';
-// import { PulseViews } from '@/types/timezone';
-// import ViewSwitcher from './ViewSwitcher'; // Removed conflicting static import
-// import DatePicker from './DatePicker';
-// import AnalogClockView from './AnalogClockView';
-// import DigitalClockView from './DigitalClockView';
-// import { OptimizedListView, OptimizedClocksView, OptimizedDigitalView } from './OptimizedViews';
-import AnalogClock from './AnalogClock';
-// import OptimizedTimezoneBar from '../OptimizedTimezoneBar';
-// import { useCounterTimeStore } from '@/store/counterTimeStore';
+import { ArrowLeftCircle, Plus, Calendar, X } from 'lucide-react'; // Removed CalendarDays, Menu icon
+// Removed unused imports
+import AnalogClock from './AnalogClock'; // Keep AnalogClock if used elsewhere, otherwise remove later
 
 
-// Define interfaces for the view components based on their implementations
-interface ListViewProps {
-  selectedTimezones: Timezone[];
-  userLocalTimezone: string;
-  timeSlots: Date[];
-  localTime: Date | null;
-  highlightedTime: Date | null;
-  handleTimeSelection: (time: Date | null) => void;
-  timezoneFormat: string;
-  currentDate: Date | null;
-}
-
-interface ClocksViewProps {
-  selectedTimezones: Timezone[];
-  userLocalTimezone: string;
-  // Removed setSelectedTimezones from interface
-}
-
-interface DigitalViewProps {
-  selectedTimezones: Timezone[];
-  userLocalTimezone: string;
-  // Removed setSelectedTimezones from interface
-}
+// Removed ListViewProps, ClocksViewProps, DigitalViewProps interfaces
 
 /**
  * Using original view components directly
  * Components are optimized using React's built-in memoization techniques
  */
-const OptimizedListView = dynamic(() => import('../views/ListView'), {
-  loading: () => <ViewPlaceholder />
-});
+// Removed OptimizedListView dynamic import
 // Import the new MobileV2ListView
 const MobileV2ListView = dynamic(() => import('../views/MobileV2ListView'), {
   loading: () => <ViewPlaceholder />
 });
-const OptimizedClocksView = ClocksView;
-const OptimizedDigitalView = DigitalView;
+// Removed OptimizedClocksView assignment
+// Removed OptimizedDigitalView assignment
 
 // Dynamically import less critical components to reduce initial load
-const ViewSwitcher = dynamic(() => import('./ViewSwitcher'), { ssr: true }); // Keep dynamic import
-const TimezoneSelector = dynamic(() => import('./TimezoneSelector'), { ssr: false }); // Added TimezoneSelector import
+// Removed ViewSwitcher dynamic import
+const TimezoneSelector = dynamic(() => import('./TimezoneSelector'), { ssr: false }); // Keep TimezoneSelector import
 
-// Import the DatePicker (Dynamic import remains)
+// Import the DatePicker (Dynamic import remains) - Keep for mobile modal
 const DatePicker = dynamic(() => import('../ui/date-picker').then(mod => mod.DatePicker), {
   ssr: false
 });
@@ -119,9 +86,8 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
     // Removed showMarsExplanation - no longer needed for tooltip logic
   } = useTimezoneStore();
 
-  // Get view state from the view context
-  const { currentView, setCurrentView } = useView();
-  
+  // Removed view state from context
+
   // State for the current time - initialize with null to avoid hydration mismatch
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
   
@@ -131,12 +97,11 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
 
   // State for tracking if the component has mounted
   const [mounted, setMounted] = useState(false);
-  
-  // State for managing expanded mobile card
-  const [expandedTimezoneId, setExpandedTimezoneId] = useState<string | null>(null);
+
+  // Removed expandedTimezoneId state
 
   // Track when the LCP (Largest Contentful Paint) container is ready
-  const [lcpReady, setLcpReady] = useState(false);
+  const [lcpReady, setLcpReady] = useState(false); // Keep LCP tracking
   
   // Use reduced motion setting for accessibility
   const prefersReducedMotion = useReducedMotion();
@@ -244,7 +209,7 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
     const date = DateTime.fromJSDate(dateToUse);
     const startOfDay = date.startOf('day');
 
-    for (let i = 0; i < 48; i++) {
+    for (let i = 0; i < 48; i++) { // Keep time slot generation
       slots.push(startOfDay.plus({ minutes: i * 30 }).toJSDate());
     }
 
@@ -255,25 +220,13 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
   const handleTimeSelection = useCallback((time: Date | null) => {
     // Set the highlighted time
     setHighlightedTime(time);
+    // Removed view switching logic
+  }, [setHighlightedTime]); // Removed currentView, setCurrentView dependencies
 
-    // Restore view switching logic
-    if (currentView !== 'list') {
-      setCurrentView('list');
-    }
-  }, [currentView, setCurrentView, setHighlightedTime]);
+  // Removed handleMobileTimeSelection
+  // Removed handleToggleExpand
 
-  // Mobile-specific time selection handler that also collapses the card
-  const handleMobileTimeSelection = useCallback((time: Date | null) => {
-    setHighlightedTime(time);
-    setExpandedTimezoneId(null); // Collapse card on selection
-  }, [setHighlightedTime]);
-
-  // Handler to toggle expanded state for mobile cards
-  const handleToggleExpand = useCallback((timezoneId: string) => {
-    setExpandedTimezoneId(prevId => (prevId === timezoneId ? null : timezoneId));
-  }, []);
-
-  // Round a date to the nearest increment (in minutes)
+  // Round a date to the nearest increment (in minutes) - Keep this utility
   const roundToNearestIncrement = useCallback((date: Date, increment: number) => {
     const dt = DateTime.fromJSDate(date);
     const minutes = dt.minute;
@@ -304,10 +257,9 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
 
   return (
     <div className="clock-container w-full max-w-screen-xl mx-auto px-4 py-6">
-      {/* Conditional Header Rendering */}
-      {isConsideredMobile ? (
-        // Mobile Header (Moved from app/page.tsx and adapted)
-        <header className="flex items-center justify-between mb-4 h-12">
+      {/* Simplified Header Rendering - Always show mobile-style header controls */}
+      {/* Since MobileV2ListView is forced, use the controls suitable for it */}
+      <header className="flex items-center justify-between mb-4 h-12">
           <MobileMenu />
           <h1 className="font-bold uppercase text-xl">TimeZonePulse</h1>
           <div className="flex items-center space-x-2">
@@ -329,53 +281,17 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
             </button>
           </div>
         </header>
-      ) : (
-        // Desktop Header Controls
-        <>
-          <div className="flex justify-between items-center mb-4 h-12">
-            <ViewSwitcher />
-             <div className="flex items-center space-x-2">
-             <button // Desktop Add Button
-               onClick={openTimezoneSelector} // Use global action
-               className="p-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-               aria-label="Add Timezone"
-               title="Add Timezone" // Tooltip for clarity
-            >
-              <Plus size={20} />
-            </button>
-            <DatePicker // Desktop Date Picker
-              selectedDate={selectedDate}
-              onDateChange={setSelectedDate}
-              minDate={new Date()} // Prevent selecting dates in the past
-            />
-            
-            {/* Show reset to today button if viewing a future date */}
-            {isViewingFutureDate && (
-              <button
-                type="button"
-                onClick={resetToToday}
-                className="flex items-center gap-1 px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-                aria-label="Return to today"
-              >
-                <ArrowLeftCircle className="h-4 w-4" />
-                <span className="text-sm">Today</span>
-              </button>
-            )}
-            </div>
-          </div>
-        </>
-      )}
-      {/* End of Conditional Header Rendering */}
+      {/* Removed Desktop Header Controls block */}
+      {/* End of Simplified Header Rendering */}
 
 
-      {/* Dynamic View Rendering - Using Suspense for better loading experience */}
-      <div className="flex justify-center w-full"> {/* Removed redundant mobile controls from here */}
+      {/* Simplified View Rendering - Always render MobileV2ListView */}
+      <div className="flex justify-center w-full">
         <Suspense fallback={<ViewPlaceholder />}>
-          {forceMobileV2View ? (
-            // --- MobileV2 Forced View ---
-            <AnimatePresence mode="wait">
-              <motion.div
-                key="mobilev2-list"
+          {/* --- Always Render MobileV2 Forced View --- */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key="mobilev2-list" // Keep key for animation consistency
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -388,107 +304,19 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
                   timeSlots={timeSlots}
                   localTime={currentTime}
                   highlightedTime={highlightedTime}
-                  handleTimeSelection={handleTimeSelection}
-                  roundToNearestIncrement={roundToNearestIncrement}
-                  removeTimezone={removeTimezone}
-                  currentDate={currentDate}
+                  handleTimeSelection={handleTimeSelection} // Keep this prop
+                  roundToNearestIncrement={roundToNearestIncrement} // Keep this prop
+                  removeTimezone={removeTimezone} // Keep this prop
+                  currentDate={currentDate} // Keep this prop
                 />
               </motion.div>
             </AnimatePresence>
-          ) : isConsideredMobile ? (
-            // --- Standard Mobile View (Draggable Cards) ---
-            <div className="w-full space-y-4 pb-20">
-              <AnimatePresence initial={false}>
-                {timezones.map((tz: Timezone) => (
-                  <DraggableTimezoneCard
-                    key={tz.id}
-                    timezone={tz}
-                    isLocal={tz.id === localTimezone}
-                    onRemove={removeTimezone}
-                    localTime={currentTime}
-                    highlightedTime={highlightedTime}
-                    timeSlots={timeSlots}
-                    handleTimeSelection={handleMobileTimeSelection}
-                    roundToNearestIncrement={roundToNearestIncrement}
-                    isExpanded={expandedTimezoneId === tz.id}
-                    onToggleExpand={handleToggleExpand}
-                  />
-                ))}
-              </AnimatePresence>
-              {timezones.length === 0 && (
-                <div className="text-center text-gray-400 mt-10">
-                  <p>No timezones added yet.</p>
-                  <button
-                    onClick={openTimezoneSelector} // Use global action here
-                    className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <Plus className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
-                    Add Timezone
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            // --- Standard Desktop View (List/Analog/Digital) ---
-            <AnimatePresence mode="wait">
-              {currentView === 'list' && (
-                <motion.div
-                  key="list"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="time-columns-container w-full"
-                >
-                  <OptimizedListView
-                    selectedTimezones={timezones}
-                    userLocalTimezone={localTimezone}
-                    timeSlots={timeSlots}
-                    localTime={currentTime}
-                    highlightedTime={highlightedTime}
-                    handleTimeSelection={handleTimeSelection}
-                    roundToNearestIncrement={roundToNearestIncrement}
-                    removeTimezone={removeTimezone}
-                    currentDate={currentDate}
-                  />
-                </motion.div>
-              )}
-              {currentView === 'analog' && (
-                <motion.div
-                  key="analog"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="w-full"
-                >
-                  <OptimizedClocksView
-                    selectedTimezones={timezones}
-                    userLocalTimezone={localTimezone}
-                  />
-                </motion.div>
-              )}
-              {currentView === 'digital' && (
-                <motion.div
-                  key="digital"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="w-full"
-                >
-                  <OptimizedDigitalView
-                    selectedTimezones={timezones}
-                    userLocalTimezone={localTimezone}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          )}
+          {/* Removed isConsideredMobile block (DraggableTimezoneCard) */}
+          {/* Removed standard desktop view block (ListView, ClocksView, DigitalView) */}
         </Suspense>
       </div>
 
-      {/* Mobile DatePicker Modal */}
+      {/* Mobile DatePicker Modal - Keep this as it's triggered by the simplified header */}
       <AnimatePresence>
         {isConsideredMobile && showDatePickerModal && (
           <motion.div 
