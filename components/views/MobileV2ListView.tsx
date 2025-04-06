@@ -82,6 +82,7 @@ interface MobileV2ListViewProps {
   roundToNearestIncrement: (date: Date, increment: number) => Date;
   removeTimezone?: (id: string) => void;
   currentDate?: Date | null;
+  showBackground?: boolean; // optional prop to toggle background overlay
 }
 
 // Rename interface for clarity
@@ -236,7 +237,8 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
   handleTimeSelection,
   roundToNearestIncrement,
   removeTimezone: externalRemoveTimezone,
-  currentDate
+  currentDate,
+  showBackground = true
 }, ref) => {
   const timeColumnsContainerRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
@@ -862,7 +864,7 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
         zIndex: 1
       }}
     >
-      {/* Beautiful time-themed background */}
+      {showBackground && (
       <div 
         className="absolute inset-0 -z-10 bg-gradient-to-br from-transparent via-primary-50/5 to-accent/5 dark:from-transparent dark:via-primary-900/5 dark:to-accent/10 overflow-hidden rounded-xl"
         style={{
@@ -901,6 +903,7 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
           </div>
         </div>
       </div>
+      )}
 
       <div className="mb-4 w-full sm:w-80 ml-0 pt-3">
         {/* TimeSearch component is removed */}
