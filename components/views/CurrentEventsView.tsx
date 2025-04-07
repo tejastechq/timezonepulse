@@ -1,65 +1,68 @@
-import React from 'react';
-import EventCard from '../events/EventCard';
+'use client';
 
-const mockEvents = [
-  {
-    timezone: 'America/Chicago',
-    city: 'Chicago',
-    offset: '-05:00',
-    abbreviation: 'CDT',
-    weather: {
-      temperature: '72°F',
-      condition: 'Sunny',
-      iconUrl: 'https://openweathermap.org/img/wn/01d.png',
-      forecast: 'Clear skies throughout the day'
-    },
-    news: [
-      {
-        title: 'Local festival kicks off this weekend',
-        url: '#',
-        source: 'Chicago Tribune',
-        publishedAt: '2025-04-07T10:00:00Z'
-      },
-      {
-        title: 'New tech hub opens downtown',
-        url: '#',
-        source: 'TechCrunch',
-        publishedAt: '2025-04-07T08:30:00Z'
-      }
-    ]
-  },
-  {
-    timezone: 'Europe/London',
-    city: 'London',
-    offset: '+01:00',
-    abbreviation: 'BST',
-    weather: {
-      temperature: '58°F',
-      condition: 'Partly Cloudy',
-      iconUrl: 'https://openweathermap.org/img/wn/03d.png',
-      forecast: 'Clouds clearing by afternoon'
-    },
-    news: [
-      {
-        title: 'Parliament debates new bill',
-        url: '#',
-        source: 'BBC News',
-        publishedAt: '2025-04-07T12:00:00Z'
-      },
-      {
-        title: 'Major art exhibition opens',
-        url: '#',
-        source: 'The Guardian',
-        publishedAt: '2025-04-07T09:15:00Z'
-      }
-    ]
-  }
+import React, { useEffect, useState } from 'react';
+import EventCard from '../events/EventCard';
+import { fetchWeather, fetchNews } from '../../lib/utils/apiFetchers';
+
+interface EventData {
+  timezone: string;
+  city: string;
+  offset: string;
+  abbreviation: string;
+  weather: {
+    temperature: string;
+    condition: string;
+    iconUrl: string;
+    forecast?: string;
+  };
+  news: {
+    title: string;
+    url: string;
+    source: string;
+    publishedAt: string;
+  }[];
+}
+
+const cities = [
+  { city: 'Chicago', timezone: 'America/Chicago', offset: '-05:00', abbreviation: 'CDT' },
+  { city: 'London', timezone: 'Europe/London', offset: '+01:00', abbreviation: 'BST' }
 ];
 
 export default function CurrentEventsView() {
+  const [events, setEvents] = useState<EventData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      const results: EventData[] = [];
+      for (const c of cities) {
+        try {
+          const [weather, news] = await Promise.all([
+            fetchWeather(c.city),
+            fetchNews(c.city)
+          ]);
+          results.push({
+            ...c,
+            weather,
+            news
+          });
+        } catch (e) {
+          console.error('Error fetching data for', c.city, e);
+        }
+      }
+      setEvents(results);
+      setLoading(false);
+    }
+    loadData();
+  }, []);
+
+  if (loading) {
+    return <div className="text-center w-full">Loading current events...</div>;
+  }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl">
-      {mockEvents.map((event, idx) => (
+      {events.map((event, idx) => (
         <EventCard key={idx} event={event} />
       ))}
     </div>
