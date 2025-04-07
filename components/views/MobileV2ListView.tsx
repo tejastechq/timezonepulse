@@ -1035,7 +1035,9 @@ const TimezoneColumn = memo(({
               <span className="truncate">{timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name}</span>
             </h3>
             <span className="ml-2 text-xs font-medium text-muted-foreground bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
-              {timezone.id.startsWith('Mars/') ? timezone.id === 'Mars/Jezero' ? '(MTC+05:10)' : '(MTC)' : `(${getTimezoneOffset(timezone.id)})`}
+              {timezone.id.startsWith('Mars/') 
+                ? timezone.id === 'Mars/Jezero' ? 'MTC+05:10' : 'MTC' 
+                : getTimezoneOffset(timezone.id).replace(/[()]/g, '')}
             </span>
           </div>
           <div className={`text-2xl font-mono font-semibold mt-2 tracking-tight ${timezone.id.startsWith('Mars/') ? 'text-red-600 dark:text-red-400' : 'text-primary-600 dark:text-primary-400'}`}>
@@ -1087,10 +1089,10 @@ const TimezoneColumn = memo(({
         {!isLocal && (
           <button 
             onClick={() => handleRemoveTimezone(timezone.id)} 
-            className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400 transition-colors" 
+            className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400 transition-colors" 
             aria-label="Remove timezone"
           >
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </button>
         )}
       </div>
