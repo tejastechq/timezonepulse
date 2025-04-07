@@ -856,6 +856,7 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
         zIndex: 1
       }}
     >
+
       <DateNotification 
         selectedDateInfo={selectedDateInfo}
         resolvedTheme={resolvedTheme}
@@ -1089,11 +1090,11 @@ const TimezoneColumn = memo(({
           )}
         </div>
         
-        {!isLocal && (
+        {!isLocal && timezone.id !== userLocalTimezone && (
           <button 
             onClick={() => handleRemoveTimezone(timezone.id)} 
             className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400 transition-colors" 
-            aria-label="Remove timezone"
+            aria-label={`Remove timezone ${(timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name).replace(/[()]/g, '')}`}
           >
             <X className="h-5 w-5" />
           </button>
