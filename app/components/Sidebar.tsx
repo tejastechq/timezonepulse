@@ -69,7 +69,7 @@ export default function Sidebar({ children }: SidebarProps) {
       {/* Main content area with swipe handlers */}
       <div className="flex-grow" {...(isMobileOrTablet ? swipeHandlers : {})}>
         {/* Top header with menu toggle - visible on all devices now */}
-        <div className="fixed top-0 left-0 right-0 flex items-center h-14 px-4 bg-slate-900/90 backdrop-blur-md z-40 border-b border-gray-800">
+        <div className="fixed top-0 left-0 right-0 flex items-center h-14 px-4 bg-slate-900/60 backdrop-blur-lg backdrop-saturate-150 border border-white/10 shadow-lg z-50 transition-all duration-300 rounded-b-xl">
           <button 
             onClick={toggleSidebar}
             className="p-2 text-gray-200 hover:bg-gray-800 rounded-full"

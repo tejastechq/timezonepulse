@@ -122,7 +122,7 @@ const TimeItem = memo(function TimeItem({ style, time, timezone, isHighlightedFn
     'flex justify-between items-center px-3 py-2 cursor-pointer transition-all duration-150 relative',
     'hover:bg-accent/30',
     // Apply bright background and animation to current time if not selected
-    isHighlight ? 'bg-primary-500/90 text-white font-medium' : 
+    isHighlight ? 'bg-primary-500/90 text-white font-medium ring-2 ring-primary-400 shadow-lg scale-105 transition-transform duration-200' : 
     // Use pink for current time highlight
     isCurrent ? 'bg-pink-500/90 dark:bg-pink-600/90 text-white font-medium highlight-item-optimized highlight-pulse-effect' : 
     'text-foreground font-normal',
@@ -641,13 +641,9 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
 
   const handleRemoveTimezone = useCallback((id: string) => {
     if (id !== userLocalTimezone) {
-      const timezoneToRemove = selectedTimezones.find(tz => tz.id === id);
-      const name = timezoneToRemove?.name.split('/').pop()?.replace('_', ' ') || id;
-      if (window.confirm(`Are you sure you want to remove the timezone "${name}"?`)) {
-        removeTimezone(id);
-      }
+      removeTimezone(id);
     }
-  }, [removeTimezone, userLocalTimezone, selectedTimezones]);
+  }, [removeTimezone, userLocalTimezone]);
 
   const getHighlightClass = useCallback((isWeekend: boolean) => isWeekend ? getWeekendHighlightClass(weekendHighlightColor) : '', [weekendHighlightColor]); // Uses hardcoded function now
 
@@ -728,14 +724,17 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
 
           {/* Add Timezone ghost card */}
           {canAddMore && (
-            <button
-              onClick={() => setSelectorOpen(true)}
-              className="flex flex-col justify-center items-center border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-lg p-6 hover:border-primary-500 hover:dark:border-primary-400 hover:bg-primary-50/20 dark:hover:bg-primary-900/20 transition-colors cursor-pointer"
-              aria-label="Add a new timezone or region"
-            >
-              <Plus className="w-6 h-6 mb-2 opacity-70" />
-              <span className="font-medium">Add Timezone</span>
-            </button>
+            <div className="relative group">
+              <button
+                onClick={() => setSelectorOpen(true)}
+                className="flex flex-col justify-center items-center border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-lg hover:border-primary-500 hover:dark:border-primary-400 hover:bg-primary-50/20 dark:hover:bg-primary-900/20 transition-colors cursor-pointer"
+                style={{ minHeight: '350px', minWidth: '280px', height: '100%', width: '100%' }}
+                aria-label="Add a new timezone or region"
+              >
+                <Plus className="w-8 h-8 mb-3 opacity-70" />
+                <span className="font-medium text-lg">Add Timezone</span>
+              </button>
+            </div>
           )}
         </div>
       </>
