@@ -1041,7 +1041,16 @@ const TimezoneColumn = memo(({
             <span className="ml-2 text-xs font-medium text-muted-foreground bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
               {timezone.id.startsWith('Mars/') 
                 ? timezone.id === 'Mars/Jezero' ? 'MTC+05:10' : 'MTC' 
-                : getTimezoneOffset(timezone.id).replace(/[()]/g, '')}
+                : (() => {
+                    const localOffset = DateTime.now().setZone(userLocalTimezone).offset;
+                    const tzOffset = DateTime.now().setZone(timezone.id).offset;
+                    const diffMinutes = tzOffset - localOffset;
+                    const sign = diffMinutes >= 0 ? '+' : '-';
+                    const absMinutes = Math.abs(diffMinutes);
+                    const hours = Math.floor(absMinutes / 60).toString().padStart(2, '0');
+                    const minutes = (absMinutes % 60).toString().padStart(2, '0');
+                    return `${sign}${hours}:${minutes}`;
+                  })()}
             </span>
           </div>
           <div className={`text-2xl font-mono font-semibold mt-2 tracking-tight ${timezone.id.startsWith('Mars/') ? 'text-red-600 dark:text-red-400' : 'text-primary-600 dark:text-primary-400'}`}>

@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  devIndicators: false,
+  devIndicators: true,
   
   // Optimize for smaller function size
   output: 'standalone',
