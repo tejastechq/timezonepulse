@@ -381,13 +381,8 @@ body::after {
   
   /* Add a hint to scroll horizontally */
   .time-columns-container::after {
-    content: "← Scroll →";
-    display: block;
-    text-align: center;
-    font-size: 0.75rem;
-    color: var(--foreground);
-    opacity: 0.7;
-    padding: 0.5rem 0;
+    content: none;
+    display: none;
   }
 }
 
