@@ -639,12 +639,6 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
               getHighlightClass={getHighlightClass}
             />
           ))}
-          {canAddMore && (
-<motion.button initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.2 }} onClick={() => setSelectorOpen(true)} className={`glass-card backdrop-blur-fix ${resolvedTheme === 'dark' ? 'glass-card-dark' : 'glass-card-light'} rounded-lg border-2 border-primary-500 bg-primary-500/20 hover:bg-primary-500/30 hover:border-primary-600 dark:hover:border-primary-400 p-5 md:p-6 lg:p-7 h-full min-h-[300px] md:min-h-[320px] flex flex-col items-center justify-center transition-all duration-200 cursor-pointer`} style={{ isolation: 'isolate', minWidth: '280px' }} aria-label="Add a new timezone or region">
-              <div className="rounded-full bg-primary-100/80 dark:bg-primary-900/30 backdrop-blur-sm p-3 mb-3 shadow-md relative z-[2]"><Plus className="h-6 w-6 text-primary-600 dark:text-primary-400" /></div>
-              <p className="text-gray-600 dark:text-gray-300 font-medium relative z-[2]">Add Timezone or Region</p>
-            </motion.button>
-          )}
         </div>
       </>
     );
