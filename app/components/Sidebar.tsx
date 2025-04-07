@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { useSwipeable } from 'react-swipeable';
 import { XMarkIcon, ClockIcon, GlobeAltIcon, CalendarDaysIcon, StarIcon, 
   NewspaperIcon, ChartBarIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, 
@@ -14,6 +15,7 @@ interface SidebarProps {
 export default function Sidebar({ children }: SidebarProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobileOrTablet, setIsMobileOrTablet] = useState(false);
+  const pathname = usePathname() ?? '';
 
   // Check if the device is mobile or tablet on mount and on resize
   useEffect(() => {
@@ -142,25 +144,45 @@ export default function Sidebar({ children }: SidebarProps) {
               <nav className="mt-2">
                 <ul className="space-y-1">
                   <li>
-                    <a href="#" className="flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800">
+                    <a
+                      href="/"
+                      className={`flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800 ${
+                        pathname === '/' ? 'bg-primary-700 text-white font-semibold' : ''
+                      }`}
+                    >
                       <ClockIcon className="w-6 h-6 text-gray-200" />
                       <span className="text-white">World Clock</span>
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800">
+                    <a
+                      href="/time-travel"
+                      className={`flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800 ${
+                        pathname.startsWith('/time-travel') ? 'bg-primary-700 text-white font-semibold' : ''
+                      }`}
+                    >
                       <CalendarDaysIcon className="w-6 h-6 text-gray-200" />
                       <span className="text-white">Time Travel</span>
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800">
+                    <a
+                      href="/saved"
+                      className={`flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800 ${
+                        pathname.startsWith('/saved') ? 'bg-primary-700 text-white font-semibold' : ''
+                      }`}
+                    >
                       <StarIcon className="w-6 h-6 text-gray-200" />
                       <span className="text-white">Saved Times</span>
                     </a>
                   </li>
                   <li>
-                    <a href="#" className="flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800">
+                    <a
+                      href="/add"
+                      className={`flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800 ${
+                        pathname.startsWith('/add') ? 'bg-primary-700 text-white font-semibold' : ''
+                      }`}
+                    >
                       <PlusCircleIcon className="w-6 h-6 text-gray-200" />
                       <span className="text-white">Add Timezone</span>
                     </a>
@@ -204,4 +226,4 @@ export default function Sidebar({ children }: SidebarProps) {
       </div>
     </div>
   );
-} 
+}
