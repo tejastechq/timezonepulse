@@ -809,20 +809,6 @@ const ListView = forwardRef<ListViewHandle, ListViewProps>(({
           <div className="absolute bottom-[20%] left-[35%] w-40 h-40 rounded-full border border-primary-400/20"></div>
           <div className="absolute top-[60%] right-[10%] w-16 h-16 rounded-full border border-accent/20 animate-pulse-slow"></div>
         </div>
-        
-        {/* Subtle grid pattern to represent timelines */}
-        <div className="absolute w-full h-full opacity-5">
-          <div className="grid grid-cols-12 h-full">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="border-l border-gray-400/20 dark:border-gray-400/10 h-full"></div>
-            ))}
-          </div>
-          <div className="grid grid-rows-12 w-full">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <div key={i} className="border-t border-gray-400/20 dark:border-gray-400/10 w-full"></div>
-            ))}
-          </div>
-        </div>
       </div>
 
       <div className="mb-4 w-full sm:w-80 ml-0 pt-3">
