@@ -177,15 +177,23 @@ export default function Sidebar({ children }: SidebarProps) {
                     </a>
                   </li>
                   <li>
-                    <a
-                      href="/add"
+                    <button
+                      onClick={() => {
+                        try {
+                          const store = require('@/store/timezoneStore');
+                          store.useTimezoneStore.getState().openTimezoneSelector();
+                        } catch (e) {
+                          console.error('Failed to open timezone selector modal', e);
+                        }
+                        setSidebarOpen(false);
+                      }}
                       className={`flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800 ${
                         pathname.startsWith('/add') ? 'bg-primary-700 text-white font-semibold' : ''
                       }`}
                     >
                       <PlusCircleIcon className="w-6 h-6 text-gray-200" />
                       <span className="text-white">Add Timezone</span>
-                    </a>
+                    </button>
                   </li>
                   
                   {/* Divider */}
