@@ -24,14 +24,17 @@ export default function CurrentEventsPage() {
   }, []);
 
   const toggleTopic = (topic: string) => {
-    setSelectedTopics(prev =>
-      prev.includes(topic)
+    setSelectedTopics(prev => {
+      const updated = prev.includes(topic)
         ? prev.filter(t => t !== topic)
-        : [...prev, topic]
-    );
+        : [...prev, topic];
+      console.log('Updated selected topics:', updated);
+      return updated;
+    });
   };
 
   const savePreferences = () => {
+    console.log('Saving preferences:', selectedTopics);
     localStorage.setItem('preferredTopics', JSON.stringify(selectedTopics));
     setShowModal(false);
   };
