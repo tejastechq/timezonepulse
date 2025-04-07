@@ -444,7 +444,7 @@ export default function TimezoneSelector({
                 <Dialog.Close 
                   className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 
                             text-gray-400 hover:text-gray-500"
-                  aria-label="Close dialog"
+                  aria-label="Close timezone selector"
                 >
                   <X className="w-5 h-5" />
                 </Dialog.Close>

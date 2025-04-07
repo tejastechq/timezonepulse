@@ -102,7 +102,7 @@ export default function Sidebar({ children }: SidebarProps) {
           
           {/* Sidebar */}
           <div 
-            className={`fixed top-0 left-0 h-full w-72 bg-slate-900 border-r border-gray-800 z-50 transform transition-transform duration-300 ease-in-out ${
+            className={`fixed top-0 left-0 h-full w-72 bg-slate-900/50 backdrop-blur-lg backdrop-saturate-150 border border-white/10 shadow-xl rounded-r-2xl z-50 transform transition-transform duration-300 ease-in-out ${
               sidebarOpen ? 'translate-x-0' : '-translate-x-full'
             }`}
           >
