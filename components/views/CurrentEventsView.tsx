@@ -20,7 +20,12 @@ interface EventData {
     url: string;
     source: string;
     publishedAt: string;
+    topics: string[];
   }[];
+}
+
+interface CurrentEventsViewProps {
+  selectedTopics?: string[];
 }
 
 const cities = [
@@ -28,7 +33,7 @@ const cities = [
   { city: 'London', timezone: 'Europe/London', offset: '+01:00', abbreviation: 'BST' }
 ];
 
-export default function CurrentEventsView() {
+export default function CurrentEventsView({ selectedTopics }: CurrentEventsViewProps) {
   const [events, setEvents] = useState<EventData[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,13 +61,26 @@ export default function CurrentEventsView() {
     loadData();
   }, []);
 
+  const filteredEvents = events.map(event => {
+    if (!selectedTopics || selectedTopics.length === 0) {
+      return event;
+    }
+    const filteredNews = event.news.filter(n =>
+      n.topics.some(topic => selectedTopics.includes(topic))
+    );
+    return {
+      ...event,
+      news: filteredNews.length > 0 ? filteredNews : event.news
+    };
+  });
+
   if (loading) {
     return <div className="text-center w-full">Loading current events...</div>;
   }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl">
-      {events.map((event, idx) => (
+      {filteredEvents.map((event, idx) => (
         <EventCard key={idx} event={event} />
       ))}
     </div>

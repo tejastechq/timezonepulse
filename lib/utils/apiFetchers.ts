@@ -42,12 +42,24 @@ export async function fetchNews(city: string) {
   if (!res.ok) throw new Error('News API error');
   const data = await res.json();
 
-  const newsItems = (data.articles || []).map((article: any) => ({
-    title: article.title,
-    url: article.url,
-    source: article.source.name,
-    publishedAt: article.publishedAt
-  }));
+  const newsItems = (data.articles || []).map((article: any) => {
+    // naive topic tagging based on keywords
+    const topics: string[] = [];
+    const text = `${article.title} ${article.description || ''}`.toLowerCase();
+    if (text.includes('tech') || text.includes('ai') || text.includes('software') || text.includes('app')) topics.push('Technology');
+    if (text.includes('sport') || text.includes('game') || text.includes('match') || text.includes('tournament')) topics.push('Sports');
+    if (text.includes('politic') || text.includes('election') || text.includes('government') || text.includes('senate') || text.includes('president')) topics.push('Politics');
+    if (text.includes('movie') || text.includes('music') || text.includes('celebrity') || text.includes('show') || text.includes('entertainment')) topics.push('Entertainment');
+    if (text.includes('science') || text.includes('space') || text.includes('research') || text.includes('nasa')) topics.push('Science');
+
+    return {
+      title: article.title,
+      url: article.url,
+      source: article.source.name,
+      publishedAt: article.publishedAt,
+      topics
+    };
+  });
 
   newsCache[city] = { data: newsItems, timestamp: now };
   return newsItems;
