@@ -41,7 +41,7 @@ export default function CurrentEventsPage() {
       <h1 className="text-2xl font-bold mb-6">Current Events</h1>
       <button
         onClick={() => setShowModal(true)}
-        className="mb-4 px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white shadow transition"
+        className="mb-4 px-6 py-3 rounded-lg bg-primary-600 hover:bg-primary-700 text-white shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary-400"
       >
         Customize Your Experience
       </button>
@@ -57,35 +57,35 @@ export default function CurrentEventsPage() {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white dark:bg-gray-900 rounded-lg p-6 max-w-md w-full shadow-lg"
+              className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-md w-full shadow-2xl border border-primary-300 dark:border-primary-700"
               initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+              animate={{ scale: 1, opacity: 1, transition: { type: 'spring', stiffness: 300, damping: 25 } }}
               exit={{ scale: 0.8, opacity: 0 }}
             >
-              <h2 className="text-xl font-semibold mb-4">Select Your Topics</h2>
-              <div className="flex flex-col gap-3 mb-6">
+              <h2 className="text-2xl font-bold mb-6 text-primary-700 dark:text-primary-300">Select Your Topics</h2>
+              <div className="flex flex-col gap-4 mb-8">
                 {availableTopics.map(topic => (
-                  <label key={topic} className="flex items-center gap-2">
+                  <label key={topic} className="flex items-center gap-3 cursor-pointer hover:bg-primary-50 dark:hover:bg-primary-900 p-2 rounded transition">
                     <input
                       type="checkbox"
                       checked={selectedTopics.includes(topic)}
                       onChange={() => toggleTopic(topic)}
-                      className="form-checkbox h-5 w-5 text-primary-600"
+                      className="form-checkbox h-5 w-5 text-primary-600 transition"
                     />
-                    <span>{topic}</span>
+                    <span className="text-lg">{topic}</span>
                   </label>
                 ))}
               </div>
-              <div className="flex justify-end gap-3">
+              <div className="flex justify-end gap-4">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 transition"
+                  className="px-4 py-2 rounded-lg bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 transition"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={savePreferences}
-                  className="px-4 py-2 rounded bg-primary-600 hover:bg-primary-700 text-white transition"
+                  className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-700 text-white shadow transition"
                 >
                   Save
                 </button>
