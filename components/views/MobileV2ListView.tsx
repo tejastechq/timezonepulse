@@ -656,7 +656,17 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
 
     const localTimezoneObj = storeTimezones.find(tz => tz.id === userLocalTimezone);
     const nonLocalTimezones = storeTimezones.filter(tz => tz.id !== userLocalTimezone);
-    const displayTimezones = localTimezoneObj ? [localTimezoneObj, ...nonLocalTimezones] : [...nonLocalTimezones];
+
+    // Filter to only local timezone on initial load (when only 1 timezone saved)
+    let displayTimezones: Timezone[] = [];
+    if (storeTimezones.length <= 1 && localTimezoneObj) {
+      displayTimezones = [localTimezoneObj];
+    } else if (localTimezoneObj) {
+      displayTimezones = [localTimezoneObj, ...nonLocalTimezones];
+    } else {
+      displayTimezones = [...nonLocalTimezones];
+    }
+
     const canAddMore = displayTimezones.length < 8;
 
     const getTimeDifference = () => {
@@ -715,6 +725,18 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
               handleTouchCancel={() => {}}
             />
           ))}
+
+          {/* Add Timezone ghost card */}
+          {canAddMore && (
+            <button
+              onClick={() => setSelectorOpen(true)}
+              className="flex flex-col justify-center items-center border-2 border-dashed border-gray-400 dark:border-gray-600 rounded-lg p-6 hover:border-primary-500 hover:dark:border-primary-400 hover:bg-primary-50/20 dark:hover:bg-primary-900/20 transition-colors cursor-pointer"
+              aria-label="Add a new timezone or region"
+            >
+              <Plus className="w-6 h-6 mb-2 opacity-70" />
+              <span className="font-medium">Add Timezone</span>
+            </button>
+          )}
         </div>
       </>
     );
