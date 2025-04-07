@@ -42,6 +42,8 @@ export default function CurrentEventsPage() {
       <button
         onClick={() => setShowModal(true)}
         className="mb-4 px-6 py-3 rounded-lg bg-primary-600 hover:bg-primary-700 text-white shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary-400"
+        aria-label="Customize your news topics"
+        title="Customize your news topics"
       >
         Customize Your Experience
       </button>
@@ -71,6 +73,7 @@ export default function CurrentEventsPage() {
                       checked={selectedTopics.includes(topic)}
                       onChange={() => toggleTopic(topic)}
                       className="form-checkbox h-5 w-5 text-primary-600 transition"
+                      aria-label={`Toggle topic ${topic}`}
                     />
                     <span className="text-lg">{topic}</span>
                   </label>
