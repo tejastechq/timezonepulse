@@ -1036,7 +1036,7 @@ const TimezoneColumn = memo(({
           <div className="flex items-baseline">
             <h3 className={`text-lg font-semibold ${timezone.id === 'Mars/Jezero' ? 'text-red-600 dark:text-red-400' : 'text-primary-700 dark:text-primary-300'} flex items-center`}>
               {timezone.id.startsWith('Mars/') && (<span className="inline-block mr-2" title="Mars Time"><Image src="/mars.png" alt="Mars" width={20} height={20} className="inline-block w-5 h-5 align-text-bottom" /></span>)}
-              <span className="truncate">{(timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name).replace(/[()]/g, '')}</span>
+              <span className="truncate">{(timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name).replace(/[()]/g, '').replace(/[-+]\d{2}:\d{2}/, '')}</span>
             </h3>
             <span className="ml-2 text-xs font-medium text-muted-foreground bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
               {timezone.id.startsWith('Mars/') 
