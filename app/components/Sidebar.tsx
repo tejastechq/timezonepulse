@@ -200,8 +200,13 @@ export default function Sidebar({ children }: SidebarProps) {
                   <div className="my-2 border-t border-gray-800"></div>
                   
                   {/* Global Info Section */}
-                  <li>
-                    <a href="#" className="flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800">
+<li>
+                    <a
+                      href="/current-events"
+                      className={`flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800 ${
+                        pathname.startsWith('/current-events') ? 'bg-primary-700 text-white font-semibold' : ''
+                      }`}
+                    >
                       <NewspaperIcon className="w-6 h-6 text-gray-200" />
                       <span className="text-white">Current Events</span>
                     </a>
