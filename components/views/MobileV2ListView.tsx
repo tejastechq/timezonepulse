@@ -863,37 +863,6 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
         zIndex: 1
       }}
     >
-      {showBackground && (
-      <div 
-        className="absolute inset-0 -z-10 bg-gradient-to-br from-transparent via-primary-50/5 to-accent/5 dark:from-transparent dark:via-primary-900/5 dark:to-accent/10 overflow-hidden rounded-xl"
-        style={{
-          backgroundImage: resolvedTheme === 'dark' ? 
-            'radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.03) 0%, transparent 50%), radial-gradient(circle at 90% 90%, rgba(252, 165, 165, 0.03) 0%, transparent 50%)' : 
-            'radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.05) 0%, transparent 50%), radial-gradient(circle at 90% 90%, rgba(252, 165, 165, 0.05) 0%, transparent 50%)'
-        }}
-      >
-        {/* Add clock hand animation */}
-        <div className="absolute top-[5%] right-[5%] w-40 h-40 opacity-5">
-          <div className="relative w-full h-full rounded-full border border-gray-400/20">
-            <div className="absolute top-1/2 left-1/2 w-[1px] h-[40%] bg-primary-500/40 origin-bottom animate-clock-second"></div>
-            <div className="absolute top-1/2 left-1/2 w-[2px] h-[30%] bg-accent/40 origin-bottom animate-clock-minute"></div>
-          </div>
-        </div>
-        
-        {/* Subtle circles representing clock faces/world map dots */}
-        <div className="absolute w-full h-full opacity-5">
-          <div className="absolute top-[10%] left-[15%] w-20 h-20 rounded-full border border-primary-400/20 animate-pulse-slow"></div>
-          <div className="absolute top-[35%] right-[25%] w-32 h-32 rounded-full border border-accent/20"></div>
-          <div className="absolute bottom-[20%] left-[35%] w-40 h-40 rounded-full border border-primary-400/20"></div>
-          <div className="absolute top-[60%] right-[10%] w-16 h-16 rounded-full border border-accent/20 animate-pulse-slow"></div>
-        </div>
-      </div>
-      )}
-
-      <div className="mb-4 w-full sm:w-80 ml-0 pt-3">
-        {/* TimeSearch component is removed */}
-      </div>
-
       <DateNotification 
         selectedDateInfo={selectedDateInfo}
         resolvedTheme={resolvedTheme}
