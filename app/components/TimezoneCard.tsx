@@ -66,8 +66,13 @@ export default function TimezoneCard({
       <div className="flex justify-between items-start mb-2">
         <div>
           <h2 className="text-blue-300 text-lg font-medium">
-            {city}<span className="text-gray-400 ml-2">{offset}</span>
+            {(city || '').replace(/[()]/g, '')}
+            <span className="text-gray-400 ml-2">{(offset || '').replace(/[()]/g, '')}</span>
           </h2>
+          <div className="text-xs text-gray-400 mt-1">
+            {/* Placeholder for timezone abbreviation or offset info */}
+            {offset}
+          </div>
           <div className="flex items-center space-x-2">
             <span className="text-4xl font-bold text-gray-100">{currentTime}</span>
             <span className="text-2xl text-gray-400">{currentPeriod}</span>
@@ -76,7 +81,7 @@ export default function TimezoneCard({
         {onClose && (
           <button 
             onClick={onClose}
-            className="p-1 rounded-full hover:bg-gray-700"
+            className="p-3 rounded-full hover:bg-gray-700 focus:ring-2 focus:ring-primary-500"
           >
             <XMarkIcon className="w-5 h-5 text-gray-400" />
           </button>
@@ -123,4 +128,4 @@ export default function TimezoneCard({
       </div>
     </div>
   );
-} 
+}

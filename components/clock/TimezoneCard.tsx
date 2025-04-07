@@ -63,12 +63,17 @@ export default function TimezoneCard({
         w-full max-w-[400px] min-w-[280px] mx-auto
         ${isBusinessHours ? 'border-l-4 border-green-500' : ''}
         ${isNightTime ? 'text-white' : 'text-gray-900 dark:text-white'}
+        border-2 border-transparent transition-all duration-300 ease-in-out
+        hover:border-yellow-400
       `}
     >
       <div className="flex justify-between items-start mb-2">
         <div>
-          <h3 className="text-lg font-semibold">{(timezone.city || timezone.name).replace(/\)+$/, '').replace(/\(+$/, '')}</h3>
+          <h3 className="text-lg font-semibold">{(timezone.city || timezone.name).replace(/[()]/g, '')}</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">{timezone.id}</p>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {DateTime.now().setZone(timezone.id).offsetNameShort || DateTime.now().setZone(timezone.id).toFormat('ZZZZ')}
+          </span>
         </div>
         <div className="flex items-center">
           {isDST && (
@@ -78,7 +83,7 @@ export default function TimezoneCard({
           )}
           <button
             onClick={() => setShowOptions(!showOptions)}
-            className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="p-3 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:ring-2 focus:ring-primary-500 transition-colors"
             aria-label="Options"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
