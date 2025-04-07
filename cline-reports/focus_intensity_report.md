@@ -49,9 +49,22 @@
 
 ---
 
-## Next Steps for Even Deeper Insights
-- Provide or scrape the DOM structure to analyze semantic HTML, accessibility, and component hierarchy.
-- Use this to refine accessibility, reduce redundant elements, and optimize layout further.
+## Deeper Insights from DOM Analysis
+
+### Accessibility & Semantics
+- Add a top-level `<h1>` heading for the page title (e.g., 'TimezonePulse').
+- Add a 'Skip to content' link for keyboard navigation.
+- Improve aria-labels on buttons (e.g., 'Remove timezone Chicago' instead of just 'Remove timezone').
+- Consider adding `role="region"` with `aria-label` to timezone cards for better screen reader grouping.
+- Ensure all interactive elements are reachable and operable via keyboard.
+- Maintain semantic `<nav>`, `<main>`, `<footer>` structure.
+- Sidebar navigation is semantically correct; highlight active link clearly.
+- The use of `role="listbox"` and `role="option"` for time slots is good; ensure focus states are visible.
+
+### Component Structure
+- Group timezone cards visually and semantically.
+- Use descriptive aria-labels and roles to improve screen reader experience.
+- Avoid redundant or missing labels.
 
 ---
 
