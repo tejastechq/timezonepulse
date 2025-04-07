@@ -75,13 +75,22 @@ export default function CurrentEventsView({ selectedTopics }: CurrentEventsViewP
   });
 
   if (loading) {
-    return <div className="text-center w-full">Loading current events...</div>;
+    return (
+      <div className="flex justify-center items-center w-full h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-primary-600"></div>
+      </div>
+    );
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-6xl transition-all duration-300">
       {filteredEvents.map((event, idx) => (
-        <EventCard key={idx} event={event} />
+        <div
+          key={idx}
+          className="transform transition-transform duration-300 hover:scale-105"
+        >
+          <EventCard event={event} />
+        </div>
       ))}
     </div>
   );
