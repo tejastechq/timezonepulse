@@ -254,28 +254,6 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
     <div className="clock-container w-full max-w-screen-xl mx-auto px-4 py-6">
       {/* Simplified Header Rendering - Always show mobile-style header controls */}
       {/* Since MobileV2ListView is forced, use the controls suitable for it */}
-      <header className="flex items-center justify-between mb-4 h-12">
-          <MobileMenu />
-          <h1 className="font-bold uppercase text-xl">TimeZonePulse</h1>
-          <div className="flex items-center space-x-2">
-             {/* Add Timezone Button (Mobile FAB exists, but keep this for consistency?) */}
-              <button
-                onClick={openTimezoneSelector} // Use global action
-                className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors text-white" // Added text-white for visibility if needed
-                aria-label="Add Timezone"
-              >
-               <Plus size={20} />
-             </button>
-            {/* Calendar Button (Mobile) */}
-            <button
-              onClick={() => setShowDatePickerModal(true)} // Connect to modal state
-              className="p-2 bg-gray-700 rounded-md hover:bg-gray-600 transition-colors text-white" // Added text-white
-              aria-label="Open Calendar"
-            >
-              <Calendar size={20} />
-            </button>
-          </div>
-        </header>
       {/* Removed Desktop Header Controls block */}
       {/* End of Simplified Header Rendering */}
 
