@@ -127,14 +127,15 @@ export default function TimezoneCard({
                 roundedCurrentInTimezone.hasSame(slotInTimezone, 'hour') && 
                 roundedCurrentInTimezone.hasSame(slotInTimezone, 'minute');
               
-              return (
+return (
                 <button
                   key={slot.getTime()}
                   onClick={() => onTimeSelect(slot)}
+                  style={isHighlighted ? { fontFamily: "'Space Grotesk', 'JetBrains Mono', monospace" } : {}}
                   className={`
                     w-full text-left px-2 py-1 rounded-md mb-1 transition-colors duration-150 ease-in-out
-                    ${isHighlighted 
-                      ? 'bg-primary-500 text-white' // Highlight style: background color, white text
+${isHighlighted 
+                      ? 'bg-primary-500 text-white text-2xl font-bold' // Larger, bolder font for highlighted current time
                       : 'hover:bg-gray-100 dark:hover:bg-gray-700' // Normal style: standard padding, hover effect
                     }
                   `}

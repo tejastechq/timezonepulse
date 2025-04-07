@@ -1,0 +1,135 @@
+# Cline Project Rules
+# Enforces Memory and Sequential Thinking MCP servers for all knowledge graph and web operations
+
+## Global Settings
+- ALWAYS use the "memory" MCP server to store and retrieve context, entity data, relations, observations, and task history
+- ALWAYS use the "sequential-thinking" MCP server to structure and reason through every operation step-by-step
+- Do not execute any task unless both "memory" and "sequential-thinking" MCP servers are active
+- Log all interactions with timestamps for auditing
+
+## MCP Server Configuration
+- "memory": Persist entity data, relations, observations, hypotheses, and task outcomes
+- "sequential-thinking": Break down all operations into logical, revisable steps
+
+## Tool-Specific Workflows
+# Knowledge Graph Tools
+- create_entities(entities*)
+  1. Load "memory" MCP server and check for existing entities
+  2. Use "sequential-thinking" to validate entities and plan creation steps
+  3. Create entities in the knowledge graph, updating "memory" with new entity IDs
+  4. Log: "[TIMESTAMP] Created entities: [ENTITY_LIST]"
+
+- create_relations(relations*)
+  1. Load "memory" MCP server to retrieve entity context
+  2. Use "sequential-thinking" to ensure relations are in active voice and logically sound
+  3. Create relations, updating "memory" with relation details
+  4. Log: "[TIMESTAMP] Created relations: [RELATION_LIST]"
+
+- add_observations(observations*)
+  1. Load "memory" MCP server to identify target entities
+  2. Use "sequential-thinking" to validate observations and plan additions
+  3. Add observations, updating "memory" with new data
+  4. Log: "[TIMESTAMP] Added observations: [OBSERVATION_LIST]"
+
+- delete_entities(entityNames*)
+  1. Load "memory" MCP server to confirm entity existence and relations
+  2. Use "sequential-thinking" to plan deletion and assess impact
+  3. Delete entities and relations, updating "memory"
+  4. Log: "[TIMESTAMP] Deleted entities: [ENTITY_NAMES]"
+
+- delete_observations(deletions*)
+  1. Load "memory" MCP server to locate observations
+  2. Use "sequential-thinking" to verify deletions and plan removal
+  3. Delete observations, updating "memory"
+  4. Log: "[TIMESTAMP] Deleted observations: [DELETION_LIST]"
+
+- delete_relations(relations*)
+  1. Load "memory" MCP server to retrieve relation context
+  2. Use "sequential-thinking" to confirm relations and plan deletion
+  3. Delete relations, updating "memory"
+  4. Log: "[TIMESTAMP] Deleted relations: [RELATION_LIST]"
+
+- read_graph()
+  1. Load "memory" MCP server to access full graph state
+  2. Use "sequential-thinking" to structure graph reading process
+  3. Return graph data, storing snapshot in "memory"
+  4. Log: "[TIMESTAMP] Read entire knowledge graph"
+
+- search_nodes(query*)
+  1. Load "memory" MCP server for entity and observation context
+  2. Use "sequential-thinking" to refine query and plan search
+  3. Search nodes, updating "memory" with results
+  4. Log: "[TIMESTAMP] Searched nodes with query: [QUERY]"
+
+- open_nodes(names*)
+  1. Load "memory" MCP server to retrieve node data
+  2. Use "sequential-thinking" to validate names and plan retrieval
+  3. Open nodes, updating "memory" with accessed data
+  4. Log: "[TIMESTAMP] Opened nodes: [NAMES]"
+
+# Sequential Thinking Tool
+- sequentialthinking(thought*, nextThoughtNeeded*, thoughtNumber*, totalThoughts*, isRevision, revisesThought, branchFromThought, branchId, needsMoreThoughts)
+  1. Load "memory" MCP server to recall prior thoughts and context
+  2. Use "sequential-thinking" MCP server to process current thought:
+     - Analyze thought step
+     - Revise prior thoughts if isRevision=true
+     - Branch if branchFromThought is set
+     - Adjust totalThoughts dynamically
+  3. Update "memory" with thought progress and hypothesis
+  4. Log: "[TIMESTAMP] Thought [THOUGHT_NUMBER]: [THOUGHT] - Next needed: [NEXT_THOUGHT_NEEDED]"
+
+# Web Scraping and Browser Tools
+- scrape_webpage(url*, sessionOptions, outputFormat*)
+  1. Load "memory" MCP server to check prior scrape data
+  2. Use "sequential-thinking" to plan scraping steps
+  3. Scrape webpage, storing results in "memory"
+  4. Log: "[TIMESTAMP] Scraped webpage: [URL] in [OUTPUT_FORMAT]"
+
+- crawl_webpages(url*, sessionOptions, outputFormat*, followLinks*, maxPages, ignoreSitemap)
+  1. Load "memory" MCP server for crawl history
+  2. Use "sequential-thinking" to plan crawl strategy
+  3. Crawl pages, updating "memory" with collected data
+  4. Log: "[TIMESTAMP] Crawled from: [URL], pages: [COUNT]"
+
+- extract_structured_data(urls*, prompt*, schema, sessionOptions)
+  1. Load "memory" MCP server for prior extractions
+  2. Use "sequential-thinking" to validate schema and plan extraction
+  3. Extract data, storing in "memory"
+  4. Log: "[TIMESTAMP] Extracted data from: [URLS]"
+
+- browser_use_agent(task*, sessionOptions, returnStepInfo, maxSteps)
+  1. Load "memory" MCP server for task context
+  2. Use "sequential-thinking" to break task into explicit steps
+  3. Execute task, updating "memory" with results
+  4. Log: "[TIMESTAMP] Browser task: [TASK] completed"
+
+- openai_computer_use_agent(task*, sessionOptions, returnStepInfo, maxSteps)
+  1. Load "memory" MCP server for task history
+  2. Use "sequential-thinking" to structure task execution
+  3. Perform task, updating "memory"
+  4. Log: "[TIMESTAMP] OpenAI agent task: [TASK] completed"
+
+- claude_computer_use_agent(task*, sessionOptions, returnStepInfo, maxSteps)
+  1. Load "memory" MCP server for prior context
+  2. Use "sequential-thinking" to reason through task
+  3. Execute task, updating "memory"
+  4. Log: "[TIMESTAMP] Claude agent task: [TASK] completed"
+
+- search_with_bing(query*, sessionOptions, numResults)
+  1. Load "memory" MCP server for search history
+  2. Use "sequential-thinking" to refine query and plan search
+  3. Search Bing, storing results in "memory"
+  4. Log: "[TIMESTAMP] Bing search: [QUERY], results: [NUM_RESULTS]"
+
+## Error Handling
+- If "memory" or "sequential-thinking" MCP servers fail, halt and report: "Error: Required MCP servers unavailable"
+- Log errors: "[TIMESTAMP] Error: [DETAILS]"
+
+## Logging
+- Log every step with timestamps and details
+- Example: "[TIMESTAMP] Memory updated: [DATA]"
+- Example: "[TIMESTAMP] Sequential Thinking step: [STEP_DETAILS]"
+
+## Notes
+- These rules apply to all operations, ensuring context persistence and structured reasoning
+- No action proceeds without both MCP servers

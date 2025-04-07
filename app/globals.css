@@ -29,7 +29,7 @@
 }
 
 body {
-  font-family: var(--font-inter);
+  font-family: 'Inter', 'Manrope', 'Roboto', 'Open Sans', sans-serif;
   color: var(--foreground);
   position: relative;
   overflow-x: hidden;
