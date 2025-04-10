@@ -51,7 +51,9 @@ export default function CurrentEventsPage() {
         Customize Your Experience
       </button>
 
-      <CurrentEventsView selectedTopics={selectedTopics} />
+      <CurrentEventsView
+        selectedTopics={selectedTopics}
+      />
 
       <AnimatePresence>
         {showModal && (
