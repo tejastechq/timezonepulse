@@ -1,8 +1,15 @@
 # CodeMap Root
-timestamp: 2025-04-10T18:25:55Z
+timestamp: 2025-04-11T15:30:00Z
+
+## ACTIVE_MEMORY
+- Components: [#PROJECT_CONFIG]
+- Decisions: [#DEVOPS_001]
+- Patterns: [@GitBestPractices]
+- Tasks: [TASK_005]
 
 ## PROJECT_STRUCTURE
 [clock]/
+  .gitignore #[PROJECT_CONFIG] "Git configuration" @index[config] ^critical
   app/ [CORE]
     layout.tsx #[APP_CORE] "Root layout" @index[layouts] ^critical
     page.tsx #[PAGE_HOME] "Home page" @index[pages]

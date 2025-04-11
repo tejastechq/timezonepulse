@@ -1,10 +1,12 @@
 # Active Context
-timestamp: 2025-04-10T18:24:35Z # Keep original timestamp for now, update later
+timestamp: 2025-04-11T15:30:00Z
 
 ## Current Focus
-Audit/cleanup complete. Planning next major feature or improvement. Reviewing roadmap, pending migrations, and opportunities for new features or technical enhancements.
+DevOps improvement to fix Git repository configuration. Removing node_modules from Git tracking to reduce repository size and improve performance.
 
 ## Recent Changes
+- Identified and resolved issue with node_modules being tracked in Git
+- Implemented correction by using `git rm -r --cached node_modules` and keeping node_modules in .gitignore
 - Populated `techContext.md`, `projectbrief.md`, `productContext.md`, `systemPatterns.md`.
 - Updated `progress.md` and `decisions.md`.
 - Created `task_001_audit_cleanup.md` and updated `task_registry.md`.
@@ -14,12 +16,14 @@ Audit/cleanup complete. Planning next major feature or improvement. Reviewing ro
 - Finalized all Memory Bank indexes and completed project audit/cleanup phase.
 
 ## Active Decisions
+- #DEVOPS_001 "Remove node_modules from Git tracking"
 - Use Next.js 15 App Router as primary architecture.
 - Support both Earth and Mars timezones.
 - Integrate real-time data (weather, news).
 - Modular, component-driven UI design.
 
 ## Immediate Priorities
+- Verify Git configuration is correctly ignoring node_modules in future operations
 - Plan and prioritize next major feature or improvement (e.g., UI migration, new integrations, performance enhancements).
 - Create or update task registry and task breakdowns in `memory_docs/tasks/`.
 - Expand/comprehensively document flow diagrams as needed.

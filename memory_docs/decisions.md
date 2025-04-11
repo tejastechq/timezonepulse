@@ -1,7 +1,15 @@
 # Decision Journal
-timestamp: 2025-04-10T18:25:30Z
+timestamp: 2025-04-11T15:30:00Z
 
 ## Active Decisions
+
+- [2025-04-11] #DEVOPS_001 "Remove node_modules from Git tracking"
+  - **Context:** The node_modules directory was being tracked by Git, causing repository bloat
+  - **Options:** Continue tracking node_modules, remove from Git tracking but keep locally
+  - **Decision:** Remove node_modules from Git tracking using git rm --cached while preserving files locally
+  - **Rationale:** Reduce repository size, improve clone/pull performance, follow Git best practices
+  - **Components:** #PROJECT_CONFIG
+  - **Confidence:** HIGH
 
 - [2025-04-10] #ARCH_001 "Adopt Next.js 15 App Router"
   - **Context:** Modernize routing and layouts
