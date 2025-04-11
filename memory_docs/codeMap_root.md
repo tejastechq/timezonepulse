@@ -18,13 +18,14 @@ timestamp: 2025-04-10T18:25:55Z
     api/cleanup/ #[API_CLEANUP] "Cleanup API" @index[api]
     api/csp-report/ #[API_CSP] "CSP report API" @index[api]
     components/ #[APP_COMPONENTS] "App-specific components" @index[components]
+      Sidebar.tsx #[APP_SIDEBAR] "Main sidebar layout wrapper" @index[components] ^critical @tasks[refactor_sidebar]
     contexts/ #[APP_CONTEXTS] "Context providers" @index[contexts]
   components/ [UI]
     clock/ #[COMP_CLOCK] "Clock components" @index[components]
     dev/ #[COMP_DEV] "Dev tools" @index[components]
     error/ #[COMP_ERROR] "Error boundaries" @index[components]
     events/ #[COMP_EVENTS] "Event components" @index[components]
-    layout/ #[COMP_LAYOUT] "Layout components" @index[components]
+    layout/ #[COMP_LAYOUT] "Layout components (no sidebar, see app/components/Sidebar.tsx)" @index[components]
     mobile/ #[COMP_MOBILE] "Mobile components" @index[components]
     performance/ #[COMP_PERF] "Performance tools" @index[components]
     seo/ #[COMP_SEO] "SEO components" @index[components]
@@ -65,3 +66,42 @@ flowchart TD
   H --> K[API fetchers]
   K --> L[API routes (time, weather, news)]
   L --> M[External APIs]
+```
+
+### Component Interaction Flow
+```mermaid
+flowchart TD
+  A[RootLayout] --> B[Sidebar]
+  B --> C[ViewComponents]
+  C --> D[ClockComponents]
+  C --> E[EventComponents]
+  C --> F[UIPrimitives]
+  D --> G[TimezoneStore]
+  E --> G
+  F --> D
+  F --> E
+```
+
+### API/Data Fetching Flow
+```mermaid
+flowchart TD
+  A[ViewComponents] --> B[API Fetchers]
+  B --> C[API Routes (time, weather, news)]
+  C --> D[External APIs]
+  D --> C
+  C --> B
+  B --> A
+```
+
+### User Navigation Flow
+```mermaid
+flowchart TD
+  A[User] --> B[Sidebar Navigation]
+  B --> C{Select Page}
+  C -->|Home| D[Home View]
+  C -->|List| E[List View]
+  C -->|Grid| F[Grid View]
+  C -->|Mobile| G[Mobile View]
+  D & E & F & G --> H[Main Content]
+  H --> I[Footer]
+```

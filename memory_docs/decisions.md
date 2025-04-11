@@ -70,3 +70,30 @@ timestamp: 2025-04-10T18:25:30Z
 
 ## Historical Decisions
 <!-- Add historical decisions here as project evolves -->
+
+- [2025-04-10] #IMPL_004 "Sidebar/Layout Refactor"
+  - **Context**: The project previously used a floating sidebar component (`components/layout/Sidebar.tsx`) that was rendered as a sibling in the main layout. This led to complexity in layout management, inconsistent sidebar behavior, and difficulty maintaining a responsive/overlay experience.
+  - **Options**: Continue with the floating sidebar as a sibling; Refactor to use a layout-centric Sidebar wrapper (`app/components/Sidebar.tsx`) in `app/layout.tsx`.
+  - **Decision**: Refactor the layout to use `app/components/Sidebar.tsx` as the main layout wrapper, removing the floating sidebar and centralizing layout logic.
+  - **Rationale**: This approach improves maintainability, enables consistent responsive/overlay sidebar behavior, and aligns with modern Next.js layout patterns.
+  - **Components**: #APP_SIDEBAR, #APP_CORE
+  - **Confidence**: HIGH
+  - **Source**: TASK_001 (Project Audit and Cleanup)
+
+- [2025-04-10] #ARCH_003 "State Management Approach"
+  - **Context**: The app requires global state for timezones, user preferences, and real-time data integration.
+  - **Options**: Use Redux for all state; Use Zustand and Jotai for lightweight, flexible state management.
+  - **Decision**: Use Zustand (and Jotai where appropriate) for client state management.
+  - **Rationale**: Zustand provides a simple, scalable API for global state, and Jotai is used for atomic state needs. Both integrate well with Next.js and the modular component structure.
+  - **Components**: #STORE_STATE, #APP_CORE, #APP_SIDEBAR
+  - **Confidence**: HIGH
+  - **Source**: TASK_001
+
+- [2025-04-10] #ARCH_004 "API Integration Pattern"
+  - **Context**: The app integrates with external APIs (time, weather, news) and needs a secure, maintainable way to fetch and serve data.
+  - **Options**: Fetch data directly from the client; Use Next.js API routes as a serverless proxy layer.
+  - **Decision**: Use Next.js API routes for all external data integration, with client fetches via Axios.
+  - **Rationale**: This pattern improves security, enables SSR/ISR, and centralizes error handling and rate limiting.
+  - **Components**: #API_TIME, #API_WEATHER, #API_NEWS, #APP_CORE
+  - **Confidence**: HIGH
+  - **Source**: TASK_001

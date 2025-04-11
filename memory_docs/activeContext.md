@@ -2,7 +2,7 @@
 timestamp: 2025-04-10T18:24:35Z # Keep original timestamp for now, update later
 
 ## Current Focus
-Continuing **TASK_001: Project Audit and Cleanup**. Completed SUBTASK_001.1 (Dependency Audit) analysis. Next step is SUBTASK_001.2 (Code Structure Review).
+Audit/cleanup complete. Planning next major feature or improvement. Reviewing roadmap, pending migrations, and opportunities for new features or technical enhancements.
 
 ## Recent Changes
 - Populated `techContext.md`, `projectbrief.md`, `productContext.md`, `systemPatterns.md`.
@@ -10,6 +10,8 @@ Continuing **TASK_001: Project Audit and Cleanup**. Completed SUBTASK_001.1 (Dep
 - Created `task_001_audit_cleanup.md` and updated `task_registry.md`.
 - Completed dependency audit analysis (SUBTASK_001.1).
 - Deferred NextUI/HeroUI migration to TASK_002 (#DEPS_001).
+- Refactored layout: restored `app/components/Sidebar.tsx` as main layout wrapper in `app/layout.tsx`, removed unused floating sidebar (`components/layout/Sidebar.tsx`). Updated navigation and structure in `codeMap_root.md`.
+- Finalized all Memory Bank indexes and completed project audit/cleanup phase.
 
 ## Active Decisions
 - Use Next.js 15 App Router as primary architecture.
@@ -18,7 +20,7 @@ Continuing **TASK_001: Project Audit and Cleanup**. Completed SUBTASK_001.1 (Dep
 - Modular, component-driven UI design.
 
 ## Immediate Priorities
-- Map project structure and flow diagrams in `codeMap_root.md`.
-- Document architecture and patterns in `systemPatterns.md`.
-- Create initial component indexes.
-- Summarize key decisions in `decisions.md`.
+- Plan and prioritize next major feature or improvement (e.g., UI migration, new integrations, performance enhancements).
+- Create or update task registry and task breakdowns in `memory_docs/tasks/`.
+- Expand/comprehensively document flow diagrams as needed.
+- Continue maintaining decision history and rationale.

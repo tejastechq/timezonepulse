@@ -1,4 +1,21 @@
 timestamp: 2025-04-10T16:17:24Z
 
 models:
-  # Add model definitions here
+  #STORE_STATE: &{
+    name: TimezoneStore,
+    file: store/timezoneStore.ts,
+    description: "Zustand store for managing timezone state and user preferences.",
+    state: [
+      timezones: array,
+      selectedTimezone: string,
+      (other state fields as needed)
+    ],
+    actions: [
+      addTimezone(timezone),
+      removeTimezone(timezone),
+      setSelectedTimezone(timezone)
+    ],
+    >used_by: [#COMP_CLOCK, #COMP_VIEWS, #APP_CORE],
+    pattern: StateStore,
+    status: "Active"
+  }

@@ -1,4 +1,94 @@
 timestamp: 2025-04-10T16:16:47Z
 
 components:
-  # Add component definitions here
+  #APP_SIDEBAR: &{
+    name: Sidebar,
+    ^critical,
+    file: app/components/Sidebar.tsx,
+    description: "Main sidebar layout wrapper. Handles layout, header, sidebar, overlay, and children rendering.",
+    parameters: [
+      children: ReactNode,
+      (plus any layout/context props as needed)
+    ],
+    >used_by: [#APP_CORE],
+    pattern: LayoutWrapper,
+    tasks: [refactor_sidebar],
+    status: "Active"
+  }
+
+  #APP_CORE: &{
+    name: RootLayout,
+    ^critical,
+    file: app/layout.tsx,
+    description: "Root layout for the app. Wraps all content with Sidebar and Providers.",
+    parameters: [
+      children: ReactNode
+    ],
+    >uses: [#APP_SIDEBAR],
+    pattern: AppRoot,
+    tasks: [refactor_sidebar],
+    status: "Active"
+  }
+
+  #COMP_CLOCK: &{
+    name: ClockComponents,
+    file: components/clock/,
+    description: "Reusable clock and timezone display components.",
+    >used_by: [#APP_CORE, #COMP_VIEWS],
+    pattern: TimeDisplay,
+    status: "Active"
+  }
+
+  #COMP_EVENTS: &{
+    name: EventComponents,
+    file: components/events/,
+    description: "Components for displaying and managing events.",
+    >used_by: [#COMP_VIEWS],
+    pattern: EventDisplay,
+    status: "Active"
+  }
+
+  #COMP_UI: &{
+    name: UIPrimitives,
+    file: components/ui/,
+    description: "Reusable UI primitives (buttons, cards, tabs, etc).",
+    >used_by: [#APP_CORE, #COMP_VIEWS, #COMP_CLOCK, #COMP_EVENTS],
+    pattern: UIPrimitive,
+    status: "Active"
+  }
+
+  #COMP_VIEWS: &{
+    name: ViewComponents,
+    file: components/views/,
+    description: "High-level view components for different app screens.",
+    >uses: [#COMP_CLOCK, #COMP_EVENTS, #COMP_UI],
+    pattern: ViewContainer,
+    status: "Active"
+  }
+
+  #COMP_STATUS: &{
+    name: StatusIndicator,
+    file: components/StatusIndicator.tsx,
+    description: "Displays app/network/status indicators.",
+    >used_by: [#APP_CORE, #COMP_VIEWS],
+    pattern: StatusDisplay,
+    status: "Active"
+  }
+
+  #COMP_THEME: &{
+    name: ThemeToggle,
+    file: components/ThemeToggle.tsx,
+    description: "Theme (light/dark) toggle component.",
+    >used_by: [#APP_CORE, #COMP_VIEWS],
+    pattern: ThemeControl,
+    status: "Active"
+  }
+
+  #COMP_MOBILE_MENU: &{
+    name: MobileMenu,
+    file: components/MobileMenu.tsx,
+    description: "Mobile navigation menu component.",
+    >used_by: [#APP_CORE, #COMP_VIEWS],
+    pattern: MobileNav,
+    status: "Active"
+  }
