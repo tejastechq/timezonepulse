@@ -1117,6 +1117,13 @@ const TimezoneColumn = memo(({
     }
   }, [showEvents, activeTab, sportsLeague]);
 
+  // Handler for clicking the top-right empty space to toggle collapse/expand
+  const handleHeaderClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Prevent toggling if clicking the remove (X) button or its children
+    if ((e.target as HTMLElement).closest('[data-remove-timezone]')) return;
+    setShowEvents((prev) => !prev);
+  };
+
   return (
     <motion.div
       layout
@@ -1146,14 +1153,19 @@ const TimezoneColumn = memo(({
         e.currentTarget.style.borderColor = '';
       }}
     >
-      <div className="p-4 border-b-2 border-primary-100/30 dark:border-primary-900/30 flex justify-between items-center relative overflow-hidden">
+      <div
+        className="p-4 border-b-2 border-primary-100/30 dark:border-primary-900/30 flex justify-between items-center relative overflow-hidden cursor-pointer group"
+        onClick={handleHeaderClick}
+        tabIndex={0}
+        aria-label={showEvents ? 'Collapse timezone card' : 'Expand timezone card'}
+        role="button"
+      >
         {/* Day/night indicator for visual context */}
         {localTime && (
-          <div className="absolute inset-0 -z-10 opacity-20">
+          <div className="absolute inset-0 -z-10 opacity-20 pointer-events-none">
             {(() => {
               const dt = DateTime.fromJSDate(localTime).setZone(timezone.id);
               const hour = dt.hour;
-              
               if (hour >= 5 && hour < 8) {
                 return <div className="absolute inset-0 bg-gradient-to-r from-amber-300/30 to-blue-300/30" />; // Dawn
               } else if (hour >= 8 && hour < 16) {
@@ -1166,7 +1178,6 @@ const TimezoneColumn = memo(({
             })()}
           </div>
         )}
-
         <div>
           <div className="flex items-baseline">
             <h3 className={`text-lg font-semibold ${timezone.id === 'Mars/Jezero' ? 'text-red-600 dark:text-red-400' : 'text-primary-700 dark:text-primary-300'} flex items-center`}>
@@ -1191,7 +1202,6 @@ const TimezoneColumn = memo(({
           <div className={`text-2xl font-mono font-semibold mt-2 tracking-tight ${timezone.id.startsWith('Mars/') ? 'text-red-600 dark:text-red-400' : 'text-primary-600 dark:text-primary-400'}`}>
             {localTime && formatTime(localTime, timezone.id)}
           </div>
-          
           {/* Time of day visual indicator */}
           {localTime && (
             <div className="mt-2 flex items-center">
@@ -1200,7 +1210,6 @@ const TimezoneColumn = memo(({
                 const hour = dt.hour;
                 const minutePercentage = dt.minute / 60;
                 const dayProgress = ((hour + minutePercentage) / 24) * 100;
-                
                 return (
                   <>
                     <div className="h-2 flex-grow rounded-full bg-gray-200/50 dark:bg-gray-700/50 overflow-hidden">
@@ -1225,7 +1234,6 @@ const TimezoneColumn = memo(({
               })()}
             </div>
           )}
-          
           {/* Mars mini info - simplified */}
           {timezone.id === 'Mars/Jezero' && (
             <div className="text-xs text-red-600/80 dark:text-red-400/80 mt-1">
@@ -1233,72 +1241,77 @@ const TimezoneColumn = memo(({
             </div>
           )}
         </div>
-        
+        {/* Remove button (excluded from header click) */}
         {!isLocal && timezone.id !== userLocalTimezone && (
           <button 
             onClick={() => handleRemoveTimezone(timezone.id)} 
-            className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400 transition-colors" 
+            className="p-3 rounded-full bg-gray-100 dark:bg-gray-700 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-500 dark:hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-500 dark:focus:ring-red-400 transition-colors z-10"
             aria-label={`Remove timezone ${(timezone.name.split('/').pop()?.replace('_', ' ') || timezone.name).replace(/[()]/g, '')}`}
+            data-remove-timezone
+            tabIndex={0}
           >
             <X className="h-5 w-5" />
           </button>
         )}
       </div>
       
-      <div
-        className="overflow-hidden scrollbar-hide"
-        style={{
-          height: '15rem',
-          scrollbarWidth: 'none',
-          msOverflowStyle: 'none',
-        }}
-        role="listbox"
-        aria-label={`Time selection list for ${timezone.name}`}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchCancel}
-        onWheel={(e) => {
-          e.stopPropagation();
-          const listRef = listRefs.current[timezone.id];
-          if (!listRef) return;
-          let currentOffset = 0;
-          if (listRef.state && 'scrollOffset' in listRef.state) {
-            currentOffset = (listRef.state as any).scrollOffset;
-          }
-          const itemSize = 40;
-          const scrollAmount = e.deltaY > 0 ? itemSize : -itemSize;
-          const newOffset = Math.max(0, currentOffset + scrollAmount);
-          listRef.scrollTo(newOffset);
-        }}
-      >
-         <AutoSizer>
-           {({ height, width }) => (
-             <FixedSizeList
-               key={isSearching && displaySlots.length > 0 ? `filtered-${timezone.id}` : `full-${timezone.id}`}
-               height={height}
-               width={width}
-                itemCount={displaySlots.length}
-               itemSize={itemSize}
-               overscanCount={10}
-               ref={(r) => {
-                 listRef.current = r;
-                 listRefs.current[timezone.id] = r;
-               }}
-               className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md scrollbar-hide"
-               style={{
-                backgroundColor: 'transparent',
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-              }}
-              itemKey={(index) => `${timezone.id}-${itemData.slots[index].getTime()}`}
-              onScroll={handleUserScroll}
-              itemData={itemData}
-            >
-              {Row}
-            </FixedSizeList>
-          )}
-        </AutoSizer>
-      </div>
+      {/* Time increments list (only show when not showing events) */}
+      {!showEvents && (
+        <div
+          className="overflow-hidden scrollbar-hide"
+          style={{
+            height: '15rem',
+            scrollbarWidth: 'none',
+            msOverflowStyle: 'none',
+          }}
+          role="listbox"
+          aria-label={`Time selection list for ${timezone.name}`}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchCancel}
+          onWheel={(e) => {
+            e.stopPropagation();
+            const listRef = listRefs.current[timezone.id];
+            if (!listRef) return;
+            let currentOffset = 0;
+            if (listRef.state && 'scrollOffset' in listRef.state) {
+              currentOffset = (listRef.state as any).scrollOffset;
+            }
+            const itemSize = 40;
+            const scrollAmount = e.deltaY > 0 ? itemSize : -itemSize;
+            const newOffset = Math.max(0, currentOffset + scrollAmount);
+            listRef.scrollTo(newOffset);
+          }}
+        >
+           <AutoSizer>
+             {({ height, width }) => (
+               <FixedSizeList
+                 key={isSearching && displaySlots.length > 0 ? `filtered-${timezone.id}` : `full-${timezone.id}`}
+                 height={height}
+                 width={width}
+                  itemCount={displaySlots.length}
+                 itemSize={itemSize}
+                 overscanCount={10}
+                 ref={(r) => {
+                   listRef.current = r;
+                   listRefs.current[timezone.id] = r;
+                 }}
+                 className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md scrollbar-hide"
+                 style={{
+                  backgroundColor: 'transparent',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                }}
+                itemKey={(index) => `${timezone.id}-${itemData.slots[index].getTime()}`}
+                onScroll={handleUserScroll}
+                itemData={itemData}
+              >
+                {Row}
+              </FixedSizeList>
+            )}
+          </AutoSizer>
+        </div>
+      )}
       {/* --- EVENTS UI --- */}
       <div className="w-full flex flex-col items-center justify-center mt-2">
         {!showEvents && (
