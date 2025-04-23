@@ -1,0 +1,121 @@
+timestamp: 2024-06-09T00:00:00Z
+core:
+  layout.tsx:
+    path: app/layout.tsx
+    description: Main layout component for the application
+    purpose: Root layout for the app, wraps all pages with Providers, Sidebar, and Footer, and sets up global metadata and fonts.
+    props:
+      - children: React.ReactNode
+      - fonts: React.ReactNode (optional)
+    dependencies:
+      - Providers (context)
+      - Sidebar (navigation)
+      - GlassmorphismAnimation (visual effect)
+      - Analytics, SpeedInsights (Vercel analytics)
+      - next/font/google (fonts)
+      - global CSS, metadata, font config
+    relationships:
+      - Wraps all app content and navigation
+      - Integrates analytics and visual effects
+    patterns:
+      - Root layout pattern (Next.js)
+      - Server component with client-side children
+    test_scenarios:
+      - Renders children and footer
+      - Applies global styles and fonts
+      - Handles environment validation
+  globals.css:
+    path: app/globals.css
+    description: Global CSS styles
+  providers.tsx:
+    path: app/providers.tsx
+    description: Application context providers
+    purpose: Wraps the app in all required context providers (theme, error boundary, performance, state hydration).
+    props:
+      - children: React.ReactNode
+    dependencies:
+      - ThemeProvider (next-themes)
+      - ErrorBoundary (error handling)
+      - useTimezoneStore (state hydration)
+      - ClientInitializer (performance)
+      - Toaster (sonner notifications)
+    relationships:
+      - Hydrates state and initializes global error handlers
+      - Provides theme and error boundaries
+    patterns:
+      - Provider composition
+      - Error boundary fallback
+      - Client-side hydration
+    test_scenarios:
+      - Hydrates state and renders children
+      - Handles and displays initialization errors
+  page.tsx:
+    path: app/page.tsx
+    description: Main landing page component
+    purpose: Main entry point for the app, hydrates timezone store, renders the world clock, and provides SEO metadata.
+    props: []
+    dependencies:
+      - useTimezoneStore (state)
+      - IntegrationsProvider (context)
+      - TimeZonePulse (clock UI)
+      - JsonLd (SEO)
+    relationships:
+      - Hydrates state on mount
+      - Renders main clock UI
+      - Provides SEO metadata
+    patterns:
+      - Client-side hydration
+      - SEO with JSON-LD
+    test_scenarios:
+      - Hydrates and renders clock on mount
+      - SEO metadata is present
+  manifest.ts:
+    path: app/manifest.ts
+    description: Web app manifest configuration
+  metadata.ts:
+    path: app/metadata.ts
+    description: Metadata for SEO and app configuration
+  sitemap.ts:
+    path: app/sitemap.ts
+    description: Sitemap generation for SEO
+  robots.ts:
+    path: app/robots.ts
+    description: Robots.txt configuration
+  not-found.tsx:
+    path: app/not-found.tsx
+    description: 404 Not Found page
+  loading.tsx:
+    path: app/loading.tsx
+    description: Loading state component
+  font.ts:
+    path: app/font.ts
+    description: Font configuration
+  HeadingMCP.tsx:
+    path: app/HeadingMCP.tsx
+    description: Heading component for MCP
+  sentry.tsx:
+    path: app/sentry.tsx
+    description: Sentry error tracking integration
+  error.tsx:
+    path: app/error.tsx
+    description: Error boundary component
+  current-events/:
+    description: Current events feature (to be indexed)
+  components/:
+    description: App-level components (to be indexed)
+  api/:
+    description: API routes (to be indexed)
+  contexts/:
+    description: React contexts (to be indexed)
+  mobilev2/:
+    description: Mobile v2 feature (to be indexed)
+  grid-test/:
+    description: Grid test feature (to be indexed)
+  home/:
+    description: Home feature (to be indexed)
+  list-view/:
+    description: List view feature (to be indexed)
+  about/:
+    description: About page (to be indexed)
+  @fonts/:
+    description: Fonts directory (to be indexed) 

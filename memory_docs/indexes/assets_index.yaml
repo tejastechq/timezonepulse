@@ -1,0 +1,51 @@
+timestamp: 2024-06-09T00:00:00Z
+assets:
+  og-image.png:
+    path: public/og-image.png
+    description: Open Graph image for social sharing
+  icon.png:
+    path: public/icon.png
+    description: Main application icon
+  manifest.json:
+    path: public/manifest.json
+    description: Web app manifest
+  apple-icon.png:
+    path: public/apple-icon.png
+    description: Apple touch icon
+  apple-icon-72x72.png:
+    path: public/apple-icon-72x72.png
+    description: Apple touch icon (72x72)
+  apple-icon-114x114.png:
+    path: public/apple-icon-114x114.png
+    description: Apple touch icon (114x114)
+  twitter.PNG:
+    path: public/twitter.PNG
+    description: Twitter card image
+  perseverance.png:
+    path: public/perseverance.png
+    description: Perseverance rover image
+  mars.png:
+    path: public/mars.png
+    description: Mars image
+  timezonepulse.png:
+    path: public/timezonepulse.png
+    description: Timezone pulse image
+  total-cleanup.js:
+    path: public/total-cleanup.js
+    description: Cleanup utility script
+  sw.js:
+    path: public/sw.js
+    description: Service worker script
+  favicon.ico:
+    path: public/favicon.ico
+    description: Favicon
+  screenshots/:
+    description: Screenshots (to be indexed)
+  shortcuts/:
+    description: Shortcuts (to be indexed)
+  icons/:
+    description: Icons (to be indexed)
+  scripts/:
+    description: Public scripts (to be indexed)
+  images/:
+    description: Images (to be indexed) 

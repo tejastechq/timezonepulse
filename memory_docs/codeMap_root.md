@@ -1,114 +1,123 @@
 # CodeMap Root
-timestamp: 2025-04-11T15:30:00Z
+
+timestamp: 2024-06-09T00:00:00Z {level: metadata}
 
 ## ACTIVE_MEMORY
-- Components: [#PROJECT_CONFIG]
-- Decisions: [#DEVOPS_001]
-- Patterns: [@GitBestPractices]
-- Tasks: [TASK_005]
+- Components: []
+- Decisions: []
+- Patterns: []
+- Tasks: []
 
 ## PROJECT_STRUCTURE
-[clock]/
-  .gitignore #[PROJECT_CONFIG] "Git configuration" @index[config] ^critical
-  app/ [CORE]
-    layout.tsx #[APP_CORE] "Root layout" @index[layouts] ^critical
-    page.tsx #[PAGE_HOME] "Home page" @index[pages]
-    about/page.tsx #[PAGE_ABOUT] "About page" @index[pages]
-    current-events/page.tsx #[PAGE_EVENTS] "Current events" @index[pages]
-    grid-test/page.tsx #[PAGE_GRID] "Grid test" @index[pages]
-    home/page.tsx #[PAGE_HOME_ALT] "Alternate home" @index[pages]
-    list-view/page.tsx #[PAGE_LIST] "List view" @index[pages]
-    mobilev2/page.tsx #[PAGE_MOBILE] "Mobile view" @index[pages]
-    api/time/ #[API_TIME] "Time API" @index[api]
-    api/weather/ #[API_WEATHER] "Weather API" @index[api]
-    api/news/ #[API_NEWS] "News API" @index[api]
-    api/cleanup/ #[API_CLEANUP] "Cleanup API" @index[api]
-    api/csp-report/ #[API_CSP] "CSP report API" @index[api]
-    components/ #[APP_COMPONENTS] "App-specific components" @index[components]
-      Sidebar.tsx #[APP_SIDEBAR] "Main sidebar layout wrapper" @index[components] ^critical @tasks[refactor_sidebar]
-    contexts/ #[APP_CONTEXTS] "Context providers" @index[contexts]
+[project_root]/
   components/ [UI]
-    clock/ #[COMP_CLOCK] "Clock components" @index[components]
-    dev/ #[COMP_DEV] "Dev tools" @index[components]
-    error/ #[COMP_ERROR] "Error boundaries" @index[components]
-    events/ #[COMP_EVENTS] "Event components" @index[components]
-    layout/ #[COMP_LAYOUT] "Layout components (no sidebar, see app/components/Sidebar.tsx)" @index[components]
-    mobile/ #[COMP_MOBILE] "Mobile components" @index[components]
-    performance/ #[COMP_PERF] "Performance tools" @index[components]
-    seo/ #[COMP_SEO] "SEO components" @index[components]
-    ui/ #[COMP_UI] "UI primitives" @index[components]
-    views/ #[COMP_VIEWS] "View components" @index[components]
+    BackgroundSelector.tsx
+    MarsTimeExplanation.tsx
+    StatusIndicator.tsx
+    MobileMenu.tsx
+    GlassmorphismAnimation.tsx
+    DevInfo.tsx
+    ThemeToggle.tsx
+    [views/]
+    [layout/]
+    [mobile/]
+    [events/]
+    [clock/]
+    [dev/]
+    [ui/]
+    [performance/]
+    [seo/]
+    [error/]
+  app/ [CORE]
+    layout.tsx
+    globals.css
+    providers.tsx
+    page.tsx
+    manifest.ts
+    metadata.ts
+    sitemap.ts
+    robots.ts
+    not-found.tsx
+    loading.tsx
+    font.ts
+    HeadingMCP.tsx
+    sentry.tsx
+    error.tsx
+    [current-events/]
+    [components/]
+    [api/]
+    [contexts/]
+    [mobilev2/]
+    [grid-test/]
+    [home/]
+    [list-view/]
+    [about/]
+    [@fonts/]
+  store/ [STATE]
+    timezoneStore.ts
   lib/ [UTIL]
-    hooks/ #[HOOKS] "Custom hooks" @index[hooks]
-    utils/ #[UTILS] "Utility functions" @index[utils]
-    timezone-utils.ts #[UTIL_TZ] "Timezone utilities" @index[utils]
-    mars-timezone.ts #[UTIL_MARS] "Mars timezone calculations" @index[utils]
-  store/
-    timezoneStore.ts #[STORE_STATE] "Timezone state store" @index[state]
+    timezone-utils.ts
+    utils.ts
+    [hooks/]
+    [utils/]
+  types/ [TYPES]
+    react-native.d.ts
+    react-simple-maps.d.ts
   public/ [ASSETS]
-    images/, icons/, screenshots/, scripts/, shortcuts/
-  scripts/
-    generate-secrets.js #[SCRIPT_SECRETS] "Secret generation script" @index[scripts]
-  tests/ [TESTS]
-    README.md, e2e tests, unit tests
+    og-image.png
+    icon.png
+    manifest.json
+    apple-icon.png
+    apple-icon-72x72.png
+    apple-icon-114x114.png
+    twitter.PNG
+    perseverance.png
+    mars.png
+    timezonepulse.png
+    total-cleanup.js
+    sw.js
+    favicon.ico
+    [screenshots/]
+    [shortcuts/]
+    [icons/]
+    [scripts/]
+    [images/]
   memory_docs/ [DOCS]
-    (Memory Bank documentation)
-  cline-reports/, SECURITY/, docs/ [DOCS]
-    (Reports, security images, documentation)
+    codeMap_root.md
+    activeContext.md
+    projectbrief.md
+    productContext.md
+    systemPatterns.md
+    techContext.md
+    progress.md
+    decisions.md
+  indexes/ [INDEXES]
+    (to be created)
+  tasks/ [TASKS]
+    (to be created)
 
 ## FLOW_DIAGRAMS
 
-### Main Timezone Flow
+### Background Selection Flow
 ```mermaid
 flowchart TD
-  A[User loads app] --> B[Root layout (layout.tsx)]
-  B --> C{Route}
-  C -->|Home| D[page.tsx]
-  C -->|List| E[list-view/page.tsx]
-  C -->|Grid| F[grid-test/page.tsx]
-  C -->|Mobile| G[mobilev2/page.tsx]
-  D & E & F & G --> H[Clock components]
-  H --> I[Timezone utils]
-  H --> J[Mars timezone utils]
-  H --> K[API fetchers]
-  K --> L[API routes (time, weather, news)]
-  L --> M[External APIs]
+  U[User] -->|Clicks button| BS[BackgroundSelector]
+  BS -->|Updates state| BG[Selected Background]
+  BS -->|Persists| LS[localStorage]
+  BS -->|Loads CSS| CSS[Background CSS]
+  BG -->|Triggers| CSS
+  LS -->|Restores on load| BS
 ```
 
-### Component Interaction Flow
+### Timezone Management Flow
 ```mermaid
 flowchart TD
-  A[RootLayout] --> B[Sidebar]
-  B --> C[ViewComponents]
-  C --> D[ClockComponents]
-  C --> E[EventComponents]
-  C --> F[UIPrimitives]
-  D --> G[TimezoneStore]
-  E --> G
-  F --> D
-  F --> E
+  U[User] -->|Adds/removes timezone| UI[UI Component]
+  UI -->|Dispatches action| TS[timezoneStore]
+  TS -->|Updates state| UI
+  TS -->|Persists| LS[localStorage]
+  UI -->|Displays| TU[timezone-utils]
+  TU -->|Formats/converts| UI
 ```
 
-### API/Data Fetching Flow
-```mermaid
-flowchart TD
-  A[ViewComponents] --> B[API Fetchers]
-  B --> C[API Routes (time, weather, news)]
-  C --> D[External APIs]
-  D --> C
-  C --> B
-  B --> A
-```
-
-### User Navigation Flow
-```mermaid
-flowchart TD
-  A[User] --> B[Sidebar Navigation]
-  B --> C{Select Page}
-  C -->|Home| D[Home View]
-  C -->|List| E[List View]
-  C -->|Grid| F[Grid View]
-  C -->|Mobile| G[Mobile View]
-  D & E & F & G --> H[Main Content]
-  H --> I[Footer]
-```
+<!-- Add flow diagrams here as mermaid blocks --> 

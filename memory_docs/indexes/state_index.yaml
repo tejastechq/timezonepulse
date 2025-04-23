@@ -1,0 +1,39 @@
+timestamp: 2024-06-09T00:00:00Z
+state:
+  timezoneStore.ts:
+    path: store/timezoneStore.ts
+    description: State management for timezones and user preferences
+    purpose: Centralized Zustand store for managing user timezones, preferences, and app versioning with persistence.
+    state:
+      - timezones: Timezone[]
+      - highlightedTime: Date | null
+      - localTimezone: string
+      - appVersion: { version, buildId, timestamp }
+      - selectedDate: Date
+      - hasMarsTimezone: boolean
+      - isTimezoneSelectorOpen: boolean
+    actions:
+      - addTimezone(timezone)
+      - removeTimezone(id)
+      - setHighlightedTime(time)
+      - setSelectedDate(date)
+      - resetToToday()
+      - reorderTimezones(fromIndex, toIndex)
+      - hydrate()
+      - resetStore()
+      - openTimezoneSelector()
+      - closeTimezoneSelector()
+    dependencies:
+      - zustand (state management)
+      - zustand/middleware (persistence)
+      - getLocalTimezone (lib/utils/timezone)
+    relationships:
+      - Used by all UI and logic for timezone state
+      - Persists state in localStorage
+    patterns:
+      - Zustand store with persistence
+      - Derived state and actions
+    test_scenarios:
+      - Add/remove/reorder timezones
+      - State persists across reloads
+      - Hydration and reset actions work 

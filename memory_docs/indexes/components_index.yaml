@@ -1,94 +1,165 @@
-timestamp: 2025-04-10T16:16:47Z
-
+timestamp: 2024-06-09T00:00:00Z
 components:
-  #APP_SIDEBAR: &{
-    name: Sidebar,
-    ^critical,
-    file: app/components/Sidebar.tsx,
-    description: "Main sidebar layout wrapper. Handles layout, header, sidebar, overlay, and children rendering.",
-    parameters: [
-      children: ReactNode,
-      (plus any layout/context props as needed)
-    ],
-    >used_by: [#APP_CORE],
-    pattern: LayoutWrapper,
-    tasks: [refactor_sidebar],
-    status: "Active"
-  }
-
-  #APP_CORE: &{
-    name: RootLayout,
-    ^critical,
-    file: app/layout.tsx,
-    description: "Root layout for the app. Wraps all content with Sidebar and Providers.",
-    parameters: [
-      children: ReactNode
-    ],
-    >uses: [#APP_SIDEBAR],
-    pattern: AppRoot,
-    tasks: [refactor_sidebar],
-    status: "Active"
-  }
-
-  #COMP_CLOCK: &{
-    name: ClockComponents,
-    file: components/clock/,
-    description: "Reusable clock and timezone display components.",
-    >used_by: [#APP_CORE, #COMP_VIEWS],
-    pattern: TimeDisplay,
-    status: "Active"
-  }
-
-  #COMP_EVENTS: &{
-    name: EventComponents,
-    file: components/events/,
-    description: "Components for displaying and managing events.",
-    >used_by: [#COMP_VIEWS],
-    pattern: EventDisplay,
-    status: "Active"
-  }
-
-  #COMP_UI: &{
-    name: UIPrimitives,
-    file: components/ui/,
-    description: "Reusable UI primitives (buttons, cards, tabs, etc).",
-    >used_by: [#APP_CORE, #COMP_VIEWS, #COMP_CLOCK, #COMP_EVENTS],
-    pattern: UIPrimitive,
-    status: "Active"
-  }
-
-  #COMP_VIEWS: &{
-    name: ViewComponents,
-    file: components/views/,
-    description: "High-level view components for different app screens.",
-    >uses: [#COMP_CLOCK, #COMP_EVENTS, #COMP_UI],
-    pattern: ViewContainer,
-    status: "Active"
-  }
-
-  #COMP_STATUS: &{
-    name: StatusIndicator,
-    file: components/StatusIndicator.tsx,
-    description: "Displays app/network/status indicators.",
-    >used_by: [#APP_CORE, #COMP_VIEWS],
-    pattern: StatusDisplay,
-    status: "Active"
-  }
-
-  #COMP_THEME: &{
-    name: ThemeToggle,
-    file: components/ThemeToggle.tsx,
-    description: "Theme (light/dark) toggle component.",
-    >used_by: [#APP_CORE, #COMP_VIEWS],
-    pattern: ThemeControl,
-    status: "Active"
-  }
-
-  #COMP_MOBILE_MENU: &{
-    name: MobileMenu,
-    file: components/MobileMenu.tsx,
-    description: "Mobile navigation menu component.",
-    >used_by: [#APP_CORE, #COMP_VIEWS],
-    pattern: MobileNav,
-    status: "Active"
-  }
+  BackgroundSelector:
+    path: components/BackgroundSelector.tsx
+    description: Background image/theme selector UI component
+    purpose: Allows users to select and switch between multiple animated background styles for the app UI.
+    props: []
+    dependencies:
+      - useState, useEffect, useCallback (React)
+      - localStorage (browser)
+    relationships:
+      - Loads and preloads CSS files for backgrounds
+      - Persists user preference in localStorage
+    patterns:
+      - State management for UI selection
+      - Preloading assets for performance
+      - Graceful fallback and error handling
+    test_scenarios:
+      - User selects a new background: background switches and persists
+      - Invalid background ID: falls back to default
+      - Preloading works for smoother transitions
+  MarsTimeExplanation:
+    path: components/MarsTimeExplanation.tsx
+    description: Mars time explanation UI component
+    purpose: Explains Mars time, sols, and timezones to users when a Mars timezone is added.
+    props:
+      - isOpen: boolean (controls visibility)
+      - onClose: () => void (close handler)
+      - position?: 'left' | 'right' (tooltip position)
+      - targetTimezoneId?: string | null (target card for tooltip)
+    dependencies:
+      - React (useState, useEffect, useRef)
+      - lucide-react (icons)
+      - framer-motion (animation)
+      - react-dom (portal)
+    relationships:
+      - Attaches to timezone cards in the UI
+      - Reads and sets DOM attributes for Mars timezone cards
+    patterns:
+      - Tooltip/speech bubble pattern
+      - Portal rendering for contextual UI
+      - Accessibility (keyboard, ARIA)
+    test_scenarios:
+      - Tooltip appears when Mars timezone is added
+      - Tooltip attaches to correct card or floats to side
+      - Closes on button or keyboard
+  StatusIndicator:
+    path: components/StatusIndicator.tsx
+    description: Status indicator UI component
+    purpose: Displays real-time system status (operational, degraded, maintenance, outage) by polling a Statuspage API.
+    props:
+      - className?: string (optional styling)
+    dependencies:
+      - React (useState, useEffect, useRef)
+      - next/link (navigation)
+      - sonner (toast notifications)
+    relationships:
+      - Fetches status from external Statuspage API
+      - Notifies user of status changes
+    patterns:
+      - Polling with useEffect and setInterval
+      - Toast notifications for status changes
+      - Status color and icon mapping
+    test_scenarios:
+      - Status changes trigger notification
+      - API failure falls back to operational
+      - Link navigates to status page
+  MobileMenu:
+    path: components/MobileMenu.tsx
+    description: Mobile navigation menu UI component
+    purpose: Provides a mobile-friendly navigation drawer with links to main app sections and status indicator.
+    props: []
+    dependencies:
+      - React (useEffect, useRef, useState)
+      - vaul (Drawer UI)
+      - lucide-react (icons)
+      - next/navigation (usePathname)
+      - next/link (navigation)
+      - StatusIndicator (status component)
+    relationships:
+      - Controls navigation drawer state
+      - Integrates with StatusIndicator
+    patterns:
+      - Drawer pattern for mobile navigation
+      - Accessibility (focus management, ARIA)
+    test_scenarios:
+      - Drawer opens/closes with button
+      - Focus is set to first link on open
+      - Navigation updates active state
+  GlassmorphismAnimation:
+    path: components/GlassmorphismAnimation.tsx
+    description: Glassmorphism animation UI component
+    purpose: Adds a shine animation effect to glass-card elements on hover, enhancing visual feedback.
+    props: []
+    dependencies:
+      - React (useEffect, useRef)
+      - DOM APIs (MutationObserver, classList)
+    relationships:
+      - Attaches event listeners to .glass-card elements
+      - Observes DOM for dynamic card addition/removal
+    patterns:
+      - WeakMap for per-element state
+      - MutationObserver for dynamic UI
+      - One-time animation trigger
+    test_scenarios:
+      - Shine animation triggers on hover
+      - Animation does not repeat during cooldown
+      - Handles dynamically added/removed cards
+  DevInfo:
+    path: components/DevInfo.tsx
+    description: Developer info/debug UI component
+    purpose: Displays development/debug information (app version, build, localStorage, etc.) in development mode only.
+    props: []
+    dependencies:
+      - React (useEffect, useState)
+      - useAppVersion (from timezoneStore)
+    relationships:
+      - Reads app version and build info from store
+      - Interacts with localStorage
+    patterns:
+      - Conditional rendering for development mode
+      - Expand/collapse for details
+    test_scenarios:
+      - Only visible in development mode
+      - Expands to show environment and storage info
+      - Clear storage and total cleanup actions work
+  ThemeToggle:
+    path: components/ThemeToggle.tsx
+    description: Theme toggle UI component
+    purpose: Allows users to switch between light and dark mode, persisting preference in localStorage.
+    props: []
+    dependencies:
+      - React (useState, useEffect)
+      - framer-motion (animation)
+      - localStorage (browser)
+    relationships:
+      - Reads and writes theme preference to localStorage
+      - Updates document class for theme
+    patterns:
+      - State management for theme
+      - Animation for icon transitions
+    test_scenarios:
+      - Theme toggles and persists across reloads
+      - Respects system preference on first load
+      - Button is accessible and labeled
+  views/:
+    description: Views subdirectory (to be indexed)
+  layout/:
+    description: Layout subdirectory (to be indexed)
+  mobile/:
+    description: Mobile subdirectory (to be indexed)
+  events/:
+    description: Events subdirectory (to be indexed)
+  clock/:
+    description: Clock subdirectory (to be indexed)
+  dev/:
+    description: Dev subdirectory (to be indexed)
+  ui/:
+    description: UI subdirectory (to be indexed)
+  performance/:
+    description: Performance subdirectory (to be indexed)
+  seo/:
+    description: SEO subdirectory (to be indexed)
+  error/:
+    description: Error subdirectory (to be indexed) 

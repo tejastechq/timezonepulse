@@ -1,0 +1,8 @@
+timestamp: 2024-06-09T00:00:00Z
+types:
+  react-native.d.ts:
+    path: types/react-native.d.ts
+    description: Type definitions for React Native
+  react-simple-maps.d.ts:
+    path: types/react-simple-maps.d.ts
+    description: Type definitions for react-simple-maps library 

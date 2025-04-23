@@ -1,0 +1,56 @@
+timestamp: 2024-06-09T00:00:00Z
+util:
+  timezone-utils.ts:
+    path: lib/timezone-utils.ts
+    description: Utility functions for timezone calculations and formatting
+    purpose: Provides helper functions for formatting, converting, and analyzing timezones (Earth and Mars), business hours, DST, and offsets.
+    functions:
+      - formatTimeForTimezone(time, timezone, format): string
+      - getCurrentTimeInTimezone(timezone): Date
+      - isWithinBusinessHours(time, timezone): boolean
+      - getTimezoneAbbreviation(timezone): string
+      - getTimezoneOffset(timezone): number
+      - convertTime(time, fromTimezone, toTimezone): Date
+      - isBusinessHours(timezone): boolean
+      - getUtcOffset(timezone): string
+      - isDaylightSavingTime(timezone): boolean
+      - getCommonTimezones(): Timezone[]
+      - formatDateForTimezone(date, timezone): string
+    dependencies:
+      - luxon (DateTime)
+      - ./utils/mars-timezone (Mars time conversion)
+      - timezoneStore (types)
+    relationships:
+      - Used by UI and state for all timezone calculations
+      - Integrates with Mars time logic
+    patterns:
+      - Defensive error handling
+      - Earth/Mars abstraction
+    test_scenarios:
+      - Format/convert time for various timezones
+      - Handle Mars time conversion
+      - Detect DST and business hours
+  utils.ts:
+    path: lib/utils.ts
+    description: General utility functions
+    purpose: Provides generic helpers for class name merging, date formatting, debounce, and throttle.
+    functions:
+      - cn(...inputs): string (class name merge)
+      - formatDate(date, format): string
+      - debounce(fn, ms): function
+      - throttle(fn, wait): function
+    dependencies:
+      - clsx (class name utility)
+      - tailwind-merge (class name utility)
+    relationships:
+      - Used throughout UI for class management and timing
+    patterns:
+      - Functional utilities
+      - Debounce/throttle for performance
+    test_scenarios:
+      - Class name merging with conflicting classes
+      - Debounce/throttle functions work as expected
+  hooks/:
+    description: Custom React hooks (to be indexed)
+  utils/:
+    description: Additional utility modules (to be indexed) 

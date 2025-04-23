@@ -1,24 +1,19 @@
 # Project Brief
-timestamp: 2025-04-10T18:24:05Z
 
-## Overview
-TimezonePulse is a Next.js 15 application that provides a rich, interactive dashboard for managing and viewing multiple timezones. It uniquely supports both Earth and Mars time calculations, offering a novel perspective on planetary timekeeping. The app integrates real-time data such as weather and news, displayed alongside timezone information in customizable views.
+timestamp: 2024-06-09T00:00:00Z
 
-## Goals
-- Display current time across multiple Earth timezones.
-- Provide Mars timezone and sol information.
-- Integrate real-time weather and news data.
-- Support multiple UI views: list, grid, mobile-optimized.
-- Enable timezone management and customization.
-- Offer responsive, accessible, and performant user experience.
-- Visualize data with charts and animations.
-- Support localization and theming.
+## Project Scope
+This project is a web application with a modular structure, including UI components, application logic, state management, utility libraries, and type definitions. It appears to be built with Next.js (or similar React-based framework), and includes support for theming, mobile, and performance features.
 
-## Scope
-- Frontend built with Next.js App Router and React components.
-- Server-side API routes for time, weather, news, and system functions.
-- Client-side state management with Zustand and Jotai.
-- Styling with Tailwind CSS and UI libraries (NextUI, Radix UI).
-- Real-time updates and data fetching.
-- Deployment on Vercel.
-- Testing with Vitest, Playwright, and Testing Library.
+## Requirements (inferred)
+- Provide a user interface for time-related or clock-based features
+- Support for mobile and desktop layouts
+- Theming and customization (e.g., background selector, theme toggle)
+- State management for timezones or user preferences
+- Static assets for branding and icons
+- Modular, maintainable codebase
+
+## Next Steps
+- Deepen analysis of each directory and file
+- Document specific features and flows
+- Update as more information is discovered 
