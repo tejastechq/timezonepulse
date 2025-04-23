@@ -165,7 +165,7 @@ components:
     description: Error subdirectory (to be indexed)
   Sidebar:
     path: app/components/Sidebar.tsx
-    description: Sidebar navigation and actions, including multiple menu buttons (World Clock, Time Travel, Saved Times, Add Timezone, Current Events, Settings, Log out). Will be updated to rename 'Time Travel' to 'Select Date' and trigger popup calendar. @tasks[TASK_002]
+    description: Sidebar navigation and actions, including multiple menu buttons (World Clock, Select Date, Saved Times, Add Timezone, Current Events, Settings, Log out). Integrates with a glassmorphism calendar popup for date selection. @tasks[TASK_002] @pattern[@Glassmorphism]
     purpose: Provides main navigation and action buttons for the app, including date selection and timezone management.
     props: []
     dependencies:
@@ -174,18 +174,19 @@ components:
       - @heroicons/react (icons)
       - useSwipeable (gesture support)
     relationships:
-      - Triggers date picker popup for date selection
+      - Triggers glassmorphism date picker popup for date selection
       - Collapses sidebar on date selection
     patterns:
       - Sidebar navigation
       - Responsive/mobile gestures
+      - Glassmorphism integration
     test_scenarios:
       - Sidebar opens/closes on toggle
       - Date picker popup appears on 'Select Date' button
       - Sidebar collapses when date picker opens
   DatePicker:
     path: components/ui/date-picker.tsx
-    description: Popup calendar date picker component. Used for selecting a date without navigation. @tasks[TASK_002]
+    description: Popup calendar date picker component, now styled with glassmorphism and visually matched to the sidebar. @tasks[TASK_002] @pattern[@Glassmorphism]
     purpose: Allows users to select a date via a modal popup calendar, updating the main view without page navigation.
     props:
       - selectedDate: Date
@@ -202,7 +203,30 @@ components:
     patterns:
       - Modal dialog
       - Calendar date selection
+      - Glassmorphism card
     test_scenarios:
       - Popup opens on button click
       - Date selection updates state and closes popup
-      - Min/max date limits respected 
+      - Min/max date limits respected
+  Calendar:
+    path: components/ui/calendar.tsx
+    description: Calendar element styled with glassmorphism, deep blue gradient, and sidebar-matching theme. Used in the date picker modal. @tasks[TASK_002] @pattern[@Glassmorphism]
+    purpose: Provides a visually consistent, modern calendar for date selection.
+    props:
+      - selectedDate: Date
+      - onDateSelect: (date: Date) => void
+      - onClose: () => void
+      - minDate?: Date
+      - maxDate?: Date
+    dependencies:
+      - React (useState, useMemo)
+      - luxon (DateTime)
+    relationships:
+      - Used by DatePicker modal
+    patterns:
+      - Glassmorphism card
+      - Sidebar-matching theme
+    test_scenarios:
+      - Calendar renders with glassy, modern look
+      - Date selection triggers onDateSelect
+      - Navigation and action buttons match sidebar style 

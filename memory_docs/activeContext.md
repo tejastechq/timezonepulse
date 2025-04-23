@@ -9,4 +9,7 @@ timestamp: 2024-06-09T00:00:00Z
 ## Priorities
 1. Establish core documentation
 2. Analyze and document all major files and directories
-3. Prepare for next phase of instructions 
+3. Prepare for next phase of instructions
+
+## Recently Completed
+- TASK_002: Sidebar-matching, glassmorphism calendar popup and UI/UX improvements 

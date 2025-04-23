@@ -5,7 +5,7 @@ timestamp: 2024-06-09T00:00:00Z {level: metadata}
 ## ACTIVE_MEMORY
 - Components: [#UI_SIDEBAR, #UI_DATE_PICKER]
 - Decisions: []
-- Patterns: []
+- Patterns: [@Glassmorphism]
 - Tasks: [TASK_002]
 
 ## PROJECT_STRUCTURE
@@ -19,7 +19,8 @@ timestamp: 2024-06-09T00:00:00Z {level: metadata}
     DevInfo.tsx
     ThemeToggle.tsx
     Sidebar.tsx #[UI_SIDEBAR] "Sidebar navigation and actions" @index[components] ^critical @tasks[TASK_002]
-    ui/date-picker.tsx #[UI_DATE_PICKER] "Popup calendar date picker" @index[components] @tasks[TASK_002]
+    ui/date-picker.tsx #[UI_DATE_PICKER] "Popup calendar date picker (glassmorphism, sidebar-matching)" @index[components] @tasks[TASK_002] @pattern[@Glassmorphism]
+    ui/calendar.tsx #[UI_DATE_PICKER] "Calendar element (glassmorphism, sidebar-matching)" @index[components] @tasks[TASK_002] @pattern[@Glassmorphism]
     [views/]
     [layout/]
     [mobile/]
