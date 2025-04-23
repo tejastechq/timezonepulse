@@ -64,26 +64,26 @@ export function Calendar({
   };
 
   return (
-    <div className="p-3 bg-background border rounded-lg shadow-lg">
+    <div className="glass-card rounded-xl px-6 py-5 shadow-2xl border border-white/20 bg-background/80 backdrop-blur text-foreground">
       {/* Calendar header with month navigation */}
       <div className="flex items-center justify-between mb-4">
         <button
           type="button"
           onClick={goToPreviousMonth}
-          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="p-2 rounded-full hover:bg-primary/10 transition-colors"
           aria-label="Previous month"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
         
-        <h2 className="font-medium">
+        <h2 className="font-semibold text-lg text-foreground">
           {currentMonth.toFormat('MMMM yyyy')}
         </h2>
         
         <button
           type="button"
           onClick={goToNextMonth}
-          className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          className="p-2 rounded-full hover:bg-primary/10 transition-colors"
           aria-label="Next month"
         >
           <ChevronRight className="h-4 w-4" />
@@ -91,7 +91,7 @@ export function Calendar({
       </div>
 
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 mb-2 text-center text-xs font-medium text-muted-foreground">
+      <div className="grid grid-cols-7 mb-2 text-center text-xs font-medium text-foreground/70">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
           <div key={day} className="p-2">
             {day}
@@ -113,14 +113,14 @@ export function Calendar({
               type="button"
               onClick={() => isSelectable && handleDateClick(day)}
               disabled={!isSelectable}
-              className={`
-                h-9 w-9 rounded-full flex items-center justify-center text-sm
-                ${isCurrentMonth ? 'text-foreground' : 'text-muted-foreground opacity-50'}
-                ${isToday ? 'border border-primary/50' : ''}
-                ${isSelected ? 'bg-primary text-primary-foreground' : ''}
-                ${isSelectable && !isSelected ? 'hover:bg-accent' : ''}
-                ${!isSelectable ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}
-              `}
+              className={[
+                'h-9 w-9 rounded-full flex items-center justify-center text-sm font-medium transition-colors',
+                isCurrentMonth ? 'text-foreground' : 'text-foreground/40',
+                isToday ? 'border border-primary/60' : '',
+                isSelected ? 'bg-primary text-primary-foreground shadow' : '',
+                isSelectable && !isSelected ? 'hover:bg-primary/20' : '',
+                !isSelectable ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer',
+              ].join(' ')}
             >
               {day.day}
             </button>
@@ -129,7 +129,7 @@ export function Calendar({
       </div>
 
       {/* Action buttons */}
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-6 flex items-center justify-between">
         <button
           type="button"
           onClick={() => {
@@ -139,7 +139,7 @@ export function Calendar({
               onClose();
             }
           }}
-          className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="px-4 py-2 text-sm font-medium bg-primary/10 text-primary rounded-md hover:bg-primary/20 transition-colors"
         >
           Today
         </button>
@@ -147,7 +147,7 @@ export function Calendar({
         <button
           type="button"
           onClick={onClose}
-          className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="px-4 py-2 text-sm font-medium bg-background/70 text-foreground rounded-md hover:bg-foreground/10 transition-colors border border-white/10"
         >
           Cancel
         </button>

@@ -128,17 +128,6 @@ export default function Sidebar({ children }: SidebarProps) {
                     <p className="text-sm text-gray-400">Manage your time</p>
                   </div>
                 </div>
-                
-                <div className="flex space-x-5 mb-6 text-sm">
-                  <div>
-                    <span className="font-bold text-white">5</span>
-                    <span className="text-gray-400 ml-1">Saved zones</span>
-                  </div>
-                  <div>
-                    <span className="font-bold text-white">3</span>
-                    <span className="text-gray-400 ml-1">Time plans</span>
-                  </div>
-                </div>
               </div>
               
               {/* Menu items */}

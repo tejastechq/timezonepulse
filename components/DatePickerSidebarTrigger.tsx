@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { Calendar } from './ui/calendar';
 import { createPortal } from 'react-dom';
+import { useTimezoneStore } from '@/store/timezoneStore';
 
 interface DatePickerSidebarTriggerProps {
   onSidebarCollapse: () => void;
@@ -9,7 +10,8 @@ interface DatePickerSidebarTriggerProps {
 
 export function DatePickerSidebarTrigger({ onSidebarCollapse }: DatePickerSidebarTriggerProps) {
   const [showPicker, setShowPicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const selectedDate = useTimezoneStore((state) => state.selectedDate);
+  const setSelectedDate = useTimezoneStore((state) => state.setSelectedDate);
 
   const handleOpen = () => {
     onSidebarCollapse();
@@ -17,9 +19,8 @@ export function DatePickerSidebarTrigger({ onSidebarCollapse }: DatePickerSideba
   };
 
   const handleDateChange = (date: Date) => {
-    setSelectedDate(date);
+    setSelectedDate(date); // Update global state
     setShowPicker(false);
-    // Optionally: trigger any global state update here
   };
 
   // Render modal at the app root using a portal
