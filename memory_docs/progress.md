@@ -2,12 +2,12 @@
 
 timestamp: 2024-06-09T00:00:00Z
 
-## Status
-- Memory Bank core documentation structure created
-- Initial analysis of project directories completed
-- Ready to document individual components and features
+## Completed
+- TASK_002: Sidebar 'Select Date' button and popup calendar UI change implemented and documented.
 
-## Pending Items
-- Deep dive into each directory and file for detailed documentation
-- Populate indexes and task management files
-- Update documentation as new features or changes are made 
+## In Progress
+- TASK_001: Expand and maintain Memory Bank documentation and flows
+
+## Pending
+- Review and validate UI/UX for sidebar date selection
+- Next phase of instructions 

@@ -162,4 +162,47 @@ components:
   seo/:
     description: SEO subdirectory (to be indexed)
   error/:
-    description: Error subdirectory (to be indexed) 
+    description: Error subdirectory (to be indexed)
+  Sidebar:
+    path: app/components/Sidebar.tsx
+    description: Sidebar navigation and actions, including multiple menu buttons (World Clock, Time Travel, Saved Times, Add Timezone, Current Events, Settings, Log out). Will be updated to rename 'Time Travel' to 'Select Date' and trigger popup calendar. @tasks[TASK_002]
+    purpose: Provides main navigation and action buttons for the app, including date selection and timezone management.
+    props: []
+    dependencies:
+      - React (useState, useEffect)
+      - next/navigation (usePathname)
+      - @heroicons/react (icons)
+      - useSwipeable (gesture support)
+    relationships:
+      - Triggers date picker popup for date selection
+      - Collapses sidebar on date selection
+    patterns:
+      - Sidebar navigation
+      - Responsive/mobile gestures
+    test_scenarios:
+      - Sidebar opens/closes on toggle
+      - Date picker popup appears on 'Select Date' button
+      - Sidebar collapses when date picker opens
+  DatePicker:
+    path: components/ui/date-picker.tsx
+    description: Popup calendar date picker component. Used for selecting a date without navigation. @tasks[TASK_002]
+    purpose: Allows users to select a date via a modal popup calendar, updating the main view without page navigation.
+    props:
+      - selectedDate: Date
+      - onDateChange: (date: Date) => void
+      - minDate?: Date
+      - maxDate?: Date
+    dependencies:
+      - React (useState)
+      - @radix-ui/react-dialog (modal)
+      - Calendar (custom calendar component)
+    relationships:
+      - Triggered from sidebar 'Select Date' button
+      - Updates main view on date change
+    patterns:
+      - Modal dialog
+      - Calendar date selection
+    test_scenarios:
+      - Popup opens on button click
+      - Date selection updates state and closes popup
+      - Min/max date limits respected 

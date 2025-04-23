@@ -7,6 +7,7 @@ import { XMarkIcon, ClockIcon, GlobeAltIcon, CalendarDaysIcon, StarIcon,
   NewspaperIcon, ChartBarIcon, Cog6ToothIcon, ArrowRightOnRectangleIcon, 
   PlusCircleIcon, Bars3Icon } from '@heroicons/react/24/outline';
 import { UserCircleIcon } from '@heroicons/react/24/solid';
+import { DatePickerSidebarTrigger } from '@/components/DatePickerSidebarTrigger';
 
 interface SidebarProps {
   children: React.ReactNode;
@@ -155,15 +156,8 @@ export default function Sidebar({ children }: SidebarProps) {
                     </a>
                   </li>
                   <li>
-                    <a
-                      href="/time-travel"
-                      className={`flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800 ${
-                        pathname.startsWith('/time-travel') ? 'bg-primary-700 text-white font-semibold' : ''
-                      }`}
-                    >
-                      <CalendarDaysIcon className="w-6 h-6 text-gray-200" />
-                      <span className="text-white">Time Travel</span>
-                    </a>
+                    {/* TASK_002: Replace 'Time Travel' with 'Select Date' and show DatePicker popup */}
+                    <DatePickerSidebarTrigger onSidebarCollapse={() => setSidebarOpen(false)} />
                   </li>
                   <li>
                     <a
@@ -200,7 +194,7 @@ export default function Sidebar({ children }: SidebarProps) {
                   <div className="my-2 border-t border-gray-800"></div>
                   
                   {/* Global Info Section */}
-<li>
+                  <li>
                     <a
                       href="/current-events"
                       className={`flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800 ${
