@@ -5,22 +5,22 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { DateTime } from 'luxon';
 
 export type CalendarProps = {
-  selectedDate: Date;
-  onDateSelect: (date: Date) => void;
+  selectedDate: Date | null;
+  onDateSelect: (date: Date | null) => void;
   onClose: () => void;
   minDate?: Date;
   maxDate?: Date;
 };
 
 export function Calendar({
-  selectedDate = new Date(),
+  selectedDate = null,
   onDateSelect,
   onClose,
   minDate,
   maxDate,
 }: CalendarProps) {
   const [currentMonth, setCurrentMonth] = React.useState(() => {
-    return DateTime.fromJSDate(selectedDate).startOf('month');
+    return DateTime.fromJSDate(selectedDate ?? new Date()).startOf('month');
   });
 
   // Create calendar grid for the current month
@@ -56,10 +56,16 @@ export function Calendar({
     onClose();
   };
 
+  // Handle clearing the date
+  const handleClearClick = () => {
+    onDateSelect(null);
+    onClose();
+  };
+
   // Check if a date is selectable based on min/max constraints
   const isDateSelectable = (date: DateTime) => {
-    if (minDate && date < DateTime.fromJSDate(minDate)) return false;
-    if (maxDate && date > DateTime.fromJSDate(maxDate)) return false;
+    if (minDate && date < DateTime.fromJSDate(minDate).startOf('day')) return false;
+    if (maxDate && date > DateTime.fromJSDate(maxDate).endOf('day')) return false;
     return true;
   };
 
@@ -105,7 +111,7 @@ export function Calendar({
         {calendarDays.map((day) => {
           const isCurrentMonth = day.month === currentMonth.month;
           const isToday = day.hasSame(DateTime.local(), 'day');
-          const isSelected = day.hasSame(DateTime.fromJSDate(selectedDate), 'day');
+          const isSelected = selectedDate ? day.hasSame(DateTime.fromJSDate(selectedDate), 'day') : false;
           const isSelectable = isDateSelectable(day);
           
           return (
@@ -131,19 +137,28 @@ export function Calendar({
 
       {/* Action buttons */}
       <div className="mt-6 flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => {
-            const today = DateTime.local().startOf('day');
-            if (isDateSelectable(today)) {
-              onDateSelect(today.toJSDate());
-              onClose();
-            }
-          }}
-          className="px-4 py-2 text-sm font-medium bg-slate-800/80 text-white rounded-md hover:bg-blue-800/40 transition-colors"
-        >
-          Today
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              const today = DateTime.local().startOf('day');
+              if (isDateSelectable(today)) {
+                onDateSelect(today.toJSDate());
+                onClose();
+              }
+            }}
+            className="px-4 py-2 text-sm font-medium bg-slate-800/80 text-white rounded-md hover:bg-blue-800/40 transition-colors"
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            onClick={handleClearClick}
+            className="px-4 py-2 text-sm font-medium bg-slate-800/80 text-white rounded-md hover:bg-red-800/40 transition-colors"
+          >
+            Clear
+          </button>
+        </div>
         
         <button
           type="button"

@@ -16,6 +16,8 @@ import { MobileMenu } from '@/components/MobileMenu'; // Import MobileMenu for t
 import { ArrowLeftCircle, Plus, Calendar, X } from 'lucide-react'; // Removed CalendarDays, Menu icon
 // Removed unused imports
 // import AnalogClock from './AnalogClock'; // Removed missing AnalogClock import
+import { createPortal } from 'react-dom';
+import { Calendar as CalendarUI } from '../ui/calendar';
 
 
 /**
@@ -118,6 +120,9 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
 
   // New state for mobile DatePicker modal
   const [showDatePickerModal, setShowDatePickerModal] = useState(false);
+
+  // New state for calendar modal
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
 
   // Hydration safe initialization
   useEffect(() => {
@@ -252,11 +257,60 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
 
   return (
     <div className="clock-container w-full max-w-screen-xl mx-auto px-4 py-6">
-      {/* Simplified Header Rendering - Always show mobile-style header controls */}
-      {/* Since MobileV2ListView is forced, use the controls suitable for it */}
-      {/* Removed Desktop Header Controls block */}
-      {/* End of Simplified Header Rendering */}
+      {/* --- Mobile/Simplified Header Controls --- */}
+      <div className="flex justify-between items-center mb-4 px-2 py-1 bg-card rounded-lg shadow-sm border border-border">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={openTimezoneSelector} 
+            className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground"
+            aria-label="Add timezone"
+            title="Add Timezone"
+          >
+            <Plus size={20} />
+          </button>
+        </div>
 
+        <div className="flex items-center gap-2">
+          {isViewingFutureDate && (
+            <button
+              type="button"
+              onClick={resetToToday} 
+              className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground"
+              aria-label="Return to today"
+              title="Return to Today"
+            >
+              <ArrowLeftCircle size={20} />
+            </button>
+          )}
+          <button 
+            onClick={() => setShowCalendarModal(true)}
+            className="p-2 rounded-md hover:bg-muted transition-colors text-muted-foreground"
+            aria-label="Select date"
+            title="Select Date"
+          >
+            <Calendar size={20} />
+          </button>
+        </div>
+      </div>
+      {/* --- End Header Controls --- */}
+      
+      {/* Calendar Modal (portal, matches sidebar) */}
+      {showCalendarModal && typeof window !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setShowCalendarModal(false)} />
+          <div className="relative z-10">
+            <CalendarUI
+              selectedDate={selectedDate}
+              onDateSelect={(date) => {
+                setSelectedDate(date);
+                setShowCalendarModal(false);
+              }}
+              onClose={() => setShowCalendarModal(false)}
+            />
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* Simplified View Rendering - Always render MobileV2ListView */}
       <div className="flex justify-center w-full">
@@ -264,105 +318,38 @@ export default function TimeZonePulse({ skipHeading = false, disableMobileDetect
           {/* --- Always Render MobileV2 Forced View --- */}
           <AnimatePresence mode="wait">
             <motion.div
-              key="mobilev2-list" // Keep key for animation consistency
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="time-columns-container w-full"
-              >
-                <MobileV2ListView
-                  selectedTimezones={timezones}
-                  userLocalTimezone={localTimezone}
-                  timeSlots={timeSlots}
-                  localTime={currentTime}
-                  highlightedTime={highlightedTime}
-                  handleTimeSelection={handleTimeSelection} // Keep this prop
-                  roundToNearestIncrement={roundToNearestIncrement} // Keep this prop
-                  removeTimezone={removeTimezone} // Keep this prop
-                  currentDate={currentDate} // Keep this prop
-                />
-              </motion.div>
-            </AnimatePresence>
-          {/* Removed isConsideredMobile block (DraggableTimezoneCard) */}
+              key="mobilev2-list"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="time-columns-container w-full"
+            >
+              <MobileV2ListView
+                selectedTimezones={timezones}
+                userLocalTimezone={localTimezone}
+                timeSlots={timeSlots}
+                localTime={currentTime}
+                highlightedTime={highlightedTime}
+                handleTimeSelection={handleTimeSelection}
+                roundToNearestIncrement={roundToNearestIncrement}
+                removeTimezone={removeTimezone}
+                currentDate={currentDate}
+              />
+            </motion.div>
+          </AnimatePresence>
         </Suspense>
       </div>
 
-      {/* Mobile DatePicker Modal - Keep this as it's triggered by the simplified header */}
+      {/* Timezone Selection Modal (using global state) */}
       <AnimatePresence>
-        {isConsideredMobile && showDatePickerModal && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto"
-            style={{ 
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-card rounded-lg shadow-lg p-4 w-full max-w-sm border border-border m-auto"
-              style={{ maxHeight: '90vh' }}
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Select Date</h3>
-                <button 
-                  onClick={() => setShowDatePickerModal(false)}
-                  className="p-1 rounded-full hover:bg-muted transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="mb-4">
-                <DatePicker
-                  selectedDate={selectedDate}
-                  onDateChange={(date) => {
-                    setSelectedDate(date);
-                    setShowDatePickerModal(false);
-                  }}
-                  minDate={new Date()} // Prevent selecting dates in the past
-                />
-              </div>
-              
-              {isViewingFutureDate && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    resetToToday();
-                    setShowDatePickerModal(false);
-                  }}
-                  className="w-full flex items-center justify-center gap-1 px-3 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90"
-                  aria-label="Return to today"
-                >
-                  <ArrowLeftCircle className="h-4 w-4" />
-                  <span>Today</span>
-                </button>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-       {/* Timezone Selection Modal (using global state) */}
-       <AnimatePresence>
-         {isTimezoneSelectorOpen && ( // Use global state
-           <TimezoneSelector
-             key="timezone-selector"
-             isOpen={isTimezoneSelectorOpen} // Pass global state
-             onClose={closeTimezoneSelector} // Use global action
-             onSelect={handleAddTimezone}
-             excludeTimezones={[localTimezone, ...timezones.map(tz => tz.id)]}
+        {isTimezoneSelectorOpen && (
+          <TimezoneSelector
+            key="timezone-selector"
+            isOpen={isTimezoneSelectorOpen}
+            onClose={closeTimezoneSelector}
+            onSelect={handleAddTimezone}
+            excludeTimezones={[localTimezone, ...timezones.map(tz => tz.id)]}
             data-timezone-selector
           />
         )}

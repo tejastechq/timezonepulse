@@ -27,7 +27,7 @@ const DateNotification: React.FC<DateNotificationProps> = ({
     return null;
   }
 
-  const notificationClasses = `fixed bottom-4 right-4 z-[90] w-72 hidden md:block`;
+  const notificationClasses = `fixed top-[4.5rem] right-4 z-[90] w-72 hidden md:block`;
 
   const notificationContent = (
     <motion.div
@@ -40,7 +40,7 @@ const DateNotification: React.FC<DateNotificationProps> = ({
         isolation: 'isolate', 
         backgroundColor: resolvedTheme === 'dark' ? 'rgba(15, 15, 25, 0.2)' : 'rgba(255, 255, 255, 0.15)',
         position: 'fixed',
-        bottom: '1rem',
+        top: '4.5rem',
         right: '1rem',
         width: '18rem'
       }}
