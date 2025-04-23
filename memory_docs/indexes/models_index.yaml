@@ -1,0 +1,18 @@
+#MODEL_WEATHER: &{
+  name: WeatherModel,
+  fields: [temperature, condition, wind, humidity, icon],
+  source: Open-Meteo,
+  @tasks: [TASK_003]
+}
+#MODEL_NEWS: &{
+  name: NewsModel,
+  fields: [headline, source, link, time, category],
+  source: NewsData.io,
+  @tasks: [TASK_003]
+}
+#MODEL_SPORTS: &{
+  name: SportsModel,
+  fields: [event, league, team, score, time],
+  source: TheSportsDB,
+  @tasks: [TASK_003]
+} 

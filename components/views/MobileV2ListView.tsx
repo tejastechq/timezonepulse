@@ -913,11 +913,30 @@ const MobileV2ListView = forwardRef<MobileV2ListViewHandle, MobileV2ListViewProp
 // Rename display name
 MobileV2ListView.displayName = 'MobileV2ListView';
 
+const NEWS_API_KEY = process.env.NEXT_PUBLIC_NEWS_API_KEY || '';
+const SPORTS_API_KEY = '3'; // Use '3' for free tier/dev
+const EPL_LEAGUE_ID = '4328'; // English Premier League as default
+
+const NEWS_CATEGORIES = [
+  { value: 'top', label: 'Top' },
+  { value: 'sports', label: 'Sports' },
+  { value: 'technology', label: 'Technology' },
+  { value: 'business', label: 'Business' },
+  { value: 'health', label: 'Health' },
+  { value: 'science', label: 'Science' },
+  { value: 'entertainment', label: 'Entertainment' },
+];
+const SPORTS_LEAGUES = [
+  { value: '4328', label: 'EPL' },
+  { value: '4387', label: 'NBA' },
+  { value: '4424', label: 'MLB' },
+  { value: '4391', label: 'NFL' },
+];
+
 const TimezoneColumn = memo(({
   timezone,
   isLocal,
   isSearching, filteredTimeSlots, timeSlots, isHighlighted, checkNightHours, isDateBoundary, isDSTTransition, isCurrentTime, isWeekend, formatTime, getHighlightAnimationClass, handleTimeSelection, listRefs, handleUserScroll, resolvedTheme, getTimezoneOffset, handleRemoveTimezone, setEditingTimezoneId, setSelectorOpen, userLocalTimezone, localTime, getHighlightClass,
-  // Add touch handlers to props
   handleTouchStart, handleTouchEnd, handleTouchCancel
 }: {
   timezone: Timezone;
@@ -944,7 +963,6 @@ const TimezoneColumn = memo(({
   userLocalTimezone: string;
   localTime: Date | null;
   getHighlightClass: (isWeekend: boolean) => string;
-  // Define types for touch handlers
   handleTouchStart: () => void;
   handleTouchEnd: () => void;
   handleTouchCancel: () => void;
@@ -1001,7 +1019,103 @@ const TimezoneColumn = memo(({
   const listHeight = displaySlots.length * itemSize; // Calculate height based on filtered items
   const listRef = useRef<FixedSizeList | null>(null); // Create a ref for this specific list
 
-  // Removed the useEffect causing the error
+  // --- EVENTS UI STATE ---
+  const [showEvents, setShowEvents] = useState(false);
+  const [activeTab, setActiveTab] = useState<'weather' | 'news' | 'sports'>('weather');
+  const [newsCategory, setNewsCategory] = useState('top');
+  const [sportsLeague, setSportsLeague] = useState(EPL_LEAGUE_ID);
+  // Weather state
+  const [weather, setWeather] = useState<any>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState<string | null>(null);
+  // News state
+  const [news, setNews] = useState<any[]>([]);
+  const [newsLoading, setNewsLoading] = useState(false);
+  const [newsError, setNewsError] = useState<string | null>(null);
+  // Sports state
+  const [sports, setSports] = useState<any[]>([]);
+  const [sportsLoading, setSportsLoading] = useState(false);
+  const [sportsError, setSportsError] = useState<string | null>(null);
+
+  // Reset loading/error/data state on tab/filter change
+  useEffect(() => {
+    if (activeTab === 'weather') {
+      setWeatherError(null);
+    } else if (activeTab === 'news') {
+      setNewsError(null);
+    } else if (activeTab === 'sports') {
+      setSportsError(null);
+    }
+  }, [activeTab]);
+
+  // Fetch weather data
+  useEffect(() => {
+    if (showEvents && activeTab === 'weather' && timezone.lat && timezone.lon) {
+      setWeatherLoading(true);
+      setWeatherError(null);
+      fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${timezone.lat}&longitude=${timezone.lon}&current_weather=true`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.current_weather) {
+            setWeather({
+              temperature: data.current_weather.temperature,
+              wind: data.current_weather.windspeed,
+              condition: data.current_weather.weathercode,
+              icon: null,
+              humidity: data.current_weather.humidity
+            });
+          } else {
+            setWeatherError('No weather data available.');
+          }
+        })
+        .catch(() => setWeatherError('Failed to fetch weather data.'))
+        .finally(() => setWeatherLoading(false));
+    }
+  }, [showEvents, activeTab, timezone.lat, timezone.lon]);
+
+  // Fetch news data
+  useEffect(() => {
+    if (showEvents && activeTab === 'news' && timezone.country) {
+      setNewsLoading(true);
+      setNewsError(null);
+      fetch(
+        `https://newsdata.io/api/1/news?apikey=${NEWS_API_KEY}&country=${timezone.country?.toLowerCase()}&language=en&category=${newsCategory}`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.results && Array.isArray(data.results)) {
+            setNews(data.results);
+          } else {
+            setNewsError('No news data available.');
+          }
+        })
+        .catch(() => setNewsError('Failed to fetch news data.'))
+        .finally(() => setNewsLoading(false));
+    }
+  }, [showEvents, activeTab, timezone.country, newsCategory]);
+
+  // Fetch sports data
+  useEffect(() => {
+    if (showEvents && activeTab === 'sports') {
+      setSportsLoading(true);
+      setSportsError(null);
+      fetch(
+        `https://www.thesportsdb.com/api/v1/json/${SPORTS_API_KEY}/eventspastleague.php?id=${sportsLeague}`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.events && Array.isArray(data.events)) {
+            setSports(data.events.slice(0, 10));
+          } else {
+            setSportsError('No sports data available.');
+          }
+        })
+        .catch(() => setSportsError('Failed to fetch sports data.'))
+        .finally(() => setSportsLoading(false));
+    }
+  }, [showEvents, activeTab, sportsLeague]);
 
   return (
     <motion.div
@@ -1134,63 +1248,47 @@ const TimezoneColumn = memo(({
       <div
         className="overflow-hidden scrollbar-hide"
         style={{
-          height: '15rem', // Apply fixed height matching original example
-          scrollbarWidth: 'none', /* Firefox */
-          msOverflowStyle: 'none', /* IE/Edge */
+          height: '15rem',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
         }}
-        role="listbox" 
+        role="listbox"
         aria-label={`Time selection list for ${timezone.name}`}
-        // Attach touch handlers here
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
         onTouchCancel={handleTouchCancel}
         onWheel={(e) => {
-          // Handle wheel events for the timezone's time list when cursor is over it
-          e.stopPropagation(); // Stop wheel event from propagating to parent elements
-          
-          // Get the list reference for this timezone
+          e.stopPropagation();
           const listRef = listRefs.current[timezone.id];
           if (!listRef) return;
-          
-          // Calculate scroll direction and amount
-          const delta = e.deltaY;
-          
-          // Safely access scrollOffset or use direct scrollTo with a delta
           let currentOffset = 0;
-          
-          // Check if state and scrollOffset exist on listRef
           if (listRef.state && 'scrollOffset' in listRef.state) {
             currentOffset = (listRef.state as any).scrollOffset;
           }
-          
-          const itemSize = 40; // Reduced from 48 for a more compact look
-          
-          // Smooth scroll calculation
-          const scrollAmount = delta > 0 ? itemSize : -itemSize;
+          const itemSize = 40;
+          const scrollAmount = e.deltaY > 0 ? itemSize : -itemSize;
           const newOffset = Math.max(0, currentOffset + scrollAmount);
-          
-          // Scroll to the new position
           listRef.scrollTo(newOffset);
         }}
       >
          <AutoSizer>
            {({ height, width }) => (
              <FixedSizeList
-               key={isSearching && displaySlots.length > 0 ? `filtered-${timezone.id}` : `full-${timezone.id}`} // Add dynamic key
+               key={isSearching && displaySlots.length > 0 ? `filtered-${timezone.id}` : `full-${timezone.id}`}
                height={height}
                width={width}
                 itemCount={displaySlots.length}
-               itemSize={itemSize} // Use defined itemSize
+               itemSize={itemSize}
                overscanCount={10}
                ref={(r) => {
-                 listRef.current = r; // Assign to local ref
-                 listRefs.current[timezone.id] = r; // Assign to parent's collection ref
+                 listRef.current = r;
+                 listRefs.current[timezone.id] = r;
                }}
                className="focus:outline-none focus:ring-2 focus:ring-primary-500 rounded-md scrollbar-hide"
                style={{
                 backgroundColor: 'transparent',
-                scrollbarWidth: 'none', /* Firefox */
-                msOverflowStyle: 'none', /* IE/Edge */
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
               }}
               itemKey={(index) => `${timezone.id}-${itemData.slots[index].getTime()}`}
               onScroll={handleUserScroll}
@@ -1200,6 +1298,173 @@ const TimezoneColumn = memo(({
             </FixedSizeList>
           )}
         </AutoSizer>
+      </div>
+      {/* --- EVENTS UI --- */}
+      <div className="w-full flex flex-col items-center justify-center mt-2">
+        {!showEvents && (
+          <button
+            onClick={() => setShowEvents(true)}
+            className="mt-2 w-full py-2 rounded-lg bg-primary-500 text-white font-semibold shadow hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 transition"
+            aria-label="Show events for this timezone"
+          >
+            Show Events
+          </button>
+        )}
+        {showEvents && (
+          <motion.div layout initial={false} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} style={{ overflow: 'hidden', width: '100%' }}>
+            <button
+              onClick={() => setShowEvents(false)}
+              className="mb-4 w-full py-2 rounded-lg bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-100 font-semibold shadow hover:bg-gray-400 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 transition"
+              aria-label="Hide events for this timezone"
+            >
+              Hide Events
+            </button>
+            {/* Tab Bar */}
+            <div role="tablist" aria-label="Current Events Tabs" className="flex w-full justify-center gap-2 mb-2">
+              <button
+                role="tab"
+                aria-selected={activeTab === 'weather'}
+                tabIndex={activeTab === 'weather' ? 0 : -1}
+                className={`px-4 py-2 rounded-full font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 ${activeTab === 'weather' ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
+                onClick={() => setActiveTab('weather')}
+              >
+                <span role="img" aria-label="Weather" className="mr-1">☀️</span> Weather
+              </button>
+              <button
+                role="tab"
+                aria-selected={activeTab === 'news'}
+                tabIndex={activeTab === 'news' ? 0 : -1}
+                className={`px-4 py-2 rounded-full font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 ${activeTab === 'news' ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
+                onClick={() => setActiveTab('news')}
+              >
+                <span role="img" aria-label="News" className="mr-1">📰</span> News
+              </button>
+              <button
+                role="tab"
+                aria-selected={activeTab === 'sports'}
+                tabIndex={activeTab === 'sports' ? 0 : -1}
+                className={`px-4 py-2 rounded-full font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500 ${activeTab === 'sports' ? 'bg-primary-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}
+                onClick={() => setActiveTab('sports')}
+              >
+                <span role="img" aria-label="Sports" className="mr-1">🏟️</span> Sports
+              </button>
+            </div>
+            {/* Filter Bar */}
+            <div className="flex w-full justify-center gap-4 mb-4">
+              {activeTab === 'news' && (
+                <div>
+                  <label htmlFor="filter-category" className="text-xs text-gray-500 dark:text-gray-400 mr-1">Category</label>
+                  <select
+                    id="filter-category"
+                    className="rounded px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                    value={newsCategory}
+                    onChange={e => setNewsCategory(e.target.value)}
+                  >
+                    {NEWS_CATEGORIES.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {activeTab === 'sports' && (
+                <div>
+                  <label htmlFor="filter-league" className="text-xs text-gray-500 dark:text-gray-400 mr-1">League</label>
+                  <select
+                    id="filter-league"
+                    className="rounded px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+                    value={sportsLeague}
+                    onChange={e => setSportsLeague(e.target.value)}
+                  >
+                    {SPORTS_LEAGUES.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+            {/* Tab Content Area */}
+            <div className="w-full flex flex-col items-center justify-center min-h-[80px]">
+              {activeTab === 'weather' && (
+                <div className="w-full flex flex-col items-center">
+                  {weatherLoading && <div className="text-gray-500">Loading weather...</div>}
+                  {weatherError && <div className="text-red-600">{weatherError}</div>}
+                  {!weatherLoading && !weatherError && weather && (
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="text-3xl font-bold text-primary-600 dark:text-primary-300">
+                        {weather.temperature}&deg;C
+                      </div>
+                      <div className="text-lg text-gray-700 dark:text-gray-200">
+                        Condition code: {weather.condition}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        Wind: {weather.wind} km/h
+                      </div>
+                      {weather.humidity !== undefined && (
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          Humidity: {weather.humidity}%
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+              {activeTab === 'news' && (
+                <div className="w-full flex flex-col items-center">
+                  {newsLoading && <div className="text-gray-500">Loading news...</div>}
+                  {newsError && <div className="text-red-600">{newsError}</div>}
+                  {!newsLoading && !newsError && news && news.length > 0 && (
+                    <ul className="w-full max-w-md divide-y divide-gray-200 dark:divide-gray-700">
+                      {news.map((article, idx) => (
+                        <li key={idx} className="py-2">
+                          <a href={article.link} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary-600 dark:text-primary-300 hover:underline">
+                            {article.title}
+                          </a>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {article.source_id || article.creator?.[0] || 'Unknown Source'}
+                            {article.pubDate && (
+                              <span> &middot; {new Date(article.pubDate).toLocaleString()}</span>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {!newsLoading && !newsError && (!news || news.length === 0) && (
+                    <div className="text-gray-500">No news found for this region.</div>
+                  )}
+                </div>
+              )}
+              {activeTab === 'sports' && (
+                <div className="w-full flex flex-col items-center">
+                  {sportsLoading && <div className="text-gray-500">Loading sports events...</div>}
+                  {sportsError && <div className="text-red-600">{sportsError}</div>}
+                  {!sportsLoading && !sportsError && sports && sports.length > 0 && (
+                    <ul className="w-full max-w-md divide-y divide-gray-200 dark:divide-gray-700">
+                      {sports.map((event, idx) => (
+                        <li key={event.idEvent || idx} className="py-2">
+                          <div className="font-semibold text-primary-600 dark:text-primary-300">
+                            {event.strEvent}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {event.strLeague} &middot; {event.dateEvent} {event.strTime}
+                          </div>
+                          <div className="text-sm text-gray-700 dark:text-gray-200">
+                            {event.strHomeTeam} {event.intHomeScore !== null ? event.intHomeScore : ''}
+                            {event.intHomeScore !== null && event.intAwayScore !== null ? ' - ' : ''}
+                            {event.strAwayTeam} {event.intAwayScore !== null ? event.intAwayScore : ''}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {!sportsLoading && !sportsError && (!sports || sports.length === 0) && (
+                    <div className="text-gray-500">No sports events found.</div>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
       </div>
     </motion.div>
   );

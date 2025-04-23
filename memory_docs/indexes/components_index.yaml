@@ -229,4 +229,60 @@ components:
     test_scenarios:
       - Calendar renders with glassy, modern look
       - Date selection triggers onDateSelect
-      - Navigation and action buttons match sidebar style 
+      - Navigation and action buttons match sidebar style
+  #UI_EVENTS_SECTION: &{
+    name: EventsSection,
+    ^critical,
+    parameters: [timezoneId: string, area: string],
+    >uses: [#UI_TAB_WEATHER, #UI_TAB_NEWS, #UI_TAB_SPORTS, #UI_FILTER_BAR],
+    pattern: TabPanel,
+    @tasks: [TASK_003]
+  }
+  #UI_TAB_WEATHER: &{
+    name: TabWeather,
+    parameters: [onClick: () => void, active: boolean],
+    >calls: [#UI_PANEL_WEATHER],
+    pattern: TabButton,
+    @tasks: [TASK_003]
+  }
+  #UI_TAB_NEWS: &{
+    name: TabNews,
+    parameters: [onClick: () => void, active: boolean],
+    >calls: [#UI_PANEL_NEWS],
+    pattern: TabButton,
+    @tasks: [TASK_003]
+  }
+  #UI_TAB_SPORTS: &{
+    name: TabSports,
+    parameters: [onClick: () => void, active: boolean],
+    >calls: [#UI_PANEL_SPORTS],
+    pattern: TabButton,
+    @tasks: [TASK_003]
+  }
+  #UI_FILTER_BAR: &{
+    name: FilterBar,
+    parameters: [filters: object, onChange: (filters) => void],
+    pattern: FilterBar,
+    @tasks: [TASK_003]
+  }
+  #UI_PANEL_WEATHER: &{
+    name: PanelWeather,
+    parameters: [data: WeatherData],
+    >uses: [#SVC_WEATHER],
+    pattern: Panel,
+    @tasks: [TASK_003]
+  }
+  #UI_PANEL_NEWS: &{
+    name: PanelNews,
+    parameters: [data: NewsData],
+    >uses: [#SVC_NEWS],
+    pattern: Panel,
+    @tasks: [TASK_003]
+  }
+  #UI_PANEL_SPORTS: &{
+    name: PanelSports,
+    parameters: [data: SportsData],
+    >uses: [#SVC_SPORTS],
+    pattern: Panel,
+    @tasks: [TASK_003]
+  } 

@@ -31,6 +31,14 @@ timestamp: 2024-06-09T00:00:00Z {level: metadata}
     [performance/]
     [seo/]
     [error/]
+    eventsSection.tsx #[UI_EVENTS_SECTION] "Events section for timezone card" @patterns[TabPanel] @tasks[TASK_003]
+    tabWeather.tsx #[UI_TAB_WEATHER] "Weather tab button" @index[components] @tasks[TASK_003]
+    tabNews.tsx #[UI_TAB_NEWS] "News tab button" @index[components] @tasks[TASK_003]
+    tabSports.tsx #[UI_TAB_SPORTS] "Sports tab button" @index[components] @tasks[TASK_003]
+    filterBar.tsx #[UI_FILTER_BAR] "Filter bar for events section" @patterns[FilterBar] @index[components] @tasks[TASK_003]
+    panelWeather.tsx #[UI_PANEL_WEATHER] "Weather panel content" @index[components] @tasks[TASK_003]
+    panelNews.tsx #[UI_PANEL_NEWS] "News panel content" @index[components] @tasks[TASK_003]
+    panelSports.tsx #[UI_PANEL_SPORTS] "Sports panel content" @index[components] @tasks[TASK_003]
   app/ [CORE]
     layout.tsx
     globals.css
@@ -124,3 +132,55 @@ flowchart TD
 ```
 
 <!-- Add flow diagrams here as mermaid blocks --> 
+
+## SERVICES
+
+### Weather Service
+```mermaid
+flowchart TD
+  U[User] -->|Requests weather data| WS[weatherService]
+  WS -->|Fetches data from Open-Meteo| API[API]
+  API -->|Returns data| WS
+```
+
+### News Service
+```mermaid
+flowchart TD
+  U[User] -->|Requests news data| NS[newsService]
+  NS -->|Fetches data from NewsData.io| API[API]
+  API -->|Returns data| NS
+```
+
+### Sports Service
+```mermaid
+flowchart TD
+  U[User] -->|Requests sports data| SS[sportsService]
+  SS -->|Fetches data from TheSportsDB| API[API]
+  API -->|Returns data| SS
+```
+
+## MODELS
+
+### Weather Model
+```mermaid
+flowchart TD
+  U[User] -->|Requests weather data| WM[weatherModel]
+  WM -->|Fetches data from Open-Meteo| API[API]
+  API -->|Returns data| WM
+```
+
+### News Model
+```mermaid
+flowchart TD
+  U[User] -->|Requests news data| NM[newsModel]
+  NM -->|Fetches data from NewsData.io| API[API]
+  API -->|Returns data| NM
+```
+
+### Sports Model
+```mermaid
+flowchart TD
+  U[User] -->|Requests sports data| SM[sportsModel]
+  SM -->|Fetches data from TheSportsDB| API[API]
+  API -->|Returns data| SM
+``` 

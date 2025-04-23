@@ -1,0 +1,24 @@
+#SVC_WEATHER: &{
+  name: weatherService,
+  api: "Open-Meteo",
+  endpoint: "https://api.open-meteo.com/v1/forecast",
+  key: none,
+  parameters: [latitude, longitude, current_weather],
+  @tasks: [TASK_003]
+}
+#SVC_NEWS: &{
+  name: newsService,
+  api: "NewsData.io",
+  endpoint: "https://newsdata.io/api/1/news",
+  key: NEWS_API_KEY,
+  parameters: [apikey, country, category],
+  @tasks: [TASK_003]
+}
+#SVC_SPORTS: &{
+  name: sportsService,
+  api: "TheSportsDB",
+  endpoint: "https://www.thesportsdb.com/api/v1/json/{APIKEY}/",
+  key: 3 (dev), pub_82638261d3f5420abe0917997f1c9a9b2a73e (prod),
+  parameters: [league, team, event],
+  @tasks: [TASK_003]
+} 
