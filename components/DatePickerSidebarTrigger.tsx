@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CalendarDaysIcon } from '@heroicons/react/24/outline';
-import { DatePicker } from './ui/date-picker';
+import { Calendar } from './ui/calendar';
 
 interface DatePickerSidebarTriggerProps {
   onSidebarCollapse: () => void;
@@ -23,6 +23,7 @@ export function DatePickerSidebarTrigger({ onSidebarCollapse }: DatePickerSideba
 
   return (
     <>
+      {/* Sidebar menu item button */}
       <button
         className="flex items-center space-x-3 px-3 py-3 rounded-full hover:bg-gray-800 w-full"
         onClick={handleOpen}
@@ -31,13 +32,15 @@ export function DatePickerSidebarTrigger({ onSidebarCollapse }: DatePickerSideba
         <CalendarDaysIcon className="w-6 h-6 text-gray-200" />
         <span className="text-white">Select Date</span>
       </button>
+      {/* Modal with only the calendar, no duplicate button */}
       {showPicker && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowPicker(false)} />
           <div className="relative z-10">
-            <DatePicker
+            <Calendar
               selectedDate={selectedDate}
-              onDateChange={handleDateChange}
+              onDateSelect={handleDateChange}
+              onClose={() => setShowPicker(false)}
             />
           </div>
         </div>
