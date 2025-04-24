@@ -1314,15 +1314,7 @@ const TimezoneColumn = memo(({
       )}
       {/* --- EVENTS UI --- */}
       <div className="w-full flex flex-col items-center justify-center mt-2">
-        {!showEvents && (
-          <button
-            onClick={() => setShowEvents(true)}
-            className="mt-2 w-full py-2 rounded-lg bg-primary-500 text-white font-semibold shadow hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 transition"
-            aria-label="Show events for this timezone"
-          >
-            Show Events
-          </button>
-        )}
+        {/* Remove the Show Events button, header is now the toggle */}
         {showEvents && (
           <motion.div layout initial={false} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} style={{ overflow: 'hidden', width: '100%' }}>
             <button
