@@ -1,14 +1,23 @@
 # CodeMap Root
 
-timestamp: 2024-06-09T00:00:00Z {level: metadata}
+timestamp: 2025-04-09T10:00:00Z {level: metadata}
 
 ## ACTIVE_MEMORY
-- Components: [#UI_SIDEBAR, #UI_DATE_PICKER]
-- Decisions: []
-- Patterns: [@Glassmorphism]
-- Tasks: [TASK_002]
+- Components: None (TASK_004 Completed)
+- Decisions: [#PRUNE_001]
+- Patterns: @TBD
+- Tasks: []
 
 ## PROJECT_STRUCTURE
+[root_directory]/
+  [app_directory]/ [CORE]
+    [grid-test_directory]/ #[GRID_TEST] "Grid Test Feature" @index[components] @pruned @tasks[TASK_004]
+  [ad_directory]/ #[AD] "Advertisement Content" @index[misc] @pruned @tasks[TASK_004]
+  [SECURITY_directory]/ #[SECURITY] "Security Documentation" @index[misc] @pruned @tasks[TASK_004]
+  [playwright-report_directory]/ #[PLAYWRIGHT_REPORT] "Testing Reports" @index[misc] @pruned @tasks[TASK_004]
+  [next_directory]/ #[NEXT_BUILD] "Build Artifacts" @index[build] @retained @tasks[TASK_004]
+  Lighthouse Report.html #[LIGHTHOUSE_REPORT] "Performance Report" @index[reports] @pruned @tasks[TASK_004]
+  localhost_2025-03-30_02-25-09.report.html #[LOCAL_REPORT] "Local Performance Report" @index[reports] @pruned @tasks[TASK_004]
 [project_root]/
   components/ [UI]
     BackgroundSelector.tsx

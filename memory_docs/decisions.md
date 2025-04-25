@@ -1,6 +1,6 @@
 # Decision Journal
 
-timestamp: 2024-06-09T00:00:00Z
+timestamp: 2025-04-09T10:00:00Z
 
 ## Active Decisions
 - [2024-06-09] #ARCH_001 "Initialize Memory Bank System" [Confidence: HIGH]
@@ -25,5 +25,15 @@ timestamp: 2024-06-09T00:00:00Z
   - **Components**: #SVC_WEATHER, #SVC_NEWS, #SVC_SPORTS
   - **Status**: Active
   - **Source**: TASK_003
+
+- [2025-04-09] #PRUNE_001 "Pruning Unused Elements" [Confidence: HIGH]
+  - **Context**: Need to optimize project by removing unused files and folders.
+  - **Options**: 
+    - Prune all identified unused elements.
+    - Archive specific elements for historical reference.
+  - **Decision**: Prune confirmed elements (grid-test/, ad/, SECURITY/, Lighthouse Report.html, localhost_2025-03-30_02-25-09.report.html, playwright-report/); retain .next/ to avoid build disruptions.
+  - **Components**: Project-wide (#TBD)
+  - **Status**: Active
+  - **Source**: TASK_004
 
 ## Historical Decisions 
