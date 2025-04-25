@@ -1124,6 +1124,85 @@ const TimezoneColumn = memo(({
     setShowEvents((prev) => !prev);
   };
 
+  // --- SPORTS TIMEZONE/TEAM MAPPING ---
+  // Map timezone IDs to states
+  const TIMEZONE_TO_STATES: Record<string, string[]> = {
+    'America/Chicago': [
+      'Illinois', 'Texas', 'Minnesota', 'Wisconsin', 'Missouri', 'Alabama', 'Arkansas', 'Louisiana', 'Mississippi', 'Oklahoma', 'Iowa', 'Kansas', 'Nebraska', 'North Dakota', 'South Dakota', 'Tennessee'
+    ],
+    'America/New_York': [
+      'New York', 'Florida', 'Georgia', 'North Carolina', 'South Carolina', 'Ohio', 'Pennsylvania', 'Michigan', 'Indiana', 'Kentucky', 'West Virginia', 'Virginia', 'Maryland', 'Delaware', 'New Jersey', 'Connecticut', 'Rhode Island', 'Massachusetts', 'Vermont', 'New Hampshire', 'Maine'
+    ],
+    'America/Denver': [
+      'Colorado', 'Utah', 'Wyoming', 'Montana', 'New Mexico'
+    ],
+    'America/Los_Angeles': [
+      'California', 'Washington', 'Oregon', 'Nevada', 'Idaho'
+    ],
+    // Add more as needed
+  };
+  // Map states to teams for each league
+  const LEAGUE_TO_TEAMS: Record<string, Record<string, string[]>> = {
+    NBA: {
+      'Illinois': ['Chicago Bulls'],
+      'Texas': ['Houston Rockets', 'Dallas Mavericks', 'San Antonio Spurs'],
+      'Minnesota': ['Minnesota Timberwolves'],
+      'Wisconsin': ['Milwaukee Bucks'],
+      'Tennessee': ['Memphis Grizzlies'],
+      'Louisiana': ['New Orleans Pelicans'],
+      'Oklahoma': ['Oklahoma City Thunder'],
+      // ... add more for other states/leagues
+    },
+    NFL: {
+      'Illinois': ['Chicago Bears'],
+      'Texas': ['Dallas Cowboys', 'Houston Texans'],
+      'Minnesota': ['Minnesota Vikings'],
+      'Wisconsin': ['Green Bay Packers'],
+      'Tennessee': ['Tennessee Titans'],
+      'Louisiana': ['New Orleans Saints'],
+      'Missouri': ['Kansas City Chiefs'],
+      // ...
+    },
+    MLB: {
+      'Illinois': ['Chicago Cubs', 'Chicago White Sox'],
+      'Texas': ['Houston Astros', 'Texas Rangers'],
+      'Minnesota': ['Minnesota Twins'],
+      'Wisconsin': ['Milwaukee Brewers'],
+      'Missouri': ['St. Louis Cardinals', 'Kansas City Royals'],
+      'Tennessee': [],
+      // ...
+    },
+    NHL: {
+      'Illinois': ['Chicago Blackhawks'],
+      'Texas': ['Dallas Stars'],
+      'Minnesota': ['Minnesota Wild'],
+      'Tennessee': ['Nashville Predators'],
+      'Missouri': ['St. Louis Blues'],
+      // ...
+    },
+    MLS: {
+      'Illinois': ['Chicago Fire'],
+      'Texas': ['FC Dallas', 'Houston Dynamo', 'Austin FC'],
+      'Minnesota': ['Minnesota United FC'],
+      'Tennessee': ['Nashville SC'],
+      // ...
+    },
+    // Add more leagues as needed
+  };
+
+  // Helper to get all teams in a timezone for a league
+  function getTeamsForTimezoneAndLeague(timezoneId: string, league: string): string[] {
+    const states = TIMEZONE_TO_STATES[timezoneId] || [];
+    const leagueTeams = LEAGUE_TO_TEAMS[league] || {};
+    let teams: string[] = [];
+    for (const state of states) {
+      if (leagueTeams[state]) {
+        teams = teams.concat(leagueTeams[state]);
+      }
+    }
+    return teams;
+  }
+
   return (
     <motion.div
       layout
@@ -1314,16 +1393,9 @@ const TimezoneColumn = memo(({
       )}
       {/* --- EVENTS UI --- */}
       <div className="w-full flex flex-col items-center justify-center mt-2">
-        {/* Remove the Show Events button, header is now the toggle */}
         {showEvents && (
           <motion.div layout initial={false} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.3 }} style={{ overflow: 'hidden', width: '100%' }}>
-            <button
-              onClick={() => setShowEvents(false)}
-              className="mb-4 w-full py-2 rounded-lg bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-100 font-semibold shadow hover:bg-gray-400 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 transition"
-              aria-label="Hide events for this timezone"
-            >
-              Hide Events
-            </button>
+            {/* Remove the Hide Events button, header is now the toggle */}
             {/* Tab Bar */}
             <div role="tablist" aria-label="Current Events Tabs" className="flex w-full justify-center gap-2 mb-2">
               <button
@@ -1444,26 +1516,50 @@ const TimezoneColumn = memo(({
                   {sportsLoading && <div className="text-gray-500">Loading sports events...</div>}
                   {sportsError && <div className="text-red-600">{sportsError}</div>}
                   {!sportsLoading && !sportsError && sports && sports.length > 0 && (
-                    <ul className="w-full max-w-md divide-y divide-gray-200 dark:divide-gray-700">
-                      {sports.map((event, idx) => (
-                        <li key={event.idEvent || idx} className="py-2">
-                          <div className="font-semibold text-primary-600 dark:text-primary-300">
-                            {event.strEvent}
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            {event.strLeague} &middot; {event.dateEvent} {event.strTime}
-                          </div>
-                          <div className="text-sm text-gray-700 dark:text-gray-200">
-                            {event.strHomeTeam} {event.intHomeScore !== null ? event.intHomeScore : ''}
-                            {event.intHomeScore !== null && event.intAwayScore !== null ? ' - ' : ''}
-                            {event.strAwayTeam} {event.intAwayScore !== null ? event.intAwayScore : ''}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
+                    (() => {
+                      // Determine league name from dropdown value
+                      let leagueName = '';
+                      switch (sportsLeague) {
+                        case '4328': leagueName = 'NBA'; break;
+                        case '4391': leagueName = 'NFL'; break;
+                        case '4424': leagueName = 'MLB'; break;
+                        case '4387': leagueName = 'NHL'; break;
+                        case '4346': leagueName = 'MLS'; break;
+                        default: leagueName = 'NBA'; // fallback
+                      }
+                      // Get teams for this timezone and league
+                      const teamsInTz = getTeamsForTimezoneAndLeague(timezone.id, leagueName);
+                      // Debug: log API events and mapped teams
+                      console.log('Fetched sports events:', sports);
+                      console.log('Mapped teams for timezone', timezone.id, 'and league', leagueName, ':', teamsInTz);
+                      // TEMP: Show all events for debugging
+                      const filteredEvents = sports;
+                      if (filteredEvents.length === 0) {
+                        return <div className="text-gray-500">No sports events found for this league.</div>;
+                      }
+                      return (
+                        <ul className="w-full max-w-md divide-y divide-gray-200 dark:divide-gray-700">
+                          {filteredEvents.map((event, idx) => (
+                            <li key={event.idEvent || idx} className="py-2">
+                              <div className="font-semibold text-primary-600 dark:text-primary-300">
+                                {event.strEvent}
+                              </div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">
+                                {event.strLeague} &middot; {event.dateEvent} {event.strTime}
+                              </div>
+                              <div className="text-sm text-gray-700 dark:text-gray-200">
+                                {event.strHomeTeam} {event.intHomeScore !== null ? event.intHomeScore : ''}
+                                {event.intHomeScore !== null && event.intAwayScore !== null ? ' - ' : ''}
+                                {event.strAwayTeam} {event.intAwayScore !== null ? event.intAwayScore : ''}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      );
+                    })()
                   )}
                   {!sportsLoading && !sportsError && (!sports || sports.length === 0) && (
-                    <div className="text-gray-500">No sports events found.</div>
+                    <div className="text-gray-500">No sports events found for this league.</div>
                   )}
                 </div>
               )}
